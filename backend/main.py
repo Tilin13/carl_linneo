@@ -1,12 +1,173 @@
 from pathlib import Path
 import sqlite3
 from flask import Flask, render_template, send_from_directory, request, jsonify
-
+from functools import wraps
 from dotenv import load_dotenv
 from openai import OpenAI
 import os
 import random
+from flask import session, abort
+from werkzeug.security import(generate_password_hash, check_password_hash)
+import re
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 
+app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
+
+def cliente_requerido(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        cliente_id = session.get("cliente_id")
+
+        if not cliente_id:
+            abort(401, description="Inicia sesión para continuar")
+
+        # Comprobar que la cuenta todavía existe.
+        conexion = conectar_db()
+        try:
+            cliente = conexion.execute(
+                "SELECT id FROM clientes WHERE id = ?",
+                (cliente_id,)
+            ).fetchone()
+        finally:
+            conexion.close()
+
+        if cliente is None:
+            session.clear()
+            abort(401, description="Sesión no válida")
+
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+@app.post("/api/clientes/registro")
+def registrar_cliente():
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify(error="Solicitud inválida"), 400
+
+    nombre = data.get("nombre")
+    email = data.get("email")
+    password = data.get("password")
+
+    if not all(isinstance(v, str) for v in
+               (nombre, email, password)):
+        return jsonify(error="Datos inválidos"), 400
+
+    nombre = nombre.strip()
+    email = email.strip().lower()
+
+    if not nombre or len(nombre) > 100:
+        return jsonify(error="Nombre inválido"), 400
+
+    if len(email) > 254 or not re.fullmatch(
+        r"[^@\s]+@[^@\s]+\.[^@\s]+", email
+    ):
+        return jsonify(error="Correo inválido"), 400
+
+    if len(password) < 15 or len(password) > 128:
+        return jsonify(
+            error="La contraseña debe tener entre 15 y 128 caracteres"
+        ), 400
+
+    password_hash = generate_password_hash(password)
+
+    conexion = conectar_db()
+    try:
+        conexion.execute(
+            """
+            INSERT INTO clientes (nombre, email, password_hash)
+            VALUES (?, ?, ?)
+            """,
+            (nombre, email, password_hash)
+        )
+        conexion.commit()
+
+    except sqlite3.IntegrityError:
+        conexion.rollback()
+        return jsonify(
+            error="No se pudo crear la cuenta con esos datos"
+        ), 409
+
+    finally:
+        conexion.close()
+
+    return jsonify(mensaje="Cuenta creada"), 201
+
+
+@app.post("/api/clientes/login")
+def iniciar_sesion_cliente():
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify(error="Solicitud inválida"), 400
+
+    email = data.get("email")
+    password = data.get("password")
+
+    if not isinstance(email, str) or not isinstance(password, str):
+        return jsonify(error="Credenciales incorrectas"), 401
+
+    conexion = conectar_db()
+    try:
+        cliente = conexion.execute(
+            """
+            SELECT id, password_hash
+            FROM clientes
+            WHERE email = ?
+            """,
+            (email.strip().lower(),)
+        ).fetchone()
+    finally:
+        conexion.close()
+
+    if (
+        cliente is None
+        or not check_password_hash(
+            cliente["password_hash"], password
+        )
+    ):
+        return jsonify(error="Credenciales incorrectas"), 401
+
+    # Renovar el identificador de sesión después del login.
+    session.clear()
+    session["cliente_id"] = cliente["id"]
+
+    return jsonify(mensaje="Sesión iniciada"), 200
+
+
+@app.post("/api/clientes/logout")
+@cliente_requerido
+def cerrar_sesion_cliente():
+    session.clear()
+    return jsonify(mensaje="Sesión cerrada"), 200
+
+
+@app.get("/api/clientes/perfil")
+@cliente_requerido
+def perfil_cliente():
+    conexion = conectar_db()
+    try:
+        cliente = conexion.execute(
+            """
+            SELECT id, nombre, email, creado_en
+            FROM clientes
+            WHERE id = ?
+            """,
+            (session["cliente_id"],)
+        ).fetchone()
+    finally:
+        conexion.close()
+
+    return jsonify(dict(cliente))
+
+	
+csrf = CSRFProtect(app)
+
+@app.get("/api/csrf")
+def obtener_token_csrf():
+    return jsonify(csrf_token=generate_csrf())
 load_dotenv()
 
 # ============================================================
