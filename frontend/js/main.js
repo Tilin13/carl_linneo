@@ -18,6 +18,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const filtro_menu = document.getElementById("filtro_menu");
     
     const chatbtn = document.getElementById("chat_btn");
+    const iniciar_secion_btn = document.getElementById("iniciar_secion_btn");
+    const registrase_btn = documen.getElementById("registrarse_btn");
 if (chatbtn) {
     chatbtn.addEventListener("click", function () {
         window.location.href = "/chatbox";
@@ -25,7 +27,16 @@ if (chatbtn) {
 }
     const cantidad_productos =
         document.getElementById("cantidad_productos");
-
+if (iniciar_secion_btn){
+	iniciar_secion_btn.addEventListener("click", function(){
+		window.location.href="/iniciar_sesion";
+	});
+}
+if (registrarse_btn) {
+    registrarse_btn.addEventListener("click", function () {
+        window.location.href = "/registrarse";
+    });
+}
 const botonesCategoria = document.querySelectorAll(
     ".sec_btn[data-categoria]"
 );
