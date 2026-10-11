@@ -22,20 +22,6 @@ FRONTEND_DIR = BASE_DIR / "frontend"
 # Carpeta donde están las imágenes
 IMAGENES_DIR = BASE_DIR / "imagenes"
 
-
-print("========================================")
-print("CONFIGURACIÓN")
-print("========================================")
-print("BASE_DIR:       ", BASE_DIR)
-print("BASE_DATOS:     ", BASE_DATOS)
-print("FRONTEND_DIR:   ", FRONTEND_DIR)
-print("IMAGENES_DIR:   ", IMAGENES_DIR)
-print("----------------------------------------")
-print("BD existe:      ", BASE_DATOS.exists())
-print("Frontend existe:", FRONTEND_DIR.exists())
-print("========================================")
-
-
 # ============================================================
 # FLASK
 # ============================================================
