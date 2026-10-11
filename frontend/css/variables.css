@@ -27,6 +27,11 @@
 
 
 /* Contenedor de los cuatro pasos */
+.tarjeta{
+	background-color: var(--tarjeta);
+	color: var(--texto);
+	justify-content: center;
+}
 #compra_tarjeta .pasos_compra {
     display: flex;
     justify-content: space-around;
