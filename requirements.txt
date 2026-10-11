@@ -3,6 +3,5 @@ gunicorn
 python-dotenv
 openai
 werkzeug
-functools
 Flask-WTF
 
