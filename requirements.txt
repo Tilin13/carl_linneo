@@ -2,7 +2,7 @@ Flask
 gunicorn
 python-dotenv
 openai
-werkzeug.security
+werkzeug
 functools
 Flask-WTF
 
