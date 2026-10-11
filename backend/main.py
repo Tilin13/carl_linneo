@@ -1,7 +1,6 @@
 from pathlib import Path
 import sqlite3
 from flask import Flask, render_template, send_from_directory, request, jsonify
-from functools import wraps
 from dotenv import load_dotenv
 from openai import OpenAI
 import os
@@ -10,6 +9,65 @@ from flask import session, abort
 from werkzeug.security import(generate_password_hash, check_password_hash)
 import re
 from flask_wtf.csrf import CSRFProtect, generate_csrf
+
+
+# ============================================================
+# RUTAS DEL PROYECTO
+# ============================================================
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+BASE_DATOS = "pos.db"
+
+FRONTEND_DIR = BASE_DIR / "frontend"
+
+
+# Carpeta donde están las imágenes
+IMAGENES_DIR = BASE_DIR / "imagenes"
+
+# ============================================================
+# FLASK
+# ============================================================
+
+app = Flask(
+    __name__,
+    template_folder=str(FRONTEND_DIR),
+    static_folder=str(FRONTEND_DIR),
+    static_url_path=""
+)
+
+
+# Límites y configuración de seguridad
+app.config.update(
+    MAX_CONTENT_LENGTH=16 * 1024,  # 16 KiB por petición
+    MAX_FORM_MEMORY_SIZE=16 * 1024,
+    MAX_FORM_PARTS=50,
+
+    # Cookies seguras si en el futuro usas sesiones.
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+)
+
+
+@app.after_request
+def agregar_cabeceras_seguridad(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = (
+        "camera=(), microphone=(), geolocation=()"
+    )
+
+    # No almacenar respuestas personalizadas en cachés compartidas.
+    if request.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store"
+
+    return response
+
+# ============================================================
+# BASE DE DATOS
+# ============================================================		
 
 app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
 
@@ -169,64 +227,6 @@ csrf = CSRFProtect(app)
 def obtener_token_csrf():
     return jsonify(csrf_token=generate_csrf())
 load_dotenv()
-
-# ============================================================
-# RUTAS DEL PROYECTO
-# ============================================================
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-BASE_DATOS = "pos.db"
-
-FRONTEND_DIR = BASE_DIR / "frontend"
-
-
-# Carpeta donde están las imágenes
-IMAGENES_DIR = BASE_DIR / "imagenes"
-
-# ============================================================
-# FLASK
-# ============================================================
-
-app = Flask(
-    __name__,
-    template_folder=str(FRONTEND_DIR),
-    static_folder=str(FRONTEND_DIR),
-    static_url_path=""
-)
-
-
-# Límites y configuración de seguridad
-app.config.update(
-    MAX_CONTENT_LENGTH=16 * 1024,  # 16 KiB por petición
-    MAX_FORM_MEMORY_SIZE=16 * 1024,
-    MAX_FORM_PARTS=50,
-
-    # Cookies seguras si en el futuro usas sesiones.
-    SESSION_COOKIE_SECURE=True,
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE="Lax",
-)
-
-
-@app.after_request
-def agregar_cabeceras_seguridad(response):
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Permissions-Policy"] = (
-        "camera=(), microphone=(), geolocation=()"
-    )
-
-    # No almacenar respuestas personalizadas en cachés compartidas.
-    if request.path.startswith("/api/"):
-        response.headers["Cache-Control"] = "no-store"
-
-    return response
-
-# ============================================================
-# BASE DE DATOS
-# ============================================================		
 def obtener_producto(nombre):
 
     conexion = sqlite3.connect(BASE_DATOS)
