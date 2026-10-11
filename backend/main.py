@@ -9,8 +9,7 @@ from flask import session, abort
 from werkzeug.security import(generate_password_hash, check_password_hash)
 import re
 from flask_wtf.csrf import CSRFProtect, generate_csrf
-
-
+from functools import wraps
 # ============================================================
 # RUTAS DEL PROYECTO
 # ============================================================
