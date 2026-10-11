@@ -28,10 +28,14 @@
 
 /* Contenedor de los cuatro pasos */
 .tarjeta{
-	background-color: var(--tarjeta);
+	background-color: var(--terracota);
 	color: var(--texto);
 	justify-content: center;
+	align-items: center;
+	gap:25px;
+	padding: 25px;
 }
+
 #compra_tarjeta .pasos_compra {
     display: flex;
     justify-content: space-around;
@@ -437,7 +441,20 @@ body {
 
     box-shadow: 0 2px 8px rgba(35, 55, 42, 0.08);
 }
+.input_clas{
+    display: flex;
+    align-items: center;
+    gap: 10px;
 
+    background-color: var(--tarjeta);
+
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+
+    padding: 8px 12px;
+
+    box-shadow: 0 2px 8px rgba(35, 55, 42, 0.08);
+}
 #barra_busqueda input {
     flex: 1;
 
