@@ -133,7 +133,7 @@ def obtener_catalogo(categoria=None):
 def escoger_productos_azar():
     """Devuelve hasta 3 productos aleatorios de la base de datos."""
 
-    if not BASE_DATOS.exists():
+    if not Path(BASE_DATOS).exists():
         raise FileNotFoundError(
             f"No existe la base de datos: {BASE_DATOS}"
         )
