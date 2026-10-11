@@ -1,8 +1,4 @@
-pathlib
-flask
-sqlite3
-dotenv
-openai
-os
-random
+Flask
 gunicorn
+python-dotenv
+openai
