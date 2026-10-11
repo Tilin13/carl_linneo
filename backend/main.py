@@ -236,7 +236,13 @@ def catalogo(categoria=None):
     )
 
 
-
+@app.route("/iniciar_sesion")
+def login():
+	return render_template("login.html")
+	
+@app.route("/registrarse")
+def registrarse():
+	return render_template("registrarse")
 
 # ============================================================
 # IMÁGENES
