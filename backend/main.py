@@ -19,6 +19,7 @@ BASE_DATOS = "pos.db"
 
 FRONTEND_DIR = BASE_DIR / "frontend"
 
+
 # Carpeta donde están las imágenes
 IMAGENES_DIR = BASE_DIR / "imagenes"
 
@@ -95,7 +96,7 @@ def obtener_catalogo(categoria=None):
     los productos pertenecientes a esa categoría.
     """
 
-    if not BASE_DATOS.exists():
+    if not Path(BASE_DATOS).exists():
         raise FileNotFoundError(
             f"No existe la base de datos:\n{BASE_DATOS}"
         )
