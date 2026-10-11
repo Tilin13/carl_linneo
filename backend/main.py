@@ -15,9 +15,7 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-GUAYABA_POS_DIR = BASE_DIR.parent / "guayabapos"
-
-BASE_DATOS = GUAYABA_POS_DIR / "pos.db"
+BASE_DATOS = "pos.db"
 
 FRONTEND_DIR = BASE_DIR / "frontend"
 
