@@ -1,0 +1,200 @@
+	<!DOCTYPE html>
+	<html lang="es">
+
+	<head>
+		<meta charset="UTF-8">
+
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0"
+		>
+
+		<title>Linneo</title>
+
+		<link rel="stylesheet" href="/css/variables.css">
+	
+		<link
+			rel="icon"
+			type="image/png"
+			href="linneo_isotipo.png"
+		>
+	</head>
+
+
+
+	<body>
+
+		<header class="barra" id="barra_global">
+
+			<h2>Linneo</h2>
+
+
+			<button
+				class="button"
+				id="buscarbtn"
+				type="button"
+			>
+				🔍︎
+			</button>
+
+			<button
+				class="button"
+				id="carritobtn"
+				type="button"
+			>
+				🛒
+			</button>
+			<div id="carrito_productos" >
+				<h5 id="cantidad_productos"></h5>
+			</div>
+			<button 
+				class="button"
+				id="favoritos_btn"
+				type="button"
+			>Favoritos
+			</button>
+
+			<button
+				class="button"
+				id="menubtn"
+				type="button"
+			>
+				☰
+			</button>
+			<button
+				class="button"
+				id="iniciar_secion_btn"
+				type="button"
+			>Iniciar sesión
+			</button>
+			<button 
+				class="button"
+				id="registrarse_btn"
+				type="button"
+			>Registrarse
+			</button>
+			<div id="busqueda_div">
+				<form action="/buscar" method="GET">
+
+				<input
+					type="search"
+					id="barra_busqueda"
+					name="busqueda"
+					placeholder="Buscar productos..."
+					autocomplete="off"
+				>
+
+				<button
+					class="button"
+					type="submit"
+				>
+					Buscar
+				</button>
+			</form>
+			
+
+			</div>
+			
+
+		</header>
+
+		<main>
+
+			<div id="tarjeta_logo">
+				<img
+				src="tarjeta2.png"
+				alt="tarjeta"
+				>
+			
+			</div>
+
+		</main>
+		
+		<main>
+		<nav class="barra" id="configuraciones_bar_chatbox">
+			<button 
+			id="idioma_chatboxbtn"
+			class="button"
+			type="button"
+			>
+			🌐
+			</button>
+		</nav>
+		<nav id="chat_box">
+			<div id="historial_mensajes">
+			</div>
+			<div id="menu_mensajes_propios">
+				<input type="text" id="bar_mensajes">
+				<button 
+					onclick=enviarmensje()
+					 id="enviar_mensaje_btn"
+					 class="button"
+				>Enviar
+				</button>
+			</div>
+		</nav>	
+
+		<button id="chat_btn" class="button">💬</button>
+
+		<nav class="barra" id="carrito_bar">
+			<h1>CARRITO</h1>
+			<div id="mostrar_productos">
+			<h3>Producto</h3>
+			<h3 id="contenido_carrito"></h3>
+			<h3>Precio</h3>
+			<h3 id="productos_carrito_precio"></h3>	
+			</div>
+			<div>
+				<h2>Descuentos</h2>
+				<h2>Subtotal</h2>
+			</div>
+			<button class="button" type="button" id="comprar_carrito_btn">
+				Comprar
+			</button>
+			
+				
+			
+			</div>
+		</nav>
+		
+		<nav class="barra" id="menu_bar">
+
+			<button
+				id="atras_menu"
+				type="button"
+				class="button"
+			>
+				↚
+			</button>
+			<div>
+				<a
+					class="text_menu"
+					href="/catalogo"
+				>
+					Catálogo
+				</a>
+			</div>
+			<div>
+				<a
+					class="text_menu"
+					href="/contacto"
+				>
+					Contáctanos
+				</a>
+			</div>
+			<div>
+				<a
+					class="text_menu"
+					href="/informacion"
+				>
+					¿Quiénes somos?
+				</a>
+			</div>
+
+		</nav>
+
+		<script src="/js/main.js"></script>
+
+	</body>
+
+	</html>

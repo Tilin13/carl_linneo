@@ -1,0 +1,180 @@
+	<!DOCTYPE html>
+	<html lang="es">
+
+	<head>
+		<meta charset="UTF-8">
+
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0"
+		>
+
+		<title>Linneo</title>
+
+		<link rel="stylesheet" href="/css/variables.css">
+	</head>
+
+	<body>
+
+		<header class="barra" id="barra_global">
+
+			<h2>Linneo</h2>
+
+
+			<button
+				class="button"
+				id="buscarbtn"
+				type="button"
+			>
+				🔍︎
+			</button>
+
+			<button
+				class="button"
+				id="carritobtn"
+				type="button"
+			>
+				🛒
+			</button>
+
+			<button
+				class="button"
+				id="menubtn"
+				type="button"
+			>
+				☰
+			</button>
+			<div id="busqueda_div">
+				<input type="text" id="barra_busqueda">
+				<button class="button" id="buscar_btn_acometer">Buscar</button>
+			</div>
+			
+
+		</header>
+
+		<main>
+
+			<div id="tarjeta_logo">
+			</div>
+
+		</main>
+		<section id="resultados">
+
+			{% for producto in productos %}
+
+				<article
+					class="tarjeta_producto"
+					data-categoria="{{ producto.categoria }}"
+					data-nombre="{{ producto.nombre }}"
+					data-precio="{{ producto.precio_venta }}"
+				>
+
+				<div class="producto_imagen">
+
+					<img
+						src="{{ url_for(
+							'imagenes',
+							nombre_archivo=producto.nombre.replace(' ', '_') + '.jpg'
+						) }}"
+						alt="{{ producto.nombre }}"
+					>
+
+            </div>
+
+            <div class="producto_info">
+
+                <h2>{{ producto.nombre }}</h2>
+
+                <a href="/productos/{{ producto.nombre.replace(' ', '_') }}/">
+                    Ver producto
+                </a>
+
+                <p class="producto_categoria">
+                    Categoría: {{ producto.categoria }}
+                </p>
+
+                <p class="producto_precio">
+                    Precio: ${{ producto.precio_venta }}
+                </p>
+
+                <p class="producto_stock">
+                    Stock: {{ producto.stock }}
+                </p>
+                <div class="disponibilidad_favicon">
+				</div>
+
+                <button
+                    class="button agregar-carrito"
+                    type="button"
+                    data-producto-id="{{ producto.id }}"
+                >
+                    Agregar al carrito
+                </button>
+
+            </div>
+
+        </article>
+
+    {% else %}
+
+        <p class="sin-productos">
+            No hay productos disponibles.
+        </p>
+
+    {% endfor %}		
+		</section>
+		<nav class="barra" id="carrito_bar">
+			<h1>CARRITO</h1>
+			<div>
+				<h2>Subtotal</h2>
+			</div>
+			<button class="button" type="button" id="comprar_carrito_btn">
+				Comprar
+			</button>
+			
+				
+		</nav>
+		<select id="busqueda" >
+			
+
+		<nav class="barra" id="menu_bar">
+
+			<button
+				id="atras_menu"
+				type="button"
+				class="button"
+			>
+				↚
+			</button>
+			<div>
+				<a
+					class="text_menu"
+					href="/catalogo"
+				>
+					Catálogo
+				</a>
+			</div>
+			<div>
+				<a
+					class="text_menu"
+					href="#contacto"
+				>
+					Contáctanos
+				</a>
+			</div>
+			<div>
+				<a
+					class="text_menu"
+					href="/informacion"
+				>
+					¿Quiénes somos?
+				</a>
+			</div>
+
+		</nav>
+
+		<script src="/js/main.js"></script>
+
+	</body>
+
+	</html>

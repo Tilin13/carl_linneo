@@ -1,0 +1,7 @@
+pathlib
+flask
+sqlite3
+dotenv
+openai
+os
+random

@@ -1,0 +1,186 @@
+	<!DOCTYPE html>
+	<html lang="es">
+
+	<head>
+		<meta charset="UTF-8">
+
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0"
+		>
+
+		<title>Linneo</title>
+
+		<link rel="stylesheet" href="/css/variables.css">
+	
+		<link
+			rel="icon"
+			type="image/png"
+			href="linneo_isotipo.png"
+		>
+	</head>
+
+
+
+	<body>
+
+		<header class="barra" id="barra_global">
+
+			<h2>Linneo</h2>
+
+
+			<button
+				class="button"
+				id="buscarbtn"
+				type="button"
+			>
+				🔍︎
+			</button>
+
+			<button
+				class="button"
+				id="carritobtn"
+				type="button"
+			>
+				🛒
+			</button>
+			<div id="carrito_productos" >
+				<h5 id="cantidad_productos"></h5>
+			</div>
+
+			<button
+				class="button"
+				id="menubtn"
+				type="button"
+			>
+				☰
+			</button>
+			
+			<div id="busqueda_div">
+				<form action="/buscar" method="GET">
+
+				<input
+					type="search"
+					id="barra_busqueda"
+					name="busqueda"
+					placeholder="Buscar productos..."
+					autocomplete="off"
+				>
+
+				<button
+					class="button"
+					type="submit"
+				>
+					Buscar
+				</button>
+
+			</form>
+
+			</div>
+			
+
+		</header>
+
+		<main>
+			
+		</main>
+		<div id="producto">
+			<div id="imagen_zona">
+				<img 
+					src="{{ url_for(
+								'imagenes',
+								nombre_archivo=producto.nombre.replace(' ', '_') + '.jpg'
+							) }}"	
+				>
+			
+			</div>
+			<div id="informacio_producto">
+				<h1>{{producto.nombre}}</h1>
+				<hr>
+				<h2>categoria: {{producto.categoria}}</h2>
+				<p class="descripcion"></p>
+			
+				<div>
+					<h1>Precio: {{producto.precio_venta}}</h1>
+					<h1 class="producto_stock">Stock: {{producto.stock}}</h1>
+					<div class="disponibilidad_favicon">
+					</div>
+
+				</div>
+				<button
+					class="agregar-carrito button"
+					type="button"
+					data-producto-nombre="{{ producto.nombre }}"
+					data-producto-precio="{{ producto.precio_venta }}"
+				> Agregar al carrito
+				</button>
+				<button 
+					class="agregar-favoritos button"
+					type="class"
+					data-producto-nombre="{{producto.nombre}}"
+					data-producto-precio="{{producto.precio_venta}}"
+				>Agregar a favoritos
+				</button>
+			</div>
+		</div>
+		<button id="chat_btn" class="button">💬</button>
+
+		<nav class="barra" id="carrito_bar">
+			<h1>CARRITO</h1>
+			<div id="mostrar_productos">
+			<h3>Producto</h3>
+			<h3 id="contenido_carrito"></h3>
+			<h3>Precio</h3>
+			<h3 id="productos_carrito_precio"></h3>	
+			</div>
+			<div>
+				<h2>Descuentos</h2>
+				<h2>Subtotal</h2>
+			</div>
+			<button class="button" type="button" id="comprar_carrito_btn">
+				Comprar
+			</button>
+			
+				
+		</nav>
+		<nav class="barra" id="menu_bar">
+
+			<button
+				id="atras_menu"
+				type="button"
+				class="button"
+			>
+				↚
+			</button>
+			<div>
+				<a
+					class="text_menu"
+					href="/catalogo"
+				>
+					Catálogo
+				</a>
+			</div>
+			<div>
+				<a
+					class="text_menu"
+					href="#contacto"
+				>
+					Contáctanos
+				</a>
+			</div>
+			<div>
+				<a
+					class="text_menu"
+					href="/informacion"
+				>
+					¿Quiénes somos?
+				</a>
+			</div>
+
+		</nav>
+
+		<script src="/js/main.js"></script>
+
+	</body>
+
+	</html>

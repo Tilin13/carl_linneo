@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Catálogo | Linneo</title>
+
+    <link rel="stylesheet" href="/css/variables.css">
+
+</head>
+
+<body>
+
+    <header class="barra" id="barra_global">
+
+        <h2>Linneo</h2>
+
+        <button
+            class="button"
+            id="buscarbtn"
+            type="button"
+        >
+            🔍︎
+        </button>
+
+        <button
+            class="button"
+            id="carritobtn"
+            type="button"
+        >
+            🛒
+        </button>
+
+        <button
+            class="button"
+            id="menubtn"
+            type="button"
+        >
+            ☰
+        </button>
+
+    </header>
+
+    <main>
+
+        <div id="tarjeta_logo">
+        </div>
+
+        <div class="barra">
+
+            <button
+                class="sec_btn"
+                id="mariposas_catbtn"
+                type="button"
+            >
+                Mariposas
+            </button>
+
+            <button
+                class="sec_btn"
+                id="escarabajos_catbtn"
+                type="button"
+            >
+                Escarabajos
+            </button>
+
+            <button
+                class="sec_btn"
+                id="otrosinsectos_catbtn"
+                type="button"
+            >
+                Otros insectos
+            </button>
+
+            <button
+                class="sec_btn"
+                id="osteotecnias_catbtn"
+                type="button"
+            >
+                Osteotecnias
+            </button>
+
+            <button
+                class="sec_btn"
+                id="diafanizaciones_catbtn"
+                type="button"
+            >
+                Diafanizaciones
+            </button>
+
+            <button
+                class="sec_btn"
+                id="taxidermias_catbtn"
+                type="button"
+            >
+                Taxidermias
+            </button>
+
+        </div>
+        <section>
+		  {% for producto in productos%}
+		    <article class="tarjeta_producto">
+			  <div class0"producto_imagen">
+				  % if producto.imagen %}
+				  <img 
+				       src="{{producto.imagen}}"
+				       alt="{{producto.nombre}}"
+				  >
+				  {%endif %}
+				  
+			   </div>
+			   <div class="producto_info">
+			      <h3>
+				    {{producto.nombre}}
+			      </h3>
+			      <p class="producto_recio">
+				    ${{producto.precioo}}
+				  </p>
+				  <button class="button">
+				    Agregar al carrito
+				  </button>
+			   </div>
+		</section>
+    </main>
+
+    <nav class="barra" id="menu_bar">
+
+        <button
+            id="atras_menu"
+            type="button"
+        >
+            ↚
+        </button>
+
+        <a
+            class="text_menu"
+            href="/catalogo"
+        >
+            Catálogo
+        </a>
+
+        <a
+            class="text_menu"
+            href="#contacto"
+        >
+            Contáctanos
+        </a>
+
+        <a
+            class="text_menu"
+            href="#quienes-somos"
+        >
+            ¿Quiénes somos?
+        </a>
+
+    </nav>
+
+    <script src="/js/main.js"></script>
+
+</body>
+
+</html>
