@@ -35,7 +35,12 @@
 	gap:25px;
 	padding: 25px;
 }
-
+#panel{
+	background-color:var(--tarjeta);
+	color: var(--texto-secundario);
+	text-align: center;
+	align-items: center;
+}
 #compra_tarjeta .pasos_compra {
     display: flex;
     justify-content: space-around;
