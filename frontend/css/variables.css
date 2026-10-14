@@ -38,8 +38,12 @@
 #panel{
 	background-color:var(--tarjeta);
 	color: var(--texto-secundario);
-	text-align: center;
-	align-items: center;
+	display: flex;
+	justify-content: center; /* Centra horizontalmente */
+	align-items: center;    /* Centra verticalmente */
+	height: 100vh;
+	border-color: var(--verde-musgo);
+
 }
 #compra_tarjeta .pasos_compra {
     display: flex;
