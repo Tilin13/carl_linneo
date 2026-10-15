@@ -35,7 +35,40 @@ app = Flask(
     static_url_path=""
 )
 
+```python
+def obtener_catalogo(categoria=None):
+    """
+    Obtiene todos los productos del catálogo.
+    Si recibe una categoría, filtra los productos por ella.
+    """
 
+    conexion = sqlite3.connect(BASE_DATOS)
+    conexion.row_factory = sqlite3.Row
+
+    try:
+        cursor = conexion.cursor()
+
+        if categoria:
+            cursor.execute("""
+                SELECT *
+                FROM productos
+                WHERE categoria = ?
+                ORDER BY nombre ASC
+            """, (categoria,))
+        else:
+            cursor.execute("""
+                SELECT *
+                FROM productos
+                ORDER BY nombre ASC
+            """)
+
+        productos = cursor.fetchall()
+
+        return [dict(producto) for producto in productos]
+
+    finally:
+        conexion.close()
+```
 # Límites y configuración de seguridad
 app.config.update(
     MAX_CONTENT_LENGTH=16 * 1024,  # 16 KiB por petición
@@ -278,31 +311,6 @@ Si no tienes información suficiente sobre un producto, dilo claramente.
             "error": "Ocurrió un error al procesar el mensaje."
         }), 500
 
-def obtener_catalogo(nombre):
-    """Obtiene un producto por su nombre exacto."""
-
-    conexion = sqlite3.connect(BASE_DATOS)
-    conexion.row_factory = sqlite3.Row
-
-    try:
-        cursor = conexion.cursor()
-
-        cursor.execute("""
-            SELECT *
-            FROM productos
-            WHERE nombre = ?
-            LIMIT 1
-        """, (nombre,))
-
-        producto = cursor.fetchone()
-
-        if producto is None:
-            return None
-
-        return dict(producto)
-
-    finally:
-        conexion.close()
 def obtener_producto(nombre):
     """Obtiene un producto por su nombre exacto."""
 
@@ -348,7 +356,7 @@ def herramienta_ia_buscarproductos(texto):
     productos = buscar_productos(texto)
     return productos
 
-
+	
 # ============================================================
 # EJECUCIÓN
 # ============================================================
