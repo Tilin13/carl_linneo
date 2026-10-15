@@ -37,7 +37,7 @@
 }
 
 /* Panel de registro */
-#panel {
+.panel {
     background-color: var(--tarjeta);
     color: var(--texto);
 
@@ -65,21 +65,21 @@
 }
 
 /* Cada campo del formulario */
-#panel> div {
+.panel> div {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
 /* Títulos de los campos */
-#panel h1 {
+.panel h1 {
     font-size: 18px;
     margin: 0;
     color: var(--texto);
 }
 
 /* Campos de entrada */
-#panel input {
+.panel input {
     width: 100%;
     padding: 12px;
     box-sizing: border-box;
@@ -93,14 +93,14 @@
 }
 
 /* Borde al seleccionar un campo */
-#panel input:focus {
+.panel input:focus {
     outline: none;
     border-color: var(--verde-musgo);
     box-shadow: 0 0 0 2px rgba(76, 99, 67, 0.15);
 }
 
 /* Botón Enviar */
-#panel #enviar_btn {
+.panel #enviar_btn {
     width: 100%;
     margin: 0;
     padding: 12px;
