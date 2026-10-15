@@ -277,6 +277,33 @@ Si no tienes información suficiente sobre un producto, dilo claramente.
         return jsonify({
             "error": "Ocurrió un error al procesar el mensaje."
         }), 500
+
+def obtener_producto(nombre):
+    """Obtiene un producto por su nombre exacto."""
+
+    conexion = sqlite3.connect(BASE_DATOS)
+    conexion.row_factory = sqlite3.Row
+
+    try:
+        cursor = conexion.cursor()
+
+        cursor.execute("""
+            SELECT *
+            FROM productos
+            WHERE nombre = ?
+            LIMIT 1
+        """, (nombre,))
+
+        producto = cursor.fetchone()
+
+        if producto is None:
+            return None
+
+        return dict(producto)
+
+    finally:
+        conexion.close()
+
 @app.route("/producto/<path:nombre>")
 def producto(nombre):
 
