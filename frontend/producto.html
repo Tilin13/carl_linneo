@@ -98,7 +98,8 @@
 				<h1>{{producto.nombre}}</h1>
 				<hr>
 				<h2>categoria: {{producto.categoria}}</h2>
-				<p class="descripcion"></p>
+				<p class="descripcion">{{producto.descripcion}}</p>
+				<hr>
 			
 				<div>
 					<h1>Precio: {{producto.precio_venta}}</h1>
@@ -124,6 +125,20 @@
 			</div>
 		</div>
 		<button id="chat_btn" class="button">💬</button>
+		<hr>
+		<section id="comentarios" class="tarjeta">
+			<div class="comentario">
+				<div></div>
+				<h2>{{comentario.nombre}}</h2>
+				<div>
+					<img 
+					src="{{url_for(
+								'imagenes',
+								nombre_archivo=estrellas.cantidad.replace(' ', '_') + '.jpg'">
+				</div>
+			</div>
+		</section>
+	
 
 		<nav class="barra" id="carrito_bar">
 			<h1>CARRITO</h1>
@@ -162,7 +177,7 @@
 			</div>
 			<div>
 				<a
-					class="text_menu"
+					class="text_menu"-
 					href="#contacto"
 				>
 					Contáctanos
