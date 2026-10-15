@@ -35,16 +35,78 @@
 	gap:25px;
 	padding: 25px;
 }
-#panel{
-	background-color:var(--tarjeta);
-	color: var(--texto-secundario);
-	display: flex;
-	justify-content: center; /* Centra horizontalmente */
-	align-items: center;    /* Centra verticalmente */
-	height: 100vh;
-	border-color: var(--verde-musgo);
 
+/* Panel de registro */
+#panel {
+    background-color: var(--tarjeta);
+    color: var(--texto);
+
+    /* Borde del panel */
+    border: 2px solid var(--verde-musgo);
+    border-radius: 16px;
+
+    /* Tamaño del panel */
+    width: 90%;
+    max-width: 420px;
+    padding: 30px;
+    margin: 30px auto;
+
+    /* Alineación de los elementos */
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+
+    /* Evita que el padding aumente el ancho total */
+    box-sizing: border-box;
+
+    /* Sombra suave */
+    box-shadow: 0 4px 12px rgba(35, 55, 42, 0.12);
 }
+
+/* Cada campo del formulario */
+#panel> div {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Títulos de los campos */
+#panel h1 {
+    font-size: 18px;
+    margin: 0;
+    color: var(--texto);
+}
+
+/* Campos de entrada */
+#panel input {
+    width: 100%;
+    padding: 12px;
+    box-sizing: border-box;
+
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+
+    background-color: white;
+    color: var(--texto);
+    font: inherit;
+}
+
+/* Borde al seleccionar un campo */
+#panel input:focus {
+    outline: none;
+    border-color: var(--verde-musgo);
+    box-shadow: 0 0 0 2px rgba(76, 99, 67, 0.15);
+}
+
+/* Botón Enviar */
+#panel #enviar_btn {
+    width: 100%;
+    margin: 0;
+    padding: 12px;
+    border-radius: 8px;
+}
+
 #compra_tarjeta .pasos_compra {
     display: flex;
     justify-content: space-around;
