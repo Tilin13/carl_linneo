@@ -12,7 +12,15 @@
 		<title>Linneo</title>
 
 		<link rel="stylesheet" href="/css/variables.css">
+	
+		<link
+			rel="icon"
+			type="image/png"
+			href="linneo_isotipo.png"
+		>
 	</head>
+
+
 
 	<body>
 
@@ -36,6 +44,15 @@
 			>
 				🛒
 			</button>
+			<div id="carrito_productos" >
+				<h5 id="cantidad_productos"></h5>
+			</div>
+			<button 
+				class="button"
+				id="favoritos_btn"
+				type="button"
+			>Favoritos
+			</button>
 
 			<button
 				class="button"
@@ -44,7 +61,18 @@
 			>
 				☰
 			</button>
-			
+			<button
+				class="button"
+				id="iniciar_secion_btn"
+				type="button"
+			>Iniciar sesión
+			</button>
+			<button 
+				class="button"
+				id="registrarse_btn"
+				type="button"
+			>Registrarse
+			</button>
 			<div id="busqueda_div">
 				<form action="/buscar" method="GET">
 
@@ -62,8 +90,8 @@
 				>
 					Buscar
 				</button>
-
 			</form>
+			
 
 			</div>
 			
@@ -73,32 +101,134 @@
 		<main>
 
 			<div id="tarjeta_logo">
+				<img
+				src="tarjeta2.png"
+				alt="tarjeta"
+				>
+			
 			</div>
 
 		</main>
 		<nav id="novedades_bar">
 			<h1>NOVEDADES</h1>
-			<button id="atras_novedades"></button>
-			<button id="adelante_novedades"></button>
 			<div>
-				<img
-				src="novedad/novedades_hoy.jpg"
-				alt="novedad_hoy"
-				>
+				<button class="button" id="atras_novedades"></button>
+				<button class="button" id="adelante_novedades"></button>
+			</div>
+			<div>
 			</div>
 		</nav>
+		<button id="chat_btn" class="button">💬</button>
+
 		<nav class="barra" id="carrito_bar">
 			<h1>CARRITO</h1>
+			<div id="mostrar_productos">
+			<h3>Producto</h3>
+			<h3 id="contenido_carrito"></h3>
+			<h3>Precio</h3>
+			<h3 id="productos_carrito_precio"></h3>	
+			</div>
 			<div>
+				<h2>Descuentos</h2>
 				<h2>Subtotal</h2>
 			</div>
 			<button class="button" type="button" id="comprar_carrito_btn">
 				Comprar
 			</button>
+			<nav class="tarjeta" id="panel_compra">
+				<h1>Producto</h1>
+				<h1>Precio</h1>
+				<h1>Cantidad</h1>
+				<nav id="productos">
+				</nav>
+				<div>
+					<form class="panel" id="datos_compra">
+						<select id="metodo_envio" name="envio_metodo">
+							<option value="FedEx">
+							<option value="Estafeta">
+							<Option value="correos mexicanos">
+						</select>
+						<div>
+							<h2>Dirección</h2>
+							<input type="text" id="direccion">
+						</div>
+						<div>
+							<h2>Código postal</h2>
+							<input type="number" id="codigo_postal">
+							<h2>Ciudad</h2>
+							<input type="text" id="ciudad">
+							<h2>Estado</h2>
+							<input type="text" id="Estado">
+						</h2>
+					</form>
+					<div>
+						<button class="button" id="tarjeta_credito">
+							Tarjeta de crédito
+						</button>
+						<button class="button" id="paypal">
+							PayPal
+						</button>
+						<button class="button" id="oxxo">
+							Oxxo
+						</button>
+						<button class="button" id="spin">
+							Spin
+						</button>
+						<button class="button" id="transeferencia">	
+							Transferencia bancaria
+						</button>
+					</div>
+					<form class="panel" id="pago_tarjeta">
+						<h1>Número de tarjeta </h1>
+						<input type="number" id="numero_tarjeta">
+						<div>
+							<h1>Fecha de vencimiento</h1>
+							<input type="calendar" id="fecha_vencimiento">
+							<h1>Código de seguridad</h1>
+						</div>
+						<div>
+							<h1>Nombre del titular</h1>
+							<input type="text" id="nombre_titular">
+						</div>
+					</form>
+				</div>
+			</nav>
 			
-				
-		</nav>
 
+<nav class="barra" id="compra_tarjeta">
+    <h1>¿Cómo realizar una compra?</h1>
+
+    <div class="pasos_compra">
+
+        <div class="paso">
+            <h1 class="h1_redondos">1</h1>
+            <h3>Escoge los productos de tu elección en el carrito</h3>
+        </div>
+
+        <div class="paso">
+            <h1 class="h1_redondos">2</h1>
+            <h3>Inicia sesión o crea una cuenta</h3>
+        </div>
+
+        <div class="paso">
+            <h1 class="h1_redondos">3</h1>
+            <h3>Escoge el método y dirección de envío</h3>
+        </div>
+
+        <div class="paso">
+            <h1 class="h1_redondos">4</h1>
+            <h3>Paga</h3>
+        </div>
+
+    </div></nav>
+				
+				
+				
+				
+			
+			</div>
+		</nav>
+		
 		<nav class="barra" id="menu_bar">
 
 			<button
@@ -119,7 +249,7 @@
 			<div>
 				<a
 					class="text_menu"
-					href="#contacto"
+					href="/contacto"
 				>
 					Contáctanos
 				</a>

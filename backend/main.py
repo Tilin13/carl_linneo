@@ -316,6 +316,9 @@ def producto(nombre):
         "producto.html",
         producto=producto
     )
+@app.route("/comprar")    
+def comprar():
+	return render_template("comprar.html")
 #============================================================
 #HERRAMIENTAS IA
 #============================================================
