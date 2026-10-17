@@ -51,10 +51,7 @@
         background-color 0.2s ease,
         transform 0.2s ease;
 }
-#datos_compra{
-	color: var(--texto-secundario);
-	border-radius: 50%;
-}
+
 /* Panel de registro */
 .panel {
     background-color: var(--tarjeta);
