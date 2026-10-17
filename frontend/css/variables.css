@@ -598,7 +598,21 @@ body {
     background-color: var(--ocre);
     transform: scale(1.05);
 }
-
+#metodo_envio{
+	background-color: var(--beige);
+	color: var(--texto-secundario);
+    width: 100%;
+    max-width: 350px;
+    padding: 12px 16px;	
+}
+#metodo_envio option{
+	background-color: var(--beige);
+	color:var(--texto-secundario);
+	
+}
+#metodo_envio option:checked{
+	background-color: var(--terracota);
+}
 /* productos*/
 .disponibilidad_favicon {
     width: 18px;
