@@ -157,7 +157,31 @@ def index():
         productos=productos
     )
 
+def obtener_catalogo(categoria=None):
+    conexion = sqlite3.connect(BASE_DATOS)
+    conexion.row_factory = sqlite3.Row
 
+    try:
+        cursor = conexion.cursor()
+
+        if categoria:
+            cursor.execute("""
+                SELECT *
+                FROM productos
+                WHERE categoria = ?
+                ORDER BY nombre ASC
+            """, (categoria,))
+        else:
+            cursor.execute("""
+                SELECT *
+                FROM productos
+                ORDER BY nombre ASC
+            """)
+
+        return [dict(fila) for fila in cursor.fetchall()]
+
+    finally:
+        conexion.close()
 @app.route("/informacion")
 def informacion():
     return render_template("informacion.html")
