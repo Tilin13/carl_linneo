@@ -125,27 +125,9 @@
 				<h1>Cantidad</h1>
 				<nav id="productos">
 				</nav>
+				<div>	
 				<div>
-					<form class="panel" id="datos_compra">
-						<select id="metodo_envio" name="envio_metodo">
-							<option value="FedEx">
-							<option value="Estafeta">
-							<Option value="correos mexicanos">
-						</select>
-						<div>
-							<h2>Dirección</h2>
-							<input type="text" id="direccion">
-						</div>
-						<div>
-							<h2>Código postal</h2>
-							<input type="number" id="codigo_postal">
-							<h2>Ciudad</h2>
-							<input type="text" id="ciudad">
-							<h2>Estado</h2>
-							<input type="text" id="Estado">
-						</h2>
-					</form>
-					<div>
+					<h1>Modo de compra</h1>
 						<button class="button_2" id="tarjeta_credito">
 							Tarjeta de crédito
 						</button>
@@ -169,6 +151,26 @@
 							Transferencia bancaria
 						</button>
 					</div>
+					<form class="panel" id="datos_compra">
+						<select id="metodo_envio" name="envio_metodo">
+							<option value="FedEx">
+							<option value="Estafeta">
+							<Option value="correos mexicanos">
+						</select>
+						<div>
+							<h2>Dirección</h2>
+							<input type="text" id="direccion">
+						</div>
+						<div>
+							<h2>Código postal</h2>
+							<input type="number" id="codigo_postal">
+							<h2>Ciudad</h2>
+							<input type="text" id="ciudad">
+							<h2>Estado</h2>
+							<input type="text" id="Estado">
+						</h2>
+					</form>
+
 					<form class="panel" id="pago_tarjeta">
 						<h1>Número de tarjeta </h1>
 						<input type="number" id="numero_tarjeta">
