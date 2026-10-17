@@ -119,14 +119,17 @@
 			</div>
 		</nav>
 		<button id="chat_btn" class="button">💬</button>
-		<nav id="panel_compra">
-				<h1>Producto</h1>
-				<h1>Precio</h1>
-				<h1>Cantidad</h1>
-				<nav id="productos">
-				</nav>
-				<div>	
-				<div>
+		<table>
+			<thead>
+				<tr>
+					<th>Nombre</th>
+					<th>Cantidad</th>
+					<th>Precio</th>
+				</tr>
+			</thead>
+			<tbody id="lista_carrito">
+			</tbody>
+		</table>
 					<h1>Modo de compra</h1>
 						<button class="button_2" id="tarjeta_credito">
 							Tarjeta de crédito
@@ -157,9 +160,9 @@
 					</div>
 					<form class="panel" id="datos_compra">
 						<select id="metodo_envio" name="envio_metodo">
-							<option value="fedex" text="FedEx">
-							<option value="estafeta" text="Estafeta">
-							<Option value="correos_mex" text="Correos mexicanos">
+							<option value="fedex" >FedEx</option>
+							<option value="estafeta">Estafeta</option>
+							<Option value="correos_mex">Correos mexicanos</Option>
 						</select>
 						<div>
 							<h2>Dirección</h2>

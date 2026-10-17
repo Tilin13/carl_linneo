@@ -301,7 +301,21 @@ const contenidoCarrito =
 
 const precioCarrito =
     document.getElementById("productos_carrito_precio");
+carrito.forEach(lista_carrito=> {
+    const fila = document.createElement("tr");
 
+    const celdaNombre = document.createElement("td");
+    celdaNombre.textContent = carrito.nombre;
+
+    const celdaEdad = document.createElement("td");
+    celdaCantifdad.textContent = carrito.cantidad;
+
+    const celdaGrado = document.createElement("td");
+    celdaPrecio.textContent = carrito.precio;
+
+    fila.append(celdaNombre, celdaEdad, celdaGrado);
+    tabla.appendChild(fila);
+});
 
 // =========================================
 // MOSTRAR CARRITO
