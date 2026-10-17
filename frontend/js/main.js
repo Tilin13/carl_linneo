@@ -289,11 +289,6 @@ const botonesCategoria = document.querySelectorAll(
     // =========================================
     // CARRITO
     // =========================================
-
-// =========================================
-// CARRITO
-// =========================================
-
 let carrito = [];
 
 const contenidoCarrito =
@@ -301,87 +296,90 @@ const contenidoCarrito =
 
 const precioCarrito =
     document.getElementById("productos_carrito_precio");
-carrito.forEach(lista_carrito=> {
-    const fila = document.createElement("tr");
-
-    const celdaNombre = document.createElement("td");
-    celdaNombre.textContent = carrito.nombre;
-
-    const celdaEdad = document.createElement("td");
-    celdaCantifdad.textContent = carrito.cantidad;
-
-    const celdaGrado = document.createElement("td");
-    celdaPrecio.textContent = carrito.precio;
-
-    fila.append(celdaNombre, celdaEdad, celdaGrado);
-    tabla.appendChild(fila);
-});
+// =========================================
+// CARRITO
+// =========================================
 
 // =========================================
 // MOSTRAR CARRITO
 // =========================================
 
+const listaCarrito = document.getElementById("lista_carrito");
+
 function actualizarCarrito() {
-
     if (!contenidoCarrito || !precioCarrito) {
-        return;
+        console.error("No se encontró el contenedor del carrito");
     }
-
-    contenidoCarrito.innerHTML = "";
-
-    if (carrito.length === 0) {
-
-        contenidoCarrito.innerHTML =
-            "<p>El carrito está vacío.</p>";
-
-        precioCarrito.textContent = "$0";
-
-        return;
-    }
-
 
     let subtotal = 0;
 
+    // Limpiar la tabla y el panel lateral
+    if (listaCarrito) listaCarrito.innerHTML = "";
+    if (contenidoCarrito) contenidoCarrito.innerHTML = "";
 
     carrito.forEach(function (producto) {
+        const cantidad = producto.cantidad || 1;
+        const precio = Number(producto.precio);
+        const totalProducto = precio * cantidad;
 
-        subtotal += producto.precio;
+        subtotal += totalProducto;
 
+        // Agregar fila a la tabla de compra
+        if (listaCarrito) {
+            const fila = document.createElement("tr");
 
-        const productoDiv =
-            document.createElement("div");
+            const celdaNombre = document.createElement("td");
+            celdaNombre.textContent = producto.nombre;
 
-        productoDiv.classList.add(
-            "producto-carrito"
-        );
+            const celdaCantidad = document.createElement("td");
+            celdaCantidad.textContent = cantidad;
 
+            const celdaPrecio = document.createElement("td");
+            celdaPrecio.textContent = "$" + precio.toFixed(2);
 
-        productoDiv.innerHTML = `
-            <span>${producto.nombre}</span>
-            <span>$${producto.precio}</span>
-        `;
+            fila.append(celdaNombre, celdaCantidad, celdaPrecio);
+            listaCarrito.appendChild(fila);
+        }
 
+        // Mostrar producto en el carrito lateral
+        if (contenidoCarrito) {
+            const div = document.createElement("div");
+            div.classList.add("producto-carrito");
+            div.textContent =
+                producto.nombre + " x " + cantidad +
+                " — $" + totalProducto.toFixed(2);
 
-        contenidoCarrito.appendChild(
-            productoDiv
-        );
-
+            contenidoCarrito.appendChild(div);
+        }
     });
 
+    if (carrito.length === 0 && listaCarrito) {
+        const fila = document.createElement("tr");
+        const celda = document.createElement("td");
 
-    precioCarrito.textContent =
-        "$" + subtotal.toFixed(2);
+        celda.colSpan = 3;
+        celda.textContent = "El carrito está vacío.";
 
-
-    // Actualizar contador
-    if (cantidad_productos) {
-
-        cantidad_productos.textContent =
-            carrito.length;
-
+        fila.appendChild(celda);
+        listaCarrito.appendChild(fila);
     }
 
+    if (carrito.length === 0 && contenidoCarrito) {
+        contenidoCarrito.textContent = "El carrito está vacío.";
+    }
+
+    if (precioCarrito) {
+        precioCarrito.textContent = "$" + subtotal.toFixed(2);
+    }
+
+    if (cantidad_productos) {
+        cantidad_productos.textContent = carrito.reduce(
+            (total, producto) => total + (producto.cantidad || 1),
+            0
+        );
+    }
 }
+f
 
 
 // =========================================
@@ -417,15 +415,19 @@ botonesCarrito.forEach(function (boton) {
             }
 
 
-            carrito.push({
+const existente = carrito.find(
+    producto => producto.nombre === nombre
+);
 
-            
-
-                nombre: nombre,
-
-                precio: precio
-
-            });
+if (existente) {
+    existente.cantidad = (existente.cantidad || 1) + 1;
+} else {
+    carrito.push({
+        nombre: nombre,
+        precio: precio,
+        cantidad: 1
+    });
+}
 
 
             actualizarCarrito();
