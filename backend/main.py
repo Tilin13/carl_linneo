@@ -1,18 +1,72 @@
-from pathlib import Path
-import sqlite3
-from flask import Flask, render_template, send_from_directory, request, jsonify
-from dotenv import load_dotenv
-from openai import OpenAI
 import os
-import random
-from flask import session, abort
-from werkzeug.security import(generate_password_hash, check_password_hash)
 import re
-from flask_wtf.csrf import CSRFProtect, generate_csrf
-from functools import wraps
+import sqlite3
+
+from pathlib import Path
+from dotenv import load_dotenv
+
+from flask import (
+    Flask, render_template, request,
+    redirect, url_for, flash, abort
+)
+
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import (
+    LoginManager, UserMixin,
+    login_user, logout_user,
+    current_user, login_required
+)
+
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash
+)
+
+load_dotenv()
 # ============================================================
 # RUTAS DEL PROYECTO
 # ============================================================
+db= SQLAlchemy()
+
+class User(UserMixin, db.Model):
+    __tablename__ = "usuarios"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    email = db.Column(
+        db.String(255),
+        unique=True,
+        nullable=False,
+        index=True
+    )
+
+    phone = db.Column(
+        db.String(20),
+        unique=True,
+        nullable=True
+    )
+
+    password_hash = db.Column(
+        db.String(512),
+        nullable=False
+    )
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(
+            self.password_hash,
+            password
+        )
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    try:
+        return db.session.get(User, int(user_id))
+    except (ValueError, TypeError):
+        return None
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -28,26 +82,48 @@ IMAGENES_DIR = BASE_DIR / "imagenes"
 # FLASK
 # ============================================================
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DATOS = BASE_DIR / "pos.db"
+
 app = Flask(
     __name__,
-    template_folder=str(FRONTEND_DIR),
-    static_folder=str(FRONTEND_DIR),
+    template_folder=str(BASE_DIR / "frontend"),
+    static_folder=str(BASE_DIR / "frontend"),
     static_url_path=""
 )
 
+secret_key = os.getenv("SECRET_KEY")
 
-# Límites y configuración de seguridad
+if not secret_key:
+    raise RuntimeError("Falta configurar SECRET_KEY")
+
 app.config.update(
-    MAX_CONTENT_LENGTH=16 * 1024,  # 16 KiB por petición
-    MAX_FORM_MEMORY_SIZE=16 * 1024,
-    MAX_FORM_PARTS=50,
-
-    # Cookies seguras si en el futuro usas sesiones.
-    SESSION_COOKIE_SECURE=True,
+    SECRET_KEY=secret_key,
+    SQLALCHEMY_DATABASE_URI=f"sqlite:///{BASE_DATOS.as_posix()}",
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
     SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_SAMESITE="Lax",
 )
 
+db = SQLAlchemy(app)
+
+login_manager = LoginManager()
+login_manager.login_view = "login"
+login_manager.init_app(app)
+
+app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
+app.config["SESSION_COOKIE_HTTPONLY"]= True
+app.config["SESSION_COOKIE_SECURE"] = True
+app.config["SESSION_COOKIE_SAMSITE"] = "Lax"
+
+login_manager = LoginManager()
+login_manager.login_view = "login"
+login_manager.init_app(app)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
 
 @app.after_request
 def agregar_cabeceras_seguridad(response):
@@ -200,15 +276,89 @@ def catalogo(categoria=None):
         categoria=categoria
     )
 
-
-@app.route("/iniciar_sesion")
+@app.route("/iniciar_sesion", methods=["GET", "POST"])
 def login():
-	return render_template("login.html")
-	
-@app.route("/registrarse")
-def registrarse():
-	return render_template("registrarse.html")
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
 
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        usuario = User.query.filter_by(email=email).first()
+
+        if usuario and usuario.check_password(password):
+            login_user(usuario)
+            return redirect(url_for("index"))
+
+        flash("Correo o contraseña incorrectos.", "error")
+
+    return render_template("login.html")
+    
+@app.route("/cerrar_sesion", methods=["POST"])
+@login_required
+def cerrar_sesion():
+    logout_user()
+    return redirect(url_for("index"))
+
+@app.route("/registrarse", methods=["GET", "POST"])
+def registrarse():
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        phone = request.form.get("phone", "").strip() or None
+        password = request.form.get("password", "")
+        confirm_password = request.form.get(
+            "confirm_password", ""
+        )
+
+        if not re.fullmatch(
+            r"[^@\s]+@[^@\s]+\.[^@\s]+", email
+        ):
+            flash("Introduce un correo válido.", "error")
+
+        elif len(email) > 255:
+            flash("El correo es demasiado largo.", "error")
+
+        elif len(password) < 12 or len(password) > 128:
+            flash(
+                "La contraseña debe tener entre 12 y 128 caracteres.",
+                "error"
+            )
+
+        elif password != confirm_password:
+            flash("Las contraseñas no coinciden.", "error")
+
+        elif phone and len(phone) > 20:
+            flash("El teléfono es demasiado largo.", "error")
+
+        elif User.query.filter_by(email=email).first():
+            flash("Ese correo ya está registrado.", "error")
+
+        elif phone and User.query.filter_by(phone=phone).first():
+            flash("Ese teléfono ya está registrado.", "error")
+
+        else:
+            usuario = User(email=email, phone=phone)
+            usuario.set_password(password)
+
+            try:
+                db.session.add(usuario)
+                db.session.commit()
+                login_user(usuario)
+                return redirect(url_for("index"))
+
+            except Exception:
+                db.session.rollback()
+                app.logger.exception("Error al registrar usuario")
+                flash(
+                    "No se pudo crear la cuenta. Inténtalo de nuevo.",
+                    "error"
+                )
+
+    return render_template("registrarse.html")
 # ============================================================
 # IMÁGENES
 # ============================================================
