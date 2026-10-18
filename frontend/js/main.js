@@ -16,7 +16,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const filtrosbtn = document.getElementById("filtrosbtn");
     const filtro_menu = document.getElementById("filtro_menu");
-    
+    const atras_novedades = document.getElementById("atras_novedades");
+    const adelante_novedades = document.getEementById("adelante_novedades");
+    const imagenes = ["novedades/1.jpg", "novedades/2.jpg", "novedades/3.jpg"];
+    let indice = 0;
+    function mostrarImagen(){
+        document.getElementById("imagen").src =
+            imagenes[indice];
+		document.getElementById("contador").textContent =
+		"Imagen ${indice +1} de ${imagenes.length}";
+		
+	}
+	function siguiente(){
+		indice = (indice + 1) % imagenes.length;
+		mostrarImagen();
+	}
+	function anterior(){
+		indice = (indice - 1 + imagenes.length)
+				% imagen es.length;
+		mostrarImagen();
+	}
     const chatbtn = document.getElementById("chat_btn");
     const csrfToken = document.querySelector(
   'meta[name="csrf-token"]'
