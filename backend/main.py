@@ -6,7 +6,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 from flask_wtf.csrf import CSRFProtect
 from flask_login import LoginManager
-
+from sqlalchemy.exc import IntegrityError
+from flask import send_from_directory, jsonify
+from openai import OpenAI
 from flask import (
     Flask, render_template, request,
     redirect, url_for, flash, abort
@@ -29,16 +31,17 @@ load_dotenv()
 # RUTAS DEL PROYECTO
 # ============================================================
 db= SQLAlchemy()
-
 class User(UserMixin, db.Model):
     __tablename__ = "usuarios"
-    username = db.Column(
-    db.String(80),
-    unique=True,
-    nullable=False,
-    index=True
-    )
+
     id = db.Column(db.Integer, primary_key=True)
+
+    username = db.Column(
+        db.String(80),
+        unique=True,
+        nullable=False,
+        index=True
+    )
 
     email = db.Column(
         db.String(255),
@@ -67,7 +70,12 @@ class User(UserMixin, db.Model):
             password
         )
 
-
+@login_manager.user_loader
+def load_user(user_id):
+    try:
+        return db.session.get(User, int(user_id))
+    except (ValueError, TypeError):
+        return None
 @login_manager.user_loader
 def load_user(user_id):
     try:
@@ -281,7 +289,6 @@ def catalogo(categoria=None):
         productos=productos,
         categoria=categoria
     )
-
 @app.route("/iniciar_sesion", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
@@ -305,40 +312,65 @@ def login():
             login_user(usuario)
             return redirect(url_for("index"))
 
-        flash("Nombre, correo o contraseña incorrectos.", "error")
+        flash(
+            "Nombre de usuario, correo o contraseña incorrectos.",
+            "error"
+        )
 
     return render_template("login.html")
+
 
 @app.route("/cerrar_sesion", methods=["POST"])
 @login_required
 def cerrar_sesion():
     logout_user()
     return redirect(url_for("index"))
-
+@app.route("/cerrar_sesion", methods=["POST"])
+@login_required
+def cerrar_sesion():
+    logout_user()
+    return redirect(url_for("index"))
 @app.route("/registrarse", methods=["GET", "POST"])
 def registrarse():
     if current_user.is_authenticated:
         return redirect(url_for("index"))
 
     if request.method == "POST":
-        email = request.form.get("email", "").strip().lower()
-        phone = request.form.get("phone", "").strip() or None
+        username = request.form.get(
+            "username", ""
+        ).strip()
+
+        email = request.form.get(
+            "email", ""
+        ).strip().lower()
+
+        phone = request.form.get(
+            "phone", ""
+        ).strip() or None
+
         password = request.form.get("password", "")
         confirm_password = request.form.get(
             "confirm_password", ""
         )
 
         if not re.fullmatch(
-            r"[^@\s]+@[^@\s]+\.[^@\s]+", email
+            r"[A-Za-z0-9_.-]{3,80}", username
         ):
-            flash("Introduce un correo válido.", "error")
+            flash(
+                "El usuario debe tener entre 3 y 80 "
+                "caracteres válidos.",
+                "error"
+            )
 
-        elif len(email) > 255:
-            flash("El correo es demasiado largo.", "error")
+        elif not re.fullmatch(
+            r"[^@\s]+@[^@\s]+\.[^@\s]+", email
+        ) or len(email) > 255:
+            flash("Introduce un correo válido.", "error")
 
         elif len(password) < 12 or len(password) > 128:
             flash(
-                "La contraseña debe tener entre 12 y 128 caracteres.",
+                "La contraseña debe tener entre "
+                "12 y 128 caracteres.",
                 "error"
             )
 
@@ -348,25 +380,45 @@ def registrarse():
         elif phone and len(phone) > 20:
             flash("El teléfono es demasiado largo.", "error")
 
-        elif User.query.filter_by(email=email).first():
-            flash("Ese correo ya está registrado.", "error")
-
-        elif phone and User.query.filter_by(phone=phone).first():
-            flash("Ese teléfono ya está registrado.", "error")
+        elif User.query.filter(
+            or_(
+                User.username == username,
+                User.email == email,
+                User.phone == phone if phone else False
+            )
+        ).first():
+            flash(
+                "El usuario, correo o teléfono ya está registrado.",
+                "error"
+            )
 
         else:
-            usuario = User(email=email, phone=phone)
+            usuario = User(
+                username=username,
+                email=email,
+                phone=phone
+            )
             usuario.set_password(password)
 
             try:
                 db.session.add(usuario)
                 db.session.commit()
+
                 login_user(usuario)
                 return redirect(url_for("index"))
 
+            except IntegrityError:
+                db.session.rollback()
+                flash(
+                    "El usuario, correo o teléfono ya está registrado.",
+                    "error"
+                )
+
             except Exception:
                 db.session.rollback()
-                app.logger.exception("Error al registrar usuario")
+                app.logger.exception(
+                    "Error al registrar usuario"
+                )
                 flash(
                     "No se pudo crear la cuenta. Inténtalo de nuevo.",
                     "error"
@@ -505,6 +557,7 @@ def producto(nombre):
         producto=producto
     )
 @app.route("/comprar")    
+@login.required
 def comprar():
 	return render_template("comprar.html")
 #============================================================

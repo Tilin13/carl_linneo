@@ -139,6 +139,13 @@
     <p>¿No tienes cuenta?
         <a href="{{ url_for('registrarse') }}">Regístrate</a>
     </p>
+    {% with mensajes = get_flashed_messages(with_categories=true) %}
+    {% for categoria, mensaje in mensajes %}
+        <p class="{{ categoria }}" role="alert">
+            {{ mensaje }}
+        </p>
+    {% endfor %}
+{% endwith %}
 </form>
 
 
