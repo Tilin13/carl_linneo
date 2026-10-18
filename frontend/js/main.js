@@ -71,18 +71,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const chatbtn = document.getElementById("chat_btn");
-    const csrfToken = document.querySelector(
-  'meta[name="csrf-token"]'
-).content;
-
-const respuesta = await fetch("/api/chat", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "X-CSRFToken": csrfToken
-  },
-  body: JSON.stringify({ mensaje: mensaje })
-});
 if (chatbtn) {
     chatbtn.addEventListener("click", function () {
         window.location.href = "/chatbox";
