@@ -61,18 +61,18 @@
 			>
 				☰
 			</button>
-			<button
-				class="button"
-				id="iniciar_secion_btn"
-				type="button"
-			>Iniciar sesión
-			</button>
-			<button 
-				class="button"
-				id="registrarse_btn"
-				type="button"
-			>Registrarse
-			</button>
+		{% if current_user.is_authenticated %}
+  <span>Hola, {{ current_user.username }}</span>
+
+  <form action="{{ url_for('cerrar_sesion') }}" method="POST">
+    <input type="hidden" name="csrf_token"
+           value="{{ csrf_token() }}">
+    <button type="submit">Cerrar sesión</button>
+  </form>
+{% else %}
+  <a href="{{ url_for('login') }}">Iniciar sesión</a>
+  <a href="{{ url_for('registrarse') }}">Registrarse</a>
+{% endif %}
 			<div id="busqueda_div">
 				<form action="/buscar" method="GET">
 
@@ -107,117 +107,40 @@
 				>
 			
 			</div>
-
-<form class="panel" id="panelsignup"
-      action="{{ url_for('registrarse') }}"
-      method="POST">
-
-    <!-- Protección CSRF de Flask -->
-    <input type="hidden" name="csrf_token"
-           value="{{ csrf_token() }}">
-
-    <div>
-        <h1>Nombre de usuario</h1>
-        <input
-            class="input_clas"
-            type="text"
-            id="username"
-            name="username"
-            placeholder="Nombre de usuario"
-            minlength="3"
-            maxlength="80"
-            autocomplete="username"
-            required
-        >
-    </div>
-
-    <div>
-        <h1>Correo electrónico</h1>
-        <input
-            class="input_clas"
-            type="email"
-            id="correo_e"
-            name="email"
-            placeholder="Correo electrónico"
-            maxlength="255"
-            autocomplete="email"
-            required
-        >
-    </div>
-
-    <div>
-        <h1>Teléfono</h1>
-        <input
-            class="input_clas"
-            type="tel"
-            id="telefono"
-            name="phone"
-            placeholder="Teléfono"
-            maxlength="20"
-            autocomplete="tel"
-        >
-    </div>
-
-    <div>
-        <h1>Contraseña</h1>
-        <input
-            class="input_clas"
-            type="password"
-            id="contrasena"
-            name="password"
-            placeholder="Contraseña"
-            minlength="12"
-            maxlength="128"
-            autocomplete="new-password"
-            required
-        >
-
-        <button class="button"
-                id="visiblidad_password_btn"
-                type="button">
-            Ver
-        </button>
-    </div>
-
-    <div>
-        <h1>Repetir contraseña</h1>
-        <input
-            class="input_clas"
-            type="password"
-            id="contrasena_repeticion"
-            name="confirm_password"
-            placeholder="Repite tu contraseña"
-            minlength="12"
-            maxlength="128"
-            autocomplete="new-password"
-            required
-        >
-    </div>
-
-    <div>
-        <button class="button"
-                id="enviar_btn"
-                type="submit">
-            Crear cuenta
-        </button>
-    </div>
-
-    <p>
-        ¿Ya tienes una cuenta?
-        <a href="{{ url_for('login') }}">Iniciar sesión</a>
+		<form class="panel" id="panelsignup">
+			<div>
+				<h1>Nombre</h1>
+				<input  class="input_clas" type="text" id="username" placeholder="Nombre">
+			</div>
+			<div>
+				<h1>Correo electrónico</h1>
+				<input  class="input_clas" type="email" id="correo_e" placeholder="Correo electrónico">
+			</div>
+			<div>
+				<h1>Teléfono</h1>
+				<input class="input_clas" type="phone" id="telefono" placeholder="Teléfono">
+			</div>
+			<div>
+				
+				<h1>Contraseña</h1>
+				<input class="input_clas" type="password" id="contrasena" placeholder="Contraseña">
+				<button class="button" id="visiblidad_password_btn">ver</button>
+			</div>
+			<div>
+				<h1>Repetir contraseña</h1>
+				<input class="input_clas" type="password" id="contrasena_repeticion" placeholder="Contraseña">
+			</div>
+			<div>
+				<button class="button"id="enviar_btn">Enviar</button>
+			</div>
+			{% with mensajes = get_flashed_messages(with_categories=true) %}
+  {% for categoria, mensaje in mensajes %}
+    <p role="alert" class="mensaje-{{ categoria }}">
+      {{ mensaje }}
     </p>
-
-    <!-- Mostrar errores o confirmaciones de Flask -->
-    {% with mensajes = get_flashed_messages(with_categories=true) %}
-        {% for categoria, mensaje in mensajes %}
-            <p class="{{ categoria }}" role="alert">
-                {{ mensaje }}
-            </p>
-        {% endfor %}
-    {% endwith %}
-
-</form>
-
+  {% endfor %}
+{% endwith %}
+		</form>
 
 		<nav class="barra" id="carrito_bar">
 			<h1>CARRITO</h1>

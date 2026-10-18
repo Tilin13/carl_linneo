@@ -61,18 +61,18 @@
 			>
 				☰
 			</button>
-			<button
-				class="button"
-				id="iniciar_secion_btn"
-				type="button"
-			>Iniciar sesión
-			</button>
-			<button 
-				class="button"
-				id="registrarse_btn"
-				type="button"
-			>Registrarse
-			</button>
+			{% if current_user.is_authenticated %}
+  <span>Hola, {{ current_user.username }}</span>
+
+  <form action="{{ url_for('cerrar_sesion') }}" method="POST">
+    <input type="hidden" name="csrf_token"
+           value="{{ csrf_token() }}">
+    <button type="submit">Cerrar sesión</button>
+  </form>
+{% else %}
+  <a href="{{ url_for('login') }}">Iniciar sesión</a>
+  <a href="{{ url_for('registrarse') }}">Registrarse</a>
+{% endif %}
 			<div id="busqueda_div">
 				<form action="/buscar" method="GET">
 
@@ -107,7 +107,13 @@
 				>
 			
 			</div>
-		
+		{% with mensajes = get_flashed_messages(with_categories=true) %}
+  {% for categoria, mensaje in mensajes %}
+    <p role="alert" class="mensaje-{{ categoria }}">
+      {{ mensaje }}
+    </p>
+  {% endfor %}
+{% endwith %}
 <form class="panel" id="panellogin"
       action="{{ url_for('login') }}" method="POST">
 
@@ -139,13 +145,6 @@
     <p>¿No tienes cuenta?
         <a href="{{ url_for('registrarse') }}">Regístrate</a>
     </p>
-    {% with mensajes = get_flashed_messages(with_categories=true) %}
-    {% for categoria, mensaje in mensajes %}
-        <p class="{{ categoria }}" role="alert">
-            {{ mensaje }}
-        </p>
-    {% endfor %}
-{% endwith %}
 </form>
 
 

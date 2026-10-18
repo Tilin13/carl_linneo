@@ -1,36 +1,87 @@
+
 import os
 import re
 import sqlite3
-from sqlalchemy import or_
 from pathlib import Path
+from urllib.parse import urlsplit
+
 from dotenv import load_dotenv
-from flask_wtf.csrf import CSRFProtect
-from flask_login import LoginManager
-from sqlalchemy.exc import IntegrityError
-from flask import send_from_directory, jsonify
-from openai import OpenAI
 from flask import (
     Flask, render_template, request,
-    redirect, url_for, flash, abort
+    redirect, url_for, flash, abort, jsonify,
+    send_from_directory
 )
-
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
-    LoginManager, UserMixin,
-    login_user, logout_user,
-    current_user, login_required
+    LoginManager, UserMixin, current_user,
+    login_user, logout_user, login_required
 )
-
+from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
+from sqlalchemy import or_, select
+from sqlalchemy.exc import IntegrityError
 from werkzeug.security import (
     generate_password_hash,
     check_password_hash
 )
+from openai import OpenAI
 
 load_dotenv()
-# ============================================================
-# RUTAS DEL PROYECTO
-# ============================================================
-db= SQLAlchemy()
+
+# main.py está en una subcarpeta y frontend está
+# en la carpeta superior.
+BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DATOS = BASE_DIR / "pos.db"
+FRONTEND_DIR = BASE_DIR / "frontend"
+IMAGENES_DIR = BASE_DIR / "imagenes"
+
+secret_key = os.getenv("SECRET_KEY")
+api_key = os.getenv("OPENAI_API_KEY")
+
+if not secret_key or len(secret_key) < 32:
+    raise RuntimeError(
+        "Configura SECRET_KEY con una clave aleatoria "
+        "de al menos 32 caracteres."
+    )
+
+if not api_key:
+    raise RuntimeError("Falta configurar OPENAI_API_KEY.")
+
+app = Flask(
+    __name__,
+    template_folder=str(FRONTEND_DIR),
+    static_folder=str(FRONTEND_DIR),
+    static_url_path=""
+)
+
+app.config.update(
+    SECRET_KEY=secret_key,
+
+    # Utiliza HTTPS en producción.
+    SESSION_COOKIE_SECURE=(
+        os.getenv("COOKIE_SECURE", "true").lower() == "true"
+    ),
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    PERMANENT_SESSION_LIFETIME=1800,
+
+    # SQLite existente; no se crea otra base de productos.
+    SQLALCHEMY_DATABASE_URI=(
+        "sqlite:///" + BASE_DATOS.as_posix()
+    ),
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
+)
+
+db = SQLAlchemy(app)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
+login_manager.session_protection = "strong"
+
+csrf = CSRFProtect(app)
+
+client = OpenAI(api_key=api_key)
+
 class User(UserMixin, db.Model):
     __tablename__ = "usuarios"
 
@@ -39,15 +90,13 @@ class User(UserMixin, db.Model):
     username = db.Column(
         db.String(80),
         unique=True,
-        nullable=False,
-        index=True
+        nullable=False
     )
 
     email = db.Column(
         db.String(255),
         unique=True,
-        nullable=False,
-        index=True
+        nullable=False
     )
 
     phone = db.Column(
@@ -57,7 +106,7 @@ class User(UserMixin, db.Model):
     )
 
     password_hash = db.Column(
-        db.String(512),
+        db.String(255),
         nullable=False
     )
 
@@ -70,74 +119,15 @@ class User(UserMixin, db.Model):
             password
         )
 
+
 @login_manager.user_loader
 def load_user(user_id):
     try:
         return db.session.get(User, int(user_id))
     except (ValueError, TypeError):
         return None
-@login_manager.user_loader
-def load_user(user_id):
-    try:
-        return db.session.get(User, int(user_id))
-    except (ValueError, TypeError):
-        return None
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-BASE_DATOS = "pos.db"
-
-FRONTEND_DIR = BASE_DIR / "frontend"
-
-
-# Carpeta donde están las imágenes
-IMAGENES_DIR = BASE_DIR / "imagenes"
-
-# ============================================================
-# FLASK
-# ============================================================
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-BASE_DATOS = BASE_DIR / "pos.db"
-
-app = Flask(
-    __name__,
-    template_folder=str(BASE_DIR / "frontend"),
-    static_folder=str(BASE_DIR / "frontend"),
-    static_url_path=""
-)
-
-secret_key = os.getenv("SECRET_KEY")
-
-if not secret_key:
-    raise RuntimeError("Falta configurar SECRET_KEY")
-db = SQLAlchemy(app)
-
-login_manager = LoginManager()
-login_manager.login_view = "login"
-login_manager.init_app(app)
-app.config.update(
-    SECRET_KEY=secret_key,
-    SQLALCHEMY_DATABASE_URI=f"sqlite:///{BASE_DATOS.as_posix()}",
-    SQLALCHEMY_TRACK_MODIFICATIONS=False,
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SECURE=True,
-    SESSION_COOKIE_SAMESITE="Lax",
-)
-
-
-app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
-app.config["SESSION_COOKIE_HTTPONLY"]= True
-app.config["SESSION_COOKIE_SECURE"] = True
-app.config["SESSION_COOKIE_SAMSITE"] = "Lax"
-
-login_manager = LoginManager()
-login_manager.login_view = "login"
-login_manager.init_app(app)
-
-@login_manager.user_loader
-def load_user(user_id):
-    return db.session.get(User, int(user_id))
+with app.app_context():
+    db.create_all()
 
 @app.after_request
 def agregar_cabeceras_seguridad(response):
@@ -160,7 +150,7 @@ def agregar_cabeceras_seguridad(response):
 # ============================================================
 # RUTAS
 # ============================================================
-csrf = CSRFProtect(app)
+
 def escoger_productos_azar():
     """Devuelve hasta 3 productos aleatorios de la base de datos."""
 
@@ -216,6 +206,9 @@ def buscar_productos(texto):
 
     finally:
         conexion.close()
+######################################################################
+##CUENTAS
+##################################################################
 
 @app.route("/buscar")
 def buscar():
@@ -237,6 +230,177 @@ def buscar():
     )
 
 
+
+def destino_local_seguro(destino):
+    """Evita redirecciones hacia sitios externos."""
+    if not destino:
+        return False
+
+    partes = urlsplit(destino)
+
+    return (
+        not partes.scheme
+        and not partes.netloc
+        and destino.startswith("/")
+        and not destino.startswith("//")
+        and "\\" not in destino
+    )
+
+
+@app.route("/iniciar_sesion", methods=["GET", "POST"])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        identificador = request.form.get(
+            "identificador", ""
+        ).strip()
+
+        password = request.form.get("password", "")
+
+        usuario = db.session.scalar(
+            select(User).where(
+                or_(
+                    User.email == identificador.lower(),
+                    User.username == identificador.lower()
+                )
+            )
+        )
+
+        if (
+            usuario is not None
+            and usuario.check_password(password)
+        ):
+            # No conservar datos de sesión anteriores.
+            session.clear()
+            login_user(usuario, remember=False)
+
+            destino = request.args.get("next", "")
+            if destino_local_seguro(destino):
+                return redirect(destino)
+
+            return redirect(url_for("index"))
+
+        flash(
+            "Nombre de usuario, correo o contraseña incorrectos.",
+            "error"
+        )
+
+    return render_template("login.html")
+
+
+@app.route("/registrarse", methods=["GET", "POST"])
+def registrarse():
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        username = request.form.get(
+            "username", ""
+        ).strip().lower()
+
+        email = request.form.get(
+            "email", ""
+        ).strip().lower()
+
+        phone = request.form.get("phone", "").strip() or None
+
+        password = request.form.get("password", "")
+        confirm_password = request.form.get(
+            "confirm_password", ""
+        )
+
+        if not re.fullmatch(r"[a-zA-Z0-9_.-]{3,80}", username):
+            flash(
+                "El usuario debe tener entre 3 y 80 "
+                "caracteres válidos.",
+                "error"
+            )
+
+        elif (
+            len(email) > 255
+            or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email)
+        ):
+            flash("Introduce un correo válido.", "error")
+
+        elif not 12 <= len(password) <= 128:
+            flash(
+                "La contraseña debe tener entre "
+                "12 y 128 caracteres.",
+                "error"
+            )
+
+        elif password != confirm_password:
+            flash("Las contraseñas no coinciden.", "error")
+
+        elif phone and (
+            len(phone) > 20
+            or not re.fullmatch(r"[0-9+(). -]{7,20}", phone)
+        ):
+            flash("Introduce un teléfono válido.", "error")
+
+        else:
+            condiciones = [
+                User.username == username,
+                User.email == email
+            ]
+
+            if phone:
+                condiciones.append(User.phone == phone)
+
+            existente = db.session.scalar(
+                select(User).where(or_(*condiciones))
+            )
+
+            if existente:
+                flash(
+                    "El usuario, correo o teléfono ya está registrado.",
+                    "error"
+                )
+            else:
+                usuario = User(
+                    username=username,
+                    email=email,
+                    phone=phone
+                )
+                usuario.set_password(password)
+
+                try:
+                    db.session.add(usuario)
+                    db.session.commit()
+
+                    session.clear()
+                    login_user(usuario, remember=False)
+
+                    return redirect(url_for("index"))
+
+                except IntegrityError:
+                    db.session.rollback()
+                    flash(
+                        "El usuario, correo o teléfono ya está registrado.",
+                        "error"
+                    )
+
+                except Exception:
+                    db.session.rollback()
+                    app.logger.exception(
+                        "Error al registrar usuario"
+                    )
+                    flash(
+                        "No se pudo crear la cuenta. Inténtalo de nuevo.",
+                        "error"
+                    )
+
+    return render_template("registrarse.html")
+
+
+@app.route("/cerrar_sesion", methods=["POST"])
+@login_required
+def cerrar_sesion():
+    logout_user()
+    session.clear()
+    return redirect(url_for("index"))
 
 @app.route("/")
 def index():
@@ -289,142 +453,8 @@ def catalogo(categoria=None):
         productos=productos,
         categoria=categoria
     )
-@app.route("/iniciar_sesion", methods=["GET", "POST"])
-def login():
-    if current_user.is_authenticated:
-        return redirect(url_for("index"))
+    
 
-    if request.method == "POST":
-        identificador = request.form.get(
-            "identificador", ""
-        ).strip()
-
-        password = request.form.get("password", "")
-
-        usuario = User.query.filter(
-            or_(
-                User.email == identificador.lower(),
-                User.username == identificador
-            )
-        ).first()
-
-        if usuario and usuario.check_password(password):
-            login_user(usuario)
-            return redirect(url_for("index"))
-
-        flash(
-            "Nombre de usuario, correo o contraseña incorrectos.",
-            "error"
-        )
-
-    return render_template("login.html")
-
-
-@app.route("/cerrar_sesion", methods=["POST"])
-@login_required
-def cerrar_sesion():
-    logout_user()
-    return redirect(url_for("index"))
-@app.route("/cerrar_sesion", methods=["POST"])
-@login_required
-def cerrar_sesion():
-    logout_user()
-    return redirect(url_for("index"))
-@app.route("/registrarse", methods=["GET", "POST"])
-def registrarse():
-    if current_user.is_authenticated:
-        return redirect(url_for("index"))
-
-    if request.method == "POST":
-        username = request.form.get(
-            "username", ""
-        ).strip()
-
-        email = request.form.get(
-            "email", ""
-        ).strip().lower()
-
-        phone = request.form.get(
-            "phone", ""
-        ).strip() or None
-
-        password = request.form.get("password", "")
-        confirm_password = request.form.get(
-            "confirm_password", ""
-        )
-
-        if not re.fullmatch(
-            r"[A-Za-z0-9_.-]{3,80}", username
-        ):
-            flash(
-                "El usuario debe tener entre 3 y 80 "
-                "caracteres válidos.",
-                "error"
-            )
-
-        elif not re.fullmatch(
-            r"[^@\s]+@[^@\s]+\.[^@\s]+", email
-        ) or len(email) > 255:
-            flash("Introduce un correo válido.", "error")
-
-        elif len(password) < 12 or len(password) > 128:
-            flash(
-                "La contraseña debe tener entre "
-                "12 y 128 caracteres.",
-                "error"
-            )
-
-        elif password != confirm_password:
-            flash("Las contraseñas no coinciden.", "error")
-
-        elif phone and len(phone) > 20:
-            flash("El teléfono es demasiado largo.", "error")
-
-        elif User.query.filter(
-            or_(
-                User.username == username,
-                User.email == email,
-                User.phone == phone if phone else False
-            )
-        ).first():
-            flash(
-                "El usuario, correo o teléfono ya está registrado.",
-                "error"
-            )
-
-        else:
-            usuario = User(
-                username=username,
-                email=email,
-                phone=phone
-            )
-            usuario.set_password(password)
-
-            try:
-                db.session.add(usuario)
-                db.session.commit()
-
-                login_user(usuario)
-                return redirect(url_for("index"))
-
-            except IntegrityError:
-                db.session.rollback()
-                flash(
-                    "El usuario, correo o teléfono ya está registrado.",
-                    "error"
-                )
-
-            except Exception:
-                db.session.rollback()
-                app.logger.exception(
-                    "Error al registrar usuario"
-                )
-                flash(
-                    "No se pudo crear la cuenta. Inténtalo de nuevo.",
-                    "error"
-                )
-
-    return render_template("registrarse.html")
 # ============================================================
 # IMÁGENES
 # ============================================================
@@ -557,7 +587,7 @@ def producto(nombre):
         producto=producto
     )
 @app.route("/comprar")    
-@login.required
+@login_required
 def comprar():
 	return render_template("comprar.html")
 #============================================================
