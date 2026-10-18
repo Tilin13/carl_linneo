@@ -6,7 +6,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 from flask_wtf.csrf import CSRFProtect
 
-csrf = CSRFProtect(app)
 from flask import (
     Flask, render_template, request,
     redirect, url_for, flash, abort
@@ -153,7 +152,7 @@ def agregar_cabeceras_seguridad(response):
 # ============================================================
 # RUTAS
 # ============================================================
-
+csrf = CSRFProtect(app)
 def escoger_productos_azar():
     """Devuelve hasta 3 productos aleatorios de la base de datos."""
 
