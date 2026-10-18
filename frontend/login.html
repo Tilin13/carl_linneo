@@ -107,18 +107,40 @@
 				>
 			
 			</div>
-		<form class="panel" id="panellogin">
-			<div>
-				<h1>Nombre o correo electrónico</h1>
-				<input  class="input_clas" type="text" id="username" placeholder="Nombre o correo electrónico">
-				</div>
-			<div>
-				<h1>Contraseña</h1>
-				<input  class="input_clas"  type="password" id="contrasena" placeholder="Contraseña">
-				<button class="button" id="visiblidad_password_btn">ver</button>
-			</div>
-			<button class="button" id="enviar_btn">Enviar</button>
-		</form>
+		
+<form class="panel" id="panellogin"
+      action="{{ url_for('login') }}" method="POST">
+
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div>
+        <h1>Nombre o correo electrónico</h1>
+        <input class="input_clas" type="text"
+               id="username" name="identificador"
+               placeholder="Nombre o correo electrónico"
+               autocomplete="username" required>
+    </div>
+
+    <div>
+        <h1>Contraseña</h1>
+        <input class="input_clas" type="password"
+               id="contrasena" name="password"
+               placeholder="Contraseña"
+               autocomplete="current-password" required>
+
+        <button class="button" id="visiblidad_password_btn"
+                type="button">Ver</button>
+    </div>
+
+    <button class="button" id="enviar_btn" type="submit">
+        Iniciar sesión
+    </button>
+
+    <p>¿No tienes cuenta?
+        <a href="{{ url_for('registrarse') }}">Regístrate</a>
+    </p>
+</form>
+
 
 		<nav class="barra" id="carrito_bar">
 			<h1>CARRITO</h1>

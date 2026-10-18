@@ -1,7 +1,8 @@
+
 Flask
-gunicorn
-python-dotenv
-openai
-werkzeug
+Flask-SQLAlchemy
+Flask-Login
 Flask-WTF
+python-dotenv
+SQLAlchemy
 

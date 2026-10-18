@@ -1,10 +1,12 @@
 import os
 import re
 import sqlite3
-
+from sqlalchemy import or_
 from pathlib import Path
 from dotenv import load_dotenv
+from flask_wtf.csrf import CSRFProtect
 
+csrf = CSRFProtect(app)
 from flask import (
     Flask, render_template, request,
     redirect, url_for, flash, abort
@@ -30,7 +32,12 @@ db= SQLAlchemy()
 
 class User(UserMixin, db.Model):
     __tablename__ = "usuarios"
-
+    username = db.Column(
+    db.String(80),
+    unique=True,
+    nullable=False,
+    index=True
+    )
     id = db.Column(db.Integer, primary_key=True)
 
     email = db.Column(
@@ -282,19 +289,27 @@ def login():
         return redirect(url_for("index"))
 
     if request.method == "POST":
-        email = request.form.get("email", "").strip().lower()
+        identificador = request.form.get(
+            "identificador", ""
+        ).strip()
+
         password = request.form.get("password", "")
 
-        usuario = User.query.filter_by(email=email).first()
+        usuario = User.query.filter(
+            or_(
+                User.email == identificador.lower(),
+                User.username == identificador
+            )
+        ).first()
 
         if usuario and usuario.check_password(password):
             login_user(usuario)
             return redirect(url_for("index"))
 
-        flash("Correo o contraseña incorrectos.", "error")
+        flash("Nombre, correo o contraseña incorrectos.", "error")
 
     return render_template("login.html")
-    
+
 @app.route("/cerrar_sesion", methods=["POST"])
 @login_required
 def cerrar_sesion():
