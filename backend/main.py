@@ -5,6 +5,7 @@ from sqlalchemy import or_
 from pathlib import Path
 from dotenv import load_dotenv
 from flask_wtf.csrf import CSRFProtect
+from flask_login import LoginManager
 
 from flask import (
     Flask, render_template, request,
@@ -102,7 +103,11 @@ secret_key = os.getenv("SECRET_KEY")
 
 if not secret_key:
     raise RuntimeError("Falta configurar SECRET_KEY")
+db = SQLAlchemy(app)
 
+login_manager = LoginManager()
+login_manager.login_view = "login"
+login_manager.init_app(app)
 app.config.update(
     SECRET_KEY=secret_key,
     SQLALCHEMY_DATABASE_URI=f"sqlite:///{BASE_DATOS.as_posix()}",
@@ -112,11 +117,6 @@ app.config.update(
     SESSION_COOKIE_SAMESITE="Lax",
 )
 
-db = SQLAlchemy(app)
-
-login_manager = LoginManager()
-login_manager.login_view = "login"
-login_manager.init_app(app)
 
 app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
 app.config["SESSION_COOKIE_HTTPONLY"]= True
