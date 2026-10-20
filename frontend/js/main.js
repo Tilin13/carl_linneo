@@ -105,22 +105,30 @@ const botonesCategoria = document.querySelectorAll(
 function llevar_pag(pagina){
 	window.location.href = pagina;
 }
-function cerrar_popup(){
-	documnt.getElementById("popup");
-	.classlist.add("oculto");
-}
 
-const popup = document.getElementById("popup");
+    // =========================================
+    // POPUP DEL 10% DE DESCUENTO
+    // =========================================
 
-// Comprueba si el usuario ya cerró el mensaje
-if (localStorage.getItem("popupCerrado") === "si") {
-  popup.classList.add("oculto");
-}
+    const popup = document.getElementById("popup");
+    const cerrarPopupBtn =
+        document.getElementById("cerrar_popup_btn");
 
-function cerrarPopup() {
-  popup.classList.add("oculto");
-  localStorage.setItem("popupCerrado", "si");
-}
+    // Comprobar si el usuario ya cerró el popup
+    if (popup) {
+        if (localStorage.getItem("popupCerrado") === "si") {
+            popup.classList.add("oculto");
+        }
+    }
+
+    // Cerrar el popup y recordar la decisión
+    if (popup && cerrarPopupBtn) {
+        cerrarPopupBtn.addEventListener("click", function () {
+            popup.classList.add("oculto");
+
+            localStorage.setItem("popupCerrado", "si");
+        });
+    }
 
 // =========================================
 // CHATBOT

@@ -704,7 +704,13 @@ section {
     align-items: center;
     justify-content: center;
 }
-.
+.popup{
+	border-color: var(--terracota);
+	border-radius: 50%;
+	width:200px;
+	height: 150px;
+	background-color: var(--tarjeta);
+}
 .producto_imagen img {
     width: 100%;
     height: 100%;
