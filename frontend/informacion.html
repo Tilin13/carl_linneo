@@ -1,273 +1,227 @@
+	<!DOCTYPE html>
+	<html lang="es">
 
-<!DOCTYPE html>
-<html lang="es">
+	<head>
+		<meta charset="UTF-8">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0"
+		>
 
-    <title>Linneo | La gema oculta de la ciencia</title>
+		<title>Linneo</title>
 
-    <link rel="stylesheet" href="/css/variables.css">
+		<link rel="stylesheet" href="/css/variables.css">
+	
+		<link
+			rel="icon"
+			type="image/png"
+			href="linneo_isotipo.png"
+		>
+	</head>
 
-    <!-- Rutas absolutas para que las imágenes funcionen desde cualquier página -->
-    <link rel="icon" type="image/png" href="/linneo_isotipo.png">
-</head>
 
-<body>
 
-    <!-- ENCABEZADO PRINCIPAL -->
-    <header class="barra" id="barra_global">
+	<body>
 
-        <a href="/" aria-label="Ir al inicio de Linneo">
-            <h2>Linneo</h2>
-        </a>
+		<header class="barra" id="barra_global">
 
-        <button
-            class="button"
-            id="buscarbtn"
-            type="button"
-            aria-label="Abrir búsqueda"
-            aria-controls="busqueda_div"
-        >
-            🔍︎
-        </button>
+			<h2>Linneo</h2>
 
-        <button
-            class="button"
-            id="carritobtn"
-            type="button"
-            aria-label="Abrir carrito"
-            aria-controls="carrito_bar"
-        >
-            🛒
-        </button>
 
-        <div id="carrito_productos">
-            <h5 id="cantidad_productos" aria-live="polite">0</h5>
+			<button
+				class="button"
+				id="buscarbtn"
+				type="button"
+			>
+				🔍︎
+			</button>
+
+			<button
+				class="button"
+				id="carritobtn"
+				type="button"
+			>
+				🛒
+			</button>
+			<div id="carrito_productos" >
+				<h5 id="cantidad_productos"></h5>
+			</div>
+			<button 
+				class="button"
+				id="favoritos_btn"
+				type="button"
+			>Favoritos
+			</button>
+
+			<button
+				class="button"
+				id="menubtn"
+				type="button"
+			>
+				☰
+			</button>
+			<button
+				class="button"
+				id="iniciar_secion_btn"
+				type="button"
+			>Iniciar sesión
+			</button>
+			<button 
+				class="button"
+				id="registrarse_btn"
+				type="button"
+			>Registrarse
+			</button>
+			<div id="busqueda_div">
+				<form action="/buscar" method="GET">
+
+				<input
+					type="search"
+					id="barra_busqueda"
+					name="busqueda"
+					placeholder="Buscar productos..."
+					autocomplete="off"
+				>
+
+				<button
+					class="button"
+					type="submit"
+				>
+					Buscar
+				</button>
+			</form>
+			
+
+			</div>
+			
+
+		</header>
+
+		<main>
+
+			<div id="tarjeta_logo">
+				<img
+				src="tarjeta2.png"
+				alt="tarjeta"
+				>
+			
+			</div>
+
+		</main>
+
+		<nav class="barra" id="carrito_bar">
+			<h1>CARRITO</h1>
+			<div id="mostrar_productos">
+			<h3>Producto</h3>
+			<h3 id="contenido_carrito"></h3>
+			<h3>Precio</h3>
+			<h3 id="productos_carrito_precio"></h3>	
+			</div>
+			<div>
+				<h2>Descuentos</h2>
+				<h2>Subtotal</h2>
+			</div>
+			<button class="button" type="button" id="comprar_carrito_btn">
+				Comprar
+			</button>
+		<div >-
+		<section>
+			<h1>¿Quienes somos?</h1>
+			<p>Somos un grupo de aficionados y amantes de la ciencia y de la entomología</p>
+			<h1>¿Como elaboramos nuestros productos?</h1>
+			<p>Todos nuestros productos provienen de productores autorizados que no dañan la fauna ni el
+		ecosistema local, promoviendo el comercio y la economía. Todos nuestros productos son elaborados
+		con el amor y la pasión de estos animales extraordinarios</p>
+		</section>
+		<hr>
+		</nav>
+		<nav id="compra_tarjeta">
+			<h1>Nuestros valores</h1>
+			
+			<div class="paso">
+            <h1 class="h1_redondos">Respeto</h1>
+            <h3>Respeto a la buodiversidad y la fauna mexicana</h3>
+			</div>
+
+        <div class="paso">
+            <h1 class="h1_redondos">Conservación</h1>
+            <h3>Todos nuestros productos provienen de fuentes cuyas actividades no dañan los ecosistemas</h3>
         </div>
 
-        <button
-            class="button"
-            id="favoritos_btn"
-            type="button"
-        >
-            Favoritos
-        </button>
-
-        <button
-            class="button"
-            id="menubtn"
-            type="button"
-            aria-label="Abrir menú"
-            aria-controls="menu_bar"
-        >
-            ☰
-        </button>
-
-        <button
-            class="button"
-            id="iniciar_secion_btn"
-            type="button"
-        >
-            Iniciar sesión
-        </button>
-
-        <button
-            class="button"
-            id="registrarse_btn"
-            type="button"
-        >
-            Registrarse
-        </button>
-
-        <!-- BÚSQUEDA -->
-        <div id="busqueda_div">
-            <form action="/buscar" method="GET" role="search">
-
-                <label for="barra_busqueda" class="visualmente_oculto">
-                    Buscar productos
-                </label>
-
-                <input
-                    type="search"
-                    id="barra_busqueda"
-                    name="busqueda"
-                    placeholder="Buscar productos..."
-                    autocomplete="off"
-                >
-
-                <button class="button" type="submit">
-                    Buscar
-                </button>
-
-            </form>
+        <div class="paso">
+            <h1 class="h1_redondos">Educación</h1>
+            <h3>La divulgación y educación son los cimientos del futuro que hoy construimis</h3>
         </div>
 
-    </header>
-
-    <!-- CONTENIDO PRINCIPAL -->
-    <main>
-
-        <!-- IMAGEN PRINCIPAL -->
-        <section id="tarjeta_logo" aria-label="Presentación de Linneo">
-
-            <img
-                src="/tarjeta2.png"
-                alt="Linneo, la gema oculta de la ciencia"
-            >
-
-        </section>
-
-        <!-- QUIÉNES SOMOS -->
-        <section id="informacion_linneo">
-
-            <h1>¿Quiénes somos?</h1>
-
-            <p>
-                Somos un grupo de aficionados y amantes de la ciencia
-                y de la entomología.
-            </p>
-
-            <h2>¿Cómo elaboramos nuestros productos?</h2>
-
-            <p>
-                Nuestros productos provienen de productores autorizados
-                que buscan evitar daños a la fauna y a los ecosistemas,
-                promoviendo el comercio responsable y la economía local.
-                Cada producto refleja el amor y la pasión por estos
-                organismos extraordinarios y por la divulgación científica.
-            </p>
-
-        </section>
-
-        <!-- NUESTROS VALORES -->
-        <section id="tarjeta_valores">
-
-            <h1>Nuestros valores</h1>
-
-            <article class="paso">
-                <h2 class="h1_redondos">Respeto</h2>
-                <p>
-                    Respetamos la biodiversidad y la fauna mexicana.
-                </p>
-            </article>
-
-            <article class="paso">
-                <h2 class="h1_redondos">Conservación</h2>
-                <p>
-                    Promovemos productos de fuentes responsables
-                    con el cuidado de los ecosistemas.
-                </p>
-            </article>
-
-            <article class="paso">
-                <h2 class="h1_redondos">Educación</h2>
-                <p>
-                    La divulgación científica y la educación
-                    son los cimientos del futuro que construimos hoy.
-                </p>
-            </article>
-
-            <article class="paso">
-                <h2 class="h1_redondos">Honestidad</h2>
-                <p>
-                    Actuamos con transparencia y honestidad
-                    en nuestras ventas y en la información de nuestros productos.
-                </p>
-            </article>
-
-        </section>
-
-    </main>
-
-    <!-- CARRITO: UNA SOLA INSTANCIA -->
-    <aside class="barra" id="carrito_bar" aria-label="Carrito de compras">
-
-        <h2>Carrito</h2>
-
-        <div id="mostrar_productos">
-
-            <h3>Producto</h3>
-            <div id="contenido_carrito" aria-live="polite"></div>
-
-            <h3>Precio</h3>
-            <div id="productos_carrito_precio"></div>
-
+        <div class="paso">
+            <h1 class="h1_redondos">Honestidad</h1>
+            <h3>Somos transparentes y honestos en nuestras ventas y productos</h3>
         </div>
+        </nav>
 
-        <div id="resumen_carrito">
+		
 
-            <h3>Descuentos</h3>
-            <p id="descuentos_carrito">$0.00</p>
+		<button id="chat_btn" class="button">💬</button>
 
-            <h3>Subtotal</h3>
-            <p id="subtotal_carrito">$0.00</p>
+		<nav class="barra" id="carrito_bar">
+			<h1>CARRITO</h1>
+			<div id="mostrar_productos">
+			<h3>Producto</h3>
+			<h3 id="contenido_carrito"></h3>
+			<h3>Precio</h3>
+			<h3 id="productos_carrito_precio"></h3>	
+			</div>
+			<div>
+				<h2>Descuentos</h2>
+				<h2>Subtotal</h2>
+			</div>
+			<button class="button" type="button" id="comprar_carrito_btn">
+				Comprar
+			</button>
+			
+				
+		</nav>
 
-        </div>
+		
+		<nav class="barra" id="menu_bar">
 
-        <button
-            class="button"
-            type="button"
-            id="comprar_carrito_btn"
-        >
-            Comprar
-        </button>
+			<button
+				id="atras_menu"
+				type="button"
+				class="button"
+			>
+				↚
+			</button>
+			<div>
+				<a
+					class="text_menu"
+					href="/catalogo"
+				>
+					Catálogo
+				</a>
+			</div>
+			<div>
+				<a
+					class="text_menu"
+					href="/contacto"
+				>
+					Contáctanos
+				</a>
+			</div>
+			<div>
+				<a
+					class="text_menu"
+					href="/informacion"
+				>
+					¿Quiénes somos?
+				</a>
+			</div>
 
-        <button
-            class="button"
-            type="button"
-            id="cerrar_carrito_btn"
-        >
-            Seguir comprando
-        </button>
+		</nav>
 
-    </aside>
+		<script src="/js/main.js"></script>
 
-    <!-- MENÚ DE NAVEGACIÓN -->
-    <nav class="barra" id="menu_bar" aria-label="Menú principal">
+	</body>
 
-        <button
-            id="atras_menu"
-            type="button"
-            class="button"
-            aria-label="Cerrar menú"
-        >
-            ←
-        </button>
-
-        <div>
-            <a class="text_menu" href="/catalogo">
-                Catálogo
-            </a>
-        </div>
-
-        <div>
-            <a class="text_menu" href="/contacto">
-                Contáctanos
-            </a>
-        </div>
-
-        <div>
-            <a class="text_menu" href="/informacion">
-                ¿Quiénes somos?
-            </a>
-        </div>
-
-    </nav>
-
-    <!-- BOTÓN DEL CHAT -->
-    <button
-        id="chat_btn"
-        class="button"
-        type="button"
-        aria-label="Abrir asistente virtual"
-    >
-        💬
-    </button>
-
-    <!-- JAVASCRIPT PRINCIPAL -->
-    <script src="/js/main.js" defer></script>
-
-</body>
-</html>
+	</html>
