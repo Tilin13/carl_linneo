@@ -102,6 +102,25 @@ const botonesCategoria = document.querySelectorAll(
 
     const botonesCarrito =
         document.querySelectorAll(".agregar-carrito");
+function llevar_pag(pagina){
+	window.location.href = pagina;
+}
+function cerrar_popup(){
+	documnt.getElementById("popup");
+	.classlist.add("oculto");
+}
+
+const popup = document.getElementById("popup");
+
+// Comprueba si el usuario ya cerró el mensaje
+if (localStorage.getItem("popupCerrado") === "si") {
+  popup.classList.add("oculto");
+}
+
+function cerrarPopup() {
+  popup.classList.add("oculto");
+  localStorage.setItem("popupCerrado", "si");
+}
 
 // =========================================
 // CHATBOT
