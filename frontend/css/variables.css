@@ -20,12 +20,21 @@
     --precio: rgb(42, 72, 48);
 
     --footer: rgb(27, 39, 31);
+    
 }
 
 
 /* Página */
 
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
 
+img {
+    max-width: 100%;
+}
 /* Contenedor de los cuatro pasos */
 .tarjeta{
 	background-color: var(--ocre);
@@ -176,7 +185,7 @@ body {
 	text-align: center;
 }
 .numero_indicador{
-	background-color: var(--musgo);
+	background-color: var(--verde-musgo);
 	color: var(--texto-secundario),
 }
 #chat_btn{
@@ -203,7 +212,7 @@ body {
 	background-color: var(--verde-musgo);
 	color: var(--texto);
 	border-radius: 10px;
-	text-align: fight;
+	text-align: right;
 }
 .mensajes{
 	background-color: var(--ocre);
@@ -378,10 +387,32 @@ body {
 
 .contenedor_productos {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1.25rem;
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+    gap: 20px;
 }
 
+@media (max-width: 900px) {
+    .contenedor_productos {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+}
+@media (max-width: 600px) {
+    #producto {
+        flex-direction: column;
+    }
+
+    #imagen_zona,
+    #informacion_producto {
+        width: 100%;
+    }
+}
+@media (max-width: 600px) {
+    .contenedor_productos {
+        grid-template-columns: 1fr;
+    }
+}
 .tarjeta_producto {
     min-width: 0;
     overflow: hidden;
@@ -704,12 +735,43 @@ section {
     align-items: center;
     justify-content: center;
 }
-.popup{
-	border-color: var(--terracota);
-	border-radius: 50%;
-	width:200px;
-	height: 150px;
-	background-color: var(--tarjeta);
+.popup {
+    position: relative;
+
+    width: 90%;
+    max-width: 1100px;
+
+    height: 85vh;
+    max-height: 900px;
+    min-height: 300px;
+
+    box-sizing: border-box;
+    overflow-y: auto;
+
+    padding: 40px;
+
+    background-color: var(--tarjeta);
+    color: var(--texto);
+
+    border: 2px solid var(--borde);
+    border-radius: 18px;
+
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
+}
+
+/* Ajustes para móviles */
+@media (max-width: 600px) {
+    .popup_fondo {
+        padding: 12px;
+    }
+
+    .popup {
+        width: 100%;
+        height: 90vh;
+        max-height: none;
+        padding: 22px 18px;
+        border-radius: 14px;
+    }
 }
 .producto_imagen img {
     width: 100%;
@@ -796,6 +858,118 @@ section {
 /* =========================================
    GLOBO DEL USUARIO
 ========================================= */
+
+
+/* =========================================
+   BOTONES DE CATEGORÍAS DEL CATÁLOGO
+   Estética natural, botánica y vintage
+========================================= */
+
+.botones_catalogo {
+    width: 100%;
+    min-height: 230px;
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+
+    padding: 30px 24px;
+    margin: 0;
+
+    color: var(--texto);
+    font-family: "Cormorant Garamond", serif;
+    font-size: 1.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+
+    border: 1px solid var(--borde);
+    border-radius: 16px;
+
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(35, 55, 42, 0.08);
+
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease,
+        border-color 0.25s ease,
+        filter 0.25s ease;
+}
+
+/* Colores pastel para cada categoría */
+
+#mariposas_btn {
+    background-color: #E9E4EF;
+    border-color: #CFC3DB;
+}
+
+#escarabajos_btn {
+    background-color: #E3E9D9;
+    border-color: #C4D0B6;
+}
+
+#odonatos_btn {
+    background-color: #DDE9E8;
+    border-color: #BCD2CF;
+}
+
+#fosiles_btn {
+    background-color: #F0E2D2;
+    border-color: #DCC5AC;
+}
+
+#minerales_btn {
+    background-color: #F0E3E5;
+    border-color: #DCC5CB;
+}
+
+/* Efecto al pasar el cursor */
+
+.botones_catalogo:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 22px rgba(35, 55, 42, 0.13);
+    filter: saturate(1.08);
+}
+
+/* Accesibilidad al navegar con teclado */
+
+.botones_catalogo:focus-visible {
+    outline: 3px solid var(--verde-musgo);
+    outline-offset: 4px;
+}
+
+/* Efecto al pulsar */
+
+.botones_catalogo:active {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(35, 55, 42, 0.1);
+}
+
+/* Adaptación a móviles */
+
+@media (max-width: 600px) {
+    .botones_catalogo {
+        min-height: 160px;
+        padding: 24px 16px;
+        font-size: 1.45rem;
+        border-radius: 12px;
+    }
+}
+
+/* Respeta las preferencias de movimiento */
+
+@media (prefers-reduced-motion: reduce) {
+    .botones_catalogo {
+        transition: none;
+    }
+
+    .botones_catalogo:hover,
+    .botones_catalogo:active {
+        transform: none;
+    }
+}
+
 
 .mensaje_usuario {
 
@@ -945,4 +1119,322 @@ section {
 /* Ocultar las tarjetas filtradas */
 .tarjeta_producto[hidden] {
     display: none !important;
+}
+
+/* =========================================
+   AJUSTES RESPONSIVE GENERALES
+========================================= */
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Evita que el contenido se salga de la pantalla */
+.panel,
+.popup,
+.tarjeta_producto,
+.catalogo-pagina {
+    min-width: 0;
+}
+
+/* =========================================
+   TABLETAS: 601px - 900px
+========================================= */
+
+@media (min-width: 601px) and (max-width: 900px) {
+
+    /* Catálogo de productos */
+    .contenedor_productos {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    /* Detalle del producto */
+    #producto {
+        min-height: auto;
+    }
+
+    #imagen_zona,
+    #informacion_producto {
+        width: 50%;
+        min-width: 0;
+    }
+
+    #informacion_producto {
+        padding: 20px;
+    }
+
+    /* Paneles laterales */
+    #carrito_bar {
+        width: min(320px, 85vw);
+    }
+
+    #menu_bar {
+        width: min(250px, 80vw);
+    }
+
+    /* Pasos de compra */
+    #compra_tarjeta .pasos_compra {
+        gap: 16px;
+        padding: 20px;
+    }
+
+    #compra_tarjeta .h1_redondos {
+        width: 58px;
+        height: 58px;
+        font-size: 24px;
+    }
+
+    /* Ventanas emergentes */
+    .popup {
+        padding: 28px;
+    }
+}
+
+/* =========================================
+   MÓVILES: 600px O MENOS
+========================================= */
+
+@media (max-width: 600px) {
+
+    /* Barra de navegación */
+    .barra {
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 12px;
+    }
+
+    #barra_global h2 {
+        font-size: 1.25rem;
+    }
+
+    .button,
+    .button_2,
+    .sec_btn {
+        margin-left: 0;
+        max-width: 100%;
+    }
+
+    /* Catálogo */
+    .catalogo-encabezado {
+        padding: 1rem;
+        gap: 0.75rem;
+    }
+
+    .catalogo-pagina {
+        width: 94%;
+        padding: 1rem 0 2rem;
+    }
+
+    .catalogo-filtros {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .contenedor_productos {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1rem;
+    }
+
+    /* Si utilizas section como cuadrícula de productos */
+    section {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+        padding: 16px;
+    }
+
+    .producto_imagen {
+        height: 220px;
+    }
+
+    .producto_info {
+        padding: 16px;
+    }
+
+    .producto_info h3 {
+        font-size: 20px;
+    }
+
+    /* Detalle del producto: imagen arriba,
+       información debajo */
+    #producto {
+        flex-direction: column;
+        min-height: auto;
+    }
+
+    #imagen_zona,
+    #informacion_producto {
+        width: 100%;
+    }
+
+    #imagen_zona {
+        height: auto;
+        min-height: 240px;
+        max-height: 380px;
+    }
+
+    #imagen_zona img {
+        width: 100%;
+        height: auto;
+        max-height: 380px;
+        object-fit: contain;
+    }
+
+    #informacion_producto {
+        padding: 20px 16px;
+    }
+
+    /* Pasos de compra */
+    #compra_tarjeta .pasos_compra {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 24px;
+        padding: 20px 14px;
+    }
+
+    #compra_tarjeta .paso {
+        width: 100%;
+    }
+
+    #compra_tarjeta .h1_redondos {
+        width: 56px;
+        height: 56px;
+        font-size: 24px;
+    }
+
+    /* Formulario de registro */
+    .panel {
+        width: calc(100% - 24px);
+        max-width: 420px;
+        padding: 20px 16px;
+        margin: 16px auto;
+        gap: 16px;
+    }
+
+    .panel input,
+    .panel #enviar_btn {
+        min-height: 44px;
+    }
+
+    /* Carrito y menú lateral */
+    #carrito_bar {
+        width: min(340px, 92vw);
+        max-width: 100%;
+        padding: 16px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    #menu_bar {
+        width: min(280px, 85vw);
+        max-width: 100%;
+        padding: 16px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    /* Chat */
+    #chat_box {
+        width: calc(100% - 20px);
+        height: 75vh;
+        height: 75dvh;
+        min-height: 320px;
+        margin: 10px auto;
+    }
+
+    #historial_mensajes {
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .mensaje_usuario,
+    .mensaje_asistente,
+    .mensaje_error {
+        max-width: 90%;
+        padding: 10px 12px;
+    }
+
+    #menu_mensajes_propios {
+        gap: 8px;
+        padding: 10px;
+    }
+
+    #bar_mensajes {
+        min-width: 0;
+        padding: 10px 12px;
+    }
+
+    #chat_btn {
+        bottom: 12px;
+        left: 12px;
+        max-width: calc(100vw - 24px);
+    }
+
+    /* Búsqueda */
+    #barra_busqueda,
+    .input_clas {
+        min-width: 0;
+        gap: 8px;
+        padding: 8px;
+    }
+
+    #barra_busqueda input {
+        min-width: 0;
+    }
+
+    /* Categorías */
+    .botones_catalogo {
+        min-height: 150px;
+        padding: 20px 14px;
+        font-size: 1.35rem;
+    }
+
+    /* Imágenes de logo */
+    #tarjeta_logo {
+        width: min(300px, 90%);
+        height: auto;
+        aspect-ratio: 15 / 11;
+        margin: 20px auto;
+    }
+
+    /* Ventanas emergentes */
+    .popup {
+        width: 100%;
+        height: auto;
+        max-height: 90vh;
+        max-height: 90dvh;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 20px 16px;
+    }
+
+    /* Filtros */
+    #filtro_menu {
+        margin: 12px;
+        padding: 12px;
+    }
+}
+
+/* Evita animaciones exageradas en dispositivos
+   cuyo usuario prefiere movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
