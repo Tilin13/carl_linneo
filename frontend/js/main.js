@@ -110,22 +110,24 @@ function llevar_pag(pagina){
     // POPUP DEL 10% DE DESCUENTO
     // =========================================
 
-    const popup = document.getElementById("popup");
-    const cerrarPopupBtn =
-        document.getElementById("cerrar_popup_btn");
+    // =========================================
+    // POPUP DEL 10% DE DESCUENTO
+    // =========================================
 
-    // Comprobar si el usuario ya cerró el popup
+    const popup = document.getElementById("popup");
+    const cerrarPopupBtn = document.getElementById("quitar_popup");
+
     if (popup) {
-        if (localStorage.getItem("popupCerrado") === "si") {
-            popup.classList.add("oculto");
+        // Mostrarlo si todavía no se ha cerrado
+        if (localStorage.getItem("popupCerrado") !== "si") {
+            popup.classList.add("visible");
         }
     }
 
-    // Cerrar el popup y recordar la decisión
+    // Cerrar el popup
     if (popup && cerrarPopupBtn) {
         cerrarPopupBtn.addEventListener("click", function () {
-            popup.classList.add("oculto");
-
+            popup.classList.remove("visible");
             localStorage.setItem("popupCerrado", "si");
         });
     }
