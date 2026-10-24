@@ -102,7 +102,7 @@ document.addEventListener("DOMContentLoaded", function () {
         window.location.href = pagina;
     }
 
-    // Popup de descuento
+      // POPUP DE DESCUENTO
     const popup =
         document.getElementById("popup") ||
         document.querySelector(".popup");
@@ -111,31 +111,21 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("quitar_popup");
 
     if (popup) {
-        let popupCerrado = false;
+        // Asegurar que el popup pueda mostrarse.
+        popup.hidden = false;
 
-        try {
-            popupCerrado =
-                localStorage.getItem("popupCerrado") === "si";
-        } catch (error) {
-            // Puede que el navegador no permita localStorage.
-        }
-
-        if (!popupCerrado) {
-            window.setTimeout(function () {
-                popup.classList.add("visible");
-            }, 700);
-        }
+        window.setTimeout(function () {
+            popup.classList.add("visible");
+        }, 700);
+    } else {
+        console.warn(
+            "No se encontró el popup. Revisa el HTML."
+        );
     }
 
     if (popup && cerrarPopupBtn) {
         cerrarPopupBtn.addEventListener("click", function () {
             popup.classList.remove("visible");
-
-            try {
-                localStorage.setItem("popupCerrado", "si");
-            } catch (error) {
-                // El popup se puede cerrar aunque no se guarde el estado.
-            }
         });
     }
 
@@ -694,7 +684,7 @@ document.addEventListener("DOMContentLoaded", function () {
         "comprar_carrito_btn"
     );
 
-    if (comprarBtn) {
+       if (comprarBtn) {
         comprarBtn.addEventListener("click", function () {
             if (!carrito.length) {
                 alert(
@@ -709,7 +699,8 @@ document.addEventListener("DOMContentLoaded", function () {
             );
         });
     }
-});
+
+    // CONTROL DE STOCK
     // =========================================
     // CONTROL DE STOCK
     // =========================================
