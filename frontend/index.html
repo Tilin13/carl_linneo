@@ -260,13 +260,23 @@
 			
 			</div>
 		</nav>
-		<div class="popup">
 		
-			<button id="quitar_popup">X</button>
-			<h2>10% de descuento en tu primera compra</h2>
-			<h2>¡Crea tu cuenta ahora!</h2>
-			<button class="button" onclick="llevar_pag(registrarse)">Crear cuenta</button>
-		</div>
+	<div class="popup" id="popup" role="dialog" aria-modal="true" aria-labelledby="titulo_popup">
+		<button
+			id="quitar_popup"
+			type="button"
+			aria-label="Cerrar ventana"
+		>×</button>
+
+		<h2 id="titulo_popup">10% de descuento en tu primera compra</h2>
+		<p>Descubre nuestra colección de historia natural.</p>
+		<h2>¡Crea tu cuenta ahora!</h2>
+
+		<a class="button" href="/registrarse">
+			Crear cuenta
+		</a>
+	</div>
+
 		<nav class="barra" id="menu_bar">
 
 			<button

@@ -1484,3 +1484,378 @@ img {
         transition-duration: 0.01ms !important;
     }
 }
+/* =========================
+   MEJORAS PORTADA LINNEO
+   Pegar al FINAL de variables.css
+========================= */
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    line-height: 1.5;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+    outline: 3px solid var(--ocre);
+    outline-offset: 3px;
+}
+
+#barra_global {
+    position: sticky;
+    top: 0;
+    z-index: 1100;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+#barra_global > h2 {
+    margin-right: auto;
+}
+
+#busqueda_div {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 16px;
+    width: min(420px, calc(100vw - 32px));
+    z-index: 1200;
+}
+
+#busqueda_div form {
+    display: flex;
+    gap: 8px;
+}
+
+#busqueda_div input[type="search"] {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+}
+
+#novedades_bar {
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 24px 16px;
+    text-align: center;
+}
+
+#novedades_bar h1 {
+    width: 100%;
+    margin: 0;
+}
+
+#novedades_bar > div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+#novedades_bar #imagen {
+    width: min(420px, 72vw);
+    height: 260px;
+    object-fit: contain;
+    background: var(--tarjeta);
+    border-radius: 12px;
+}
+
+#novedades_bar #contador {
+    flex-basis: 100%;
+    margin: 0;
+}
+
+.centrado {
+    text-align: center;
+    margin: 28px 0 10px;
+}
+
+/* Productos de la portada */
+
+#productos {
+    width: min(1200px, 94%);
+    margin: 0 auto;
+    padding: 24px 0 40px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+}
+
+#productos .tarjeta_producto {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    background: var(--tarjeta);
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+    box-shadow: 0 5px 18px rgba(35, 55, 42, 0.08);
+}
+
+#productos .producto_imagen {
+    height: 260px;
+    padding: 12px;
+    background: #f4f1e8;
+}
+
+#productos .producto_imagen img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+#productos .producto_info {
+    align-items: stretch;
+    padding: 18px;
+    margin: 0;
+}
+
+#productos .producto_info h2 {
+    margin: 0;
+    font-size: 1.35rem;
+}
+
+#productos .producto_info a {
+    color: var(--verde-hover);
+}
+
+#productos .producto_precio {
+    color: var(--precio);
+}
+
+#productos .agregar-carrito {
+    margin: 8px 0 0;
+}
+
+#productos .tarjeta_producto[hidden] {
+    display: none !important;
+}
+
+/* Compra y carrito */
+
+#compra_tarjeta {
+    display: block;
+    padding: 28px 5%;
+}
+
+#compra_tarjeta > h1 {
+    text-align: center;
+}
+
+#compra_tarjeta .pasos_compra {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+#menu_bar {
+    padding: 24px;
+}
+
+#menu_bar a {
+    color: var(--texto);
+    text-decoration: none;
+}
+
+#menu_bar a:hover {
+    text-decoration: underline;
+}
+
+#carrito_bar {
+    display: block;
+    overflow-y: auto;
+}
+
+#mostrar_productos {
+    display: grid;
+    gap: 8px;
+}
+
+#mostrar_productos h3 {
+    margin: 6px 0;
+}
+
+#contenido_carrito {
+    overflow-wrap: anywhere;
+}
+
+/* Ventana emergente */
+
+#quitar_popup {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: var(--terracota);
+    color: white;
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+
+.popup {
+    display: block;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    width: min(440px, calc(100vw - 32px));
+    max-height: min(90dvh, 650px);
+    overflow-y: auto;
+    padding: 38px 28px 28px;
+    border-color: var(--ocre);
+    background: var(--tarjeta);
+    background-image: radial-gradient(
+        circle at top right,
+        rgba(185, 145, 70, 0.14),
+        transparent 45%
+    );
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.28);
+    transition: opacity 0.22s ease, visibility 0.22s ease;
+}
+
+.popup.visible {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.popup h2 {
+    line-height: 1.25;
+}
+
+.popup h2:first-of-type {
+    font-size: clamp(1.4rem, 4vw, 1.8rem);
+}
+
+.popup .button {
+    display: inline-block;
+    margin: 12px 0 0;
+    text-decoration: none;
+}
+
+body:has(.popup.visible) {
+    overflow: hidden;
+}
+
+/* Categorías */
+
+#categorias_portada {
+    width: min(1200px, 94%);
+    margin: 0 auto;
+    padding: 20px 0 35px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+#categorias_portada h1 {
+    grid-column: 1 / -1;
+    text-align: center;
+}
+
+.botones_catalogo {
+    min-width: 0;
+}
+
+#aviso_filtro_portada {
+    text-align: center;
+    padding: 0 16px;
+}
+
+#tarjeta_logo {
+    width: min(680px, 92%);
+    height: auto;
+    aspect-ratio: 15 / 7;
+}
+
+#tarjeta_logo img {
+    object-fit: contain;
+}
+
+/* Tabletas */
+
+@media (max-width: 900px) {
+    #productos {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #categorias_portada {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* Móviles */
+
+@media (max-width: 600px) {
+    #productos {
+        width: calc(100% - 24px);
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    #productos .producto_imagen {
+        height: 230px;
+    }
+
+    #categorias_portada {
+        width: calc(100% - 24px);
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    #categorias_portada .botones_catalogo {
+        min-height: 125px;
+        font-size: 1.05rem;
+        padding: 12px;
+    }
+
+    #novedades_bar #imagen {
+        height: 210px;
+    }
+
+    #barra_global {
+        justify-content: space-between;
+    }
+
+    #barra_global > h2 {
+        width: 100%;
+        text-align: center;
+    }
+
+    #busqueda_div {
+        right: 8px;
+        width: calc(100vw - 16px);
+    }
+
+    #compra_tarjeta .pasos_compra {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .popup {
+        width: calc(100vw - 28px);
+        padding: 34px 20px 22px;
+    }
+}
+
+/* Accesibilidad: reducir animaciones */
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    .popup {
+        transition: none;
+    }
+}
