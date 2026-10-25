@@ -385,11 +385,12 @@ def verificar_admin():
 # ============================================================
 # ADMINISTRACIÓN
 # ============================================================
+
 @app.route("/admin")
 @administrador_requerido
 def admin():
-    app.logger.info("Acceso autorizado a /admin")
-    return "Acceso administrativo correcto"
+    return render_template("admin.html")
+
 
 def validar_datos_producto(datos):
     """Valida y normaliza el JSON recibido al crear o editar productos."""
