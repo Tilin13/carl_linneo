@@ -385,12 +385,11 @@ def verificar_admin():
 # ============================================================
 # ADMINISTRACIÓN
 # ============================================================
-
 @app.route("/admin")
 @administrador_requerido
 def admin():
-    return render_template("admin.html")
-
+    app.logger.info("Acceso autorizado a /admin")
+    return "Acceso administrativo correcto"
 
 def validar_datos_producto(datos):
     """Valida y normaliza el JSON recibido al crear o editar productos."""
@@ -818,22 +817,24 @@ def login():
 
         # La cuenta administrativa solo puede entrar si coincide con ADMIN_EMAIL
         # y completa el TOTP. Un usuario normal no puede elevar sus permisos.
+       
         correo_configurado = os.getenv("ADMIN_EMAIL", "").strip().lower()
         secreto = os.getenv("ADMIN_TOTP_SECRET", "").strip()
-        correo_configurado = os.getenv("ADMIN_EMAIL", "").strip().lower()
 
-        if correo_configurado and usuario.email.lower() == correo_configurado:
+        # El correo configurado identifica la cuenta administradora.
+        if correo_configurado and usuario.email.strip().lower() == correo_configurado:
             if usuario.rol != "admin":
                 usuario.rol = "admin"
                 db.session.commit()
+
         if usuario.rol == "admin":
             if (
                 not correo_configurado
-                or usuario.email.lower() != correo_configurado
+                or usuario.email.strip().lower() != correo_configurado
                 or not secreto
             ):
                 app.logger.error(
-                    "Cuenta admin bloqueada: revisa ADMIN_EMAIL y ADMIN_TOTP_SECRET."
+                    "Revisa ADMIN_EMAIL y ADMIN_TOTP_SECRET en .env"
                 )
                 flash(
                     "La verificación del administrador no está configurada.",
