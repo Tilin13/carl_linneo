@@ -1,130 +1,27 @@
-	<!DOCTYPE html>
-	<html lang="es">
 
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport"
-      content="width=device-width, initial-scale=1">
+<h2>Verificación de administrador</h2>
 
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1.0"
-		>
+<p>Introduce el código de seis cifras de tu aplicación autenticadora.</p>
 
-		<title>Linneo</title>
+<form method="POST" action="{{ url_for('verificar_admin') }}">
+    <input
+        type="hidden"
+        name="csrf_token"
+        value="{{ csrf_token() }}"
+    >
 
-		<link rel="stylesheet" href="/css/variables.css">
-	
-		<link
-			rel="icon"
-			type="image/png"
-			href="linneo_isotipo.png"
-		>
-	</head>
+    <label for="codigo">Código de autenticación</label>
 
+    <input
+        type="text"
+        id="codigo"
+        name="codigo"
+        inputmode="numeric"
+        pattern="[0-9]{6}"
+        maxlength="6"
+        autocomplete="one-time-code"
+        required
+    >
 
-
-	<body>
-
-		<header class="barra" id="barra_global">
-
-			<h2>Linneo</h2>
-
-
-			<button
-				class="button"
-				id="buscarbtn"
-				type="button"
-			>
-				🔍︎
-			</button>
-
-			<button
-				class="button"
-				id="carritobtn"
-				type="button"
-			>
-				🛒
-			</button>
-			<div id="carrito_productos" >
-				<h5 id="cantidad_productos"></h5>
-			</div>
-			<button 
-				class="button"
-				id="favoritos_btn"
-				type="button"
-			>♡
-			</button>
-
-			<button
-				class="button"
-				id="menubtn"
-				type="button"
-			>
-				☰
-			</button>
-			{% if current_user.is_authenticated %}
-  <span>Hola, {{ current_user.username }}</span>
-
-  <form action="{{ url_for('cerrar_sesion') }}" method="POST">
-    <input type="hidden" name="csrf_token"
-           value="{{ csrf_token() }}">
-    <button type="submit">Cerrar sesión</button>
-  </form>
-{% else %}
-  <a href="{{ url_for('login') }}">Iniciar sesión</a>
-  <a href="{{ url_for('registrarse') }}">Registrarse</a>
-{% endif %}
-			<div id="busqueda_div">
-				<form action="/buscar" method="GET">
-
-				<input
-					type="search"
-					id="barra_busqueda"
-					name="busqueda"
-					placeholder="Buscar productos..."
-					autocomplete="off"
-				>
-
-				<button
-					class="button"
-					type="submit"
-				>
-					Buscar
-				</button>
-			</form>
-			
-
-			</div>
-			
-
-		</header>
-
-		<main>
-
-			<div id="tarjeta_logo">
-				<img
-				src="tarjeta2.png"
-				alt="tarjeta"
-				>
-			
-			</div>
-			<h1>Verificación en dos pasos</h1>
-			
-			<p>Introduce el cógio de seis cifras enviado a tu correo </p>
-			<form method="POST" class="panel">
-				<input class="input_clas" type="hidden" name="csrf_token" value="{{csrf_token()}}">
-				<label for="codigo">Código de seguridad</label>
-				<input id="codigo" name="codigo" class="input_clas"
-				type="text" inputmode="numeric" pattern="[0-9]{6}" minlenght="6" maxlength="6" autocomplete="one-time-code"
-				required
-				>
-				<button class="button" type="submint">Verificar y entrar</button>
-			</form>
-
-
-		<script src="/js/main.js"></script>
-
-	</body>
-
-	</html>
+    <button type="submit">Verificar y entrar</button>
+</form>

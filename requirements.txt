@@ -1,4 +1,4 @@
-
+pyotp
 Flask
 Flask-Login
 Flask-SQLAlchemy

@@ -1,137 +1,116 @@
-	<!DOCTYPE html>
-	<html lang="es">
 
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport"
-      content="width=device-width, initial-scale=1">
+<h1>Inventario</h1>
 
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1.0"
-		>
+<p id="mensaje_admin" role="status"></p>
 
-		<title>Linneo</title>
+<section id="inventario_section">
+    <!-- main.js cargará aquí los productos -->
+</section>
 
-		<link rel="stylesheet" href="/css/variables.css">
-	
-		<link
-			rel="icon"
-			type="image/png"
-			href="linneo_isotipo.png"
-		>
-	</head>
+<h2 id="titulo_formulario">Añadir producto</h2>
 
+<form id="modificar_inv">
+    <input
+        type="hidden"
+        id="codigo_original"
+        value=""
+    >
 
+    <label for="codigo">Código</label>
+    <input
+        id="codigo"
+        type="text"
+        maxlength="80"
+        required
+    >
 
-	<body>
+    <label for="nombre">Nombre</label>
+    <input
+        id="nombre"
+        type="text"
+        maxlength="200"
+        required
+    >
 
-		<header class="barra" id="barra_global">
+    <label for="categoria">Categoría</label>
+    <input
+        id="categoria"
+        type="text"
+        maxlength="100"
+        required
+    >
 
-			<h2>Linneo</h2>
+    <label for="precio_compra">Precio de compra</label>
+    <input
+        id="precio_compra"
+        type="number"
+        min="0"
+        step="0.01"
+        required
+    >
 
+    <label for="precio_manofactura">
+        Precio de producción
+    </label>
+    <input
+        id="precio_manofactura"
+        type="number"
+        min="0"
+        step="0.01"
+        required
+    >
 
-			<button
-				class="button"
-				id="buscarbtn"
-				type="button"
-			>
-				🔍︎
-			</button>
+    <label for="precio_venta">Precio de venta</label>
+    <input
+        id="precio_venta"
+        type="number"
+        min="0"
+        step="0.01"
+        required
+    >
 
-			<button
-				class="button"
-				id="carritobtn"
-				type="button"
-			>
-				🛒
-			</button>
-			<div id="carrito_productos" >
-				<h5 id="cantidad_productos"></h5>
-			</div>
-			<button 
-				class="button"
-				id="favoritos_btn"
-				type="button"
-			>♡
-			</button>
+    <label for="stock">Stock</label>
+    <input
+        id="stock"
+        type="number"
+        min="0"
+        step="1"
+        required
+    >
 
-			<button
-				class="button"
-				id="menubtn"
-				type="button"
-			>
-				☰
-			</button>
-			{% if current_user.is_authenticated %}
-  <span>Hola, {{ current_user.username }}</span>
+    <button type="submit">Guardar producto</button>
+    <button type="button" id="cancelar_edicion">
+        Cancelar
+    </button>
+</form>
 
-  <form action="{{ url_for('cerrar_sesion') }}" method="POST">
-    <input type="hidden" name="csrf_token"
-           value="{{ csrf_token() }}">
-    <button type="submit">Cerrar sesión</button>
-  </form>
-{% else %}
-  <a href="{{ url_for('login') }}">Iniciar sesión</a>
-  <a href="{{ url_for('registrarse') }}">Registrarse</a>
-{% endif %}
-			<div id="busqueda_div">
-				<form action="/buscar" method="GET">
+<h2>Añadir stock</h2>
 
-				<input
-					type="search"
-					id="barra_busqueda"
-					name="busqueda"
-					placeholder="Buscar productos..."
-					autocomplete="off"
-				>
+<form id="form_stock">
+    <label for="producto_codigo">
+        Código del producto
+    </label>
+    <input id="producto_codigo" required>
 
-				<button
-					class="button"
-					type="submit"
-				>
-					Buscar
-				</button>
-			</form>
-			
+    <label for="cantidad_producto">
+        Unidades a añadir
+    </label>
+    <input
+        id="cantidad_producto"
+        type="number"
+        min="1"
+        step="1"
+        required
+    >
 
-			</div>
-			
+    <button type="submit">Añadir unidades</button>
+</form>
 
-		</header>
+<h2>Usuarios registrados</h2>
 
-		<main>
+<section id="clientes_section">
+    <!-- main.js cargará aquí los usuarios -->
+</section>
 
-			<div id="tarjeta_logo">
-				<img
-				src="tarjeta2.png"
-				alt="tarjeta"
-				>
-			
-			</div>
-			
-			<h1>Inventario</h1>
-			<section id="inventario_section">
-			</section>
-			<form id="modificar_inv" method="POST">
-				<input id="codigo" placeholder="Código" type="text">
-				<input id="nombre" placeholder="Nombre" type="text">
-				<input id="categoria" placeholder="Categoria" type="text">
-				<input id="precio_compra" placeholder="Precio de compra" type="number">
-				<input id="precio_manofactura" placeholder="Precio de producción" type="number">
-				<input id="precio_venta" placeholder="Precio de venta" type="number">
-				<input id="stock" placeholder="Stock" type="number">
-				<button id="enviar" type="sumnit">Guardar</button>
-			</form>
-			<h1>Añadir stock</h1>
-			<input type="text" id="producto_codigo" placeholder="Código del producto">
-			<input type="number" id="cantidad_producto" placeholder="Cantidad a añadir">
-			<section id="clientes_section">
-			</section>
-			
-
-		<script src="/js/main.js"></script>
-
-	</body>
-
-	</html>
+<script src="{{ url_for('static', filename='js/main.js') }}"
+        defer></script>

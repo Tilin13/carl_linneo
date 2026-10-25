@@ -231,19 +231,29 @@ def hash_codigo(codigo):
     ).hexdigest()
 
 
+
 def administrador_requerido(func):
     @wraps(func)
     @login_required
     def decorada(*args, **kwargs):
-        if (
-            getattr(current_user, "rol", None) != "admin"
-            or session.get("admin_2fa") != str(current_user.id)
-        ):
+        correo_configurado = os.getenv(
+            "ADMIN_EMAIL", ""
+        ).strip().lower()
+
+        es_admin_autorizado = (
+            current_user.rol == "admin"
+            and bool(correo_configurado)
+            and current_user.email.lower() == correo_configurado
+            and session.get("admin_2fa") == str(current_user.id)
+        )
+
+        if not es_admin_autorizado:
             abort(403)
 
         return func(*args, **kwargs)
 
     return decorada
+
 @app.route("/verificar_admin", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
 def verificar_admin():
@@ -254,13 +264,27 @@ def verificar_admin():
 
     usuario = db.session.get(User, usuario_id)
 
+    correo_configurado = os.getenv(
+        "ADMIN_EMAIL", ""
+    ).strip().lower()
+
+    secreto = os.getenv(
+        "ADMIN_TOTP_SECRET", ""
+    ).strip()
+
+    # Confirmar que es la cuenta administradora autorizada.
     if (
         usuario is None
-        or getattr(usuario, "rol", None) != "admin"
-        or usuario.email.lower()
-        != os.environ["ADMIN_EMAIL"].strip().lower()
+        or usuario.rol != "admin"
+        or not correo_configurado
+        or usuario.email.lower() != correo_configurado
+        or not secreto
     ):
         session.clear()
+        flash(
+            "No se pudo verificar la cuenta administradora.",
+            "error"
+        )
         return redirect(url_for("login"))
 
     if request.method == "POST":
@@ -270,54 +294,25 @@ def verificar_admin():
             flash("Introduce un código de seis cifras.", "error")
             return render_template("verificar_admin.html")
 
-        registro = db.session.scalar(
-            select(CodigoAdmin)
-            .where(
-                CodigoAdmin.usuario_id == usuario.id,
-                CodigoAdmin.usado.is_(False)
+        autenticador = pyotp.TOTP(secreto)
+
+        if not autenticador.verify(codigo, valid_window=1):
+            flash(
+                "Código incorrecto o caducado.",
+                "error"
             )
-            .order_by(CodigoAdmin.id.desc())
-        )
-
-        if registro is None:
-            flash("Solicita un nuevo código.", "error")
-            return redirect(url_for("login"))
-
-        if (
-            registro.expira <= time.time()
-            or registro.intentos >= 5
-        ):
-            registro.usado = True
-            db.session.commit()
-
-            session.clear()
-            flash("El código ha caducado. Inicia sesión de nuevo.", "error")
-            return redirect(url_for("login"))
-
-        if not hmac.compare_digest(
-            registro.codigo_hash,
-            hash_codigo(codigo)
-        ):
-            registro.intentos += 1
-
-            if registro.intentos >= 5:
-                registro.usado = True
-
-            db.session.commit()
-            flash("Código incorrecto.", "error")
             return render_template("verificar_admin.html")
 
-        # El código queda consumido antes de conceder acceso.
-        registro.usado = True
-        db.session.commit()
-
+        # Solo iniciar la sesión administrativa tras validar el código.
         session.clear()
         login_user(usuario, remember=False)
         session["admin_2fa"] = str(usuario.id)
+        session.permanent = True
 
         return redirect(url_for("admin"))
 
     return render_template("verificar_admin.html")
+
 @app.after_request
 def agregar_cabeceras_seguridad(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -461,12 +456,43 @@ def login():
             )
         )
 
+       
         if (
             usuario is not None
             and usuario.check_password(password)
         ):
-            # No conservar datos de sesión anteriores.
+            # Limpiar cualquier sesión anterior.
             session.clear()
+
+            correo_configurado = os.getenv(
+                "ADMIN_EMAIL", ""
+            ).strip().lower()
+
+            secreto = os.getenv(
+                "ADMIN_TOTP_SECRET", ""
+            ).strip()
+
+            # La cuenta administradora necesita un segundo factor.
+            if (
+                usuario.rol == "admin"
+                and correo_configurado
+                and usuario.email.lower() == correo_configurado
+            ):
+                if not secreto:
+                    app.logger.error(
+                        "Falta configurar ADMIN_TOTP_SECRET."
+                    )
+                    flash(
+                        "La verificación del administrador "
+                        "no está configurada.",
+                        "error"
+                    )
+                    return render_template("login.html"), 500
+
+                session["admin_2fa_pendiente"] = usuario.id
+                return redirect(url_for("verificar_admin"))
+
+            # Los usuarios normales mantienen el acceso habitual.
             login_user(usuario, remember=False)
 
             destino = request.args.get("next", "")
@@ -474,11 +500,6 @@ def login():
                 return redirect(destino)
 
             return redirect(url_for("index"))
-
-        flash(
-            "Nombre de usuario, correo o contraseña incorrectos.",
-            "error"
-        )
 
     return render_template("login.html")
 
@@ -651,7 +672,498 @@ def catalogo(categoria=None):
 # ============================================================
 # IMÁGENES
 # ============================================================
+@app.route("/api/admin/productos", methods=["POST"])
+@administrador_requerido
+def admin_guardar_producto():
+    datos = request.get_json(silent=True) or {}
 
+    codigo = str(datos.get("codigo", "")).strip()
+    codigo_original = str(
+        datos.get("codigo_original", "")
+    ).strip()
+
+    nombre = str(datos.get("nombre", "")).strip()
+    categoria = str(datos.get("categoria", "")).strip()
+
+    if not codigo or not nombre or not categoria:
+        return jsonify({
+            "error": "Código, nombre y categoría son obligatorios."
+        }), 400
+
+    if len(codigo) > 80 or len(nombre) > 200:
+        return jsonify({
+            "error": "El código o el nombre son demasiado largos."
+        }), 400
+
+    if len(categoria) > 100:
+        return jsonify({
+            "error": "La categoría es demasiado larga."
+        }), 400
+
+    try:
+        precio_compra = float(datos["precio_compra"])
+        precio_manofactura = float(
+            datos["precio_manofactura"]
+        )
+        precio_venta = float(datos["precio_venta"])
+        stock = int(datos["stock"])
+
+        import math
+
+        precios = [
+            precio_compra,
+            precio_manofactura,
+            precio_venta
+        ]
+
+        if not all(math.isfinite(p) and p >= 0 for p in precios):
+            raise ValueError()
+
+        if any(p > 1_000_000_000 for p in precios):
+            raise ValueError()
+
+        if stock < 0 or stock > 2_000_000_000:
+            raise ValueError()
+
+        # Evita aceptar valores como 3.5 unidades.
+        if float(datos["stock"]) != stock:
+            raise ValueError()
+
+    except (ValueError, TypeError, KeyError, OverflowError):
+        return jsonify({
+            "error": "Los precios y el stock deben ser válidos."
+        }), 400
+
+    conexion = sqlite3.connect(BASE_DATOS)
+
+    try:
+        cursor = conexion.cursor()
+
+        if codigo_original:
+            # Edición de un producto existente.
+            cursor.execute("""
+                UPDATE productos
+                SET codigo = ?,
+                    nombre = ?,
+                    categoria = ?,
+                    precio_compra = ?,
+                    precio_manofactura = ?,
+                    precio_venta = ?,
+                    stock = ?
+                WHERE codigo = ?
+            """, (
+                codigo,
+                nombre,
+                categoria,
+                precio_compra,
+                precio_manofactura,
+                precio_venta,
+                stock,
+                codigo_original
+            ))
+
+            if cursor.rowcount == 0:
+                conexion.rollback()
+                return jsonify({
+                    "error": "No se encontró el producto original."
+                }), 404
+
+        else:
+            # Alta de un producto nuevo.
+            cursor.execute("""
+                INSERT INTO productos (
+                    codigo, nombre, categoria,
+                    precio_compra, precio_manofactura,
+                    precio_venta, stock
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                codigo,
+                nombre,
+                categoria,
+                precio_compra,
+                precio_manofactura,
+                precio_venta,
+                stock
+            ))
+
+        conexion.commit()
+
+        return jsonify({
+            "mensaje": "Producto guardado correctamente."
+        }), 200
+
+    except sqlite3.IntegrityError:
+        conexion.rollback()
+        return jsonify({
+            "error": "Ese código ya existe o hay un conflicto de datos."
+        }), 409
+
+    except sqlite3.Error:
+        conexion.rollback()
+        app.logger.exception("Error guardando producto")
+        return jsonify({
+            "error": "No se pudo guardar el producto."
+        }), 500
+
+    finally:
+        conexion.close()
+@app.route("/api/admin/productos", methods=["POST"])
+@administrador_requerido
+def admin_guardar_producto():
+    datos = request.get_json(silent=True) or {}
+
+    codigo = str(datos.get("codigo", "")).strip()
+    codigo_original = str(
+        datos.get("codigo_original", "")
+    ).strip()
+
+    nombre = str(datos.get("nombre", "")).strip()
+    categoria = str(datos.get("categoria", "")).strip()
+
+    if not codigo or not nombre or not categoria:
+        return jsonify({
+            "error": "Código, nombre y categoría son obligatorios."
+        }), 400
+
+    if len(codigo) > 80 or len(nombre) > 200:
+        return jsonify({
+            "error": "El código o el nombre son demasiado largos."
+        }), 400
+
+    if len(categoria) > 100:
+        return jsonify({
+            "error": "La categoría es demasiado larga."
+        }), 400
+
+    try:
+        precio_compra = float(datos["precio_compra"])
+        precio_manofactura = float(
+            datos["precio_manofactura"]
+        )
+        precio_venta = float(datos["precio_venta"])
+        stock = int(datos["stock"])
+
+        import math
+
+        precios = [
+            precio_compra,
+            precio_manofactura,
+            precio_venta
+        ]
+
+        if not all(math.isfinite(p) and p >= 0 for p in precios):
+            raise ValueError()
+
+        if any(p > 1_000_000_000 for p in precios):
+            raise ValueError()
+
+        if stock < 0 or stock > 2_000_000_000:
+            raise ValueError()
+
+        # Evita aceptar valores como 3.5 unidades.
+        if float(datos["stock"]) != stock:
+            raise ValueError()
+
+    except (ValueError, TypeError, KeyError, OverflowError):
+        return jsonify({
+            "error": "Los precios y el stock deben ser válidos."
+        }), 400
+
+    conexion = sqlite3.connect(BASE_DATOS)
+
+    try:
+        cursor = conexion.cursor()
+
+        if codigo_original:
+            # Edición de un producto existente.
+            cursor.execute("""
+                UPDATE productos
+                SET codigo = ?,
+                    nombre = ?,
+                    categoria = ?,
+                    precio_compra = ?,
+                    precio_manofactura = ?,
+                    precio_venta = ?,
+                    stock = ?
+                WHERE codigo = ?
+            """, (
+                codigo,
+                nombre,
+                categoria,
+                precio_compra,
+                precio_manofactura,
+                precio_venta,
+                stock,
+                codigo_original
+            ))
+
+            if cursor.rowcount == 0:
+                conexion.rollback()
+                return jsonify({
+                    "error": "No se encontró el producto original."
+                }), 404
+
+        else:
+            # Alta de un producto nuevo.
+            cursor.execute("""
+                INSERT INTO productos (
+                    codigo, nombre, categoria,
+                    precio_compra, precio_manofactura,
+                    precio_venta, stock
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                codigo,
+                nombre,
+                categoria,
+                precio_compra,
+                precio_manofactura,
+                precio_venta,
+                stock
+            ))
+
+        conexion.commit()
+
+        return jsonify({
+            "mensaje": "Producto guardado correctamente."
+        }), 200
+
+    except sqlite3.IntegrityError:
+        conexion.rollback()
+        return jsonify({
+            "error": "Ese código ya existe o hay un conflicto de datos."
+        }), 409
+
+    except sqlite3.Error:
+        conexion.rollback()
+        app.logger.exception("Error guardando producto")
+        return jsonify({
+            "error": "No se pudo guardar el producto."
+        }), 500
+
+    finally:
+        conexion.close()
+@app.route("/api/admin/productos", methods=["POST"])
+@administrador_requerido
+def admin_guardar_producto():
+    datos = request.get_json(silent=True) or {}
+
+    codigo = str(datos.get("codigo", "")).strip()
+    codigo_original = str(
+        datos.get("codigo_original", "")
+    ).strip()
+
+    nombre = str(datos.get("nombre", "")).strip()
+    categoria = str(datos.get("categoria", "")).strip()
+
+    if not codigo or not nombre or not categoria:
+        return jsonify({
+            "error": "Código, nombre y categoría son obligatorios."
+        }), 400
+
+    if len(codigo) > 80 or len(nombre) > 200:
+        return jsonify({
+            "error": "El código o el nombre son demasiado largos."
+        }), 400
+
+    if len(categoria) > 100:
+        return jsonify({
+            "error": "La categoría es demasiado larga."
+        }), 400
+
+    try:
+        precio_compra = float(datos["precio_compra"])
+        precio_manofactura = float(
+            datos["precio_manofactura"]
+        )
+        precio_venta = float(datos["precio_venta"])
+        stock = int(datos["stock"])
+
+        import math
+
+        precios = [
+            precio_compra,
+            precio_manofactura,
+            precio_venta
+        ]
+
+        if not all(math.isfinite(p) and p >= 0 for p in precios):
+            raise ValueError()
+
+        if any(p > 1_000_000_000 for p in precios):
+            raise ValueError()
+
+        if stock < 0 or stock > 2_000_000_000:
+            raise ValueError()
+
+        # Evita aceptar valores como 3.5 unidades.
+        if float(datos["stock"]) != stock:
+            raise ValueError()
+
+    except (ValueError, TypeError, KeyError, OverflowError):
+        return jsonify({
+            "error": "Los precios y el stock deben ser válidos."
+        }), 400
+
+    conexion = sqlite3.connect(BASE_DATOS)
+
+    try:
+        cursor = conexion.cursor()
+
+        if codigo_original:
+            # Edición de un producto existente.
+            cursor.execute("""
+                UPDATE productos
+                SET codigo = ?,
+                    nombre = ?,
+                    categoria = ?,
+                    precio_compra = ?,
+                    precio_manofactura = ?,
+                    precio_venta = ?,
+                    stock = ?
+                WHERE codigo = ?
+            """, (
+                codigo,
+                nombre,
+                categoria,
+                precio_compra,
+                precio_manofactura,
+                precio_venta,
+                stock,
+                codigo_original
+            ))
+
+            if cursor.rowcount == 0:
+                conexion.rollback()
+                return jsonify({
+                    "error": "No se encontró el producto original."
+                }), 404
+
+        else:
+            # Alta de un producto nuevo.
+            cursor.execute("""
+                INSERT INTO productos (
+                    codigo, nombre, categoria,
+                    precio_compra, precio_manofactura,
+                    precio_venta, stock
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                codigo,
+                nombre,
+                categoria,
+                precio_compra,
+                precio_manofactura,
+                precio_venta,
+                stock
+            ))
+
+        conexion.commit()
+
+        return jsonify({
+            "mensaje": "Producto guardado correctamente."
+        }), 200
+
+    except sqlite3.IntegrityError:
+        conexion.rollback()
+        return jsonify({
+            "error": "Ese código ya existe o hay un conflicto de datos."
+        }), 409
+
+    except sqlite3.Error:
+        conexion.rollback()
+        app.logger.exception("Error guardando producto")
+        return jsonify({
+            "error": "No se pudo guardar el producto."
+        }), 500
+
+    finally:
+        conexion.close()
+@app.route("/api/admin/stock", methods=["POST"])
+@administrador_requerido
+def admin_anadir_stock():
+    datos = request.get_json(silent=True) or {}
+
+    codigo = str(datos.get("codigo", "")).strip()
+    cantidad = datos.get("cantidad")
+
+    if not codigo:
+        return jsonify({
+            "error": "Introduce el código del producto."
+        }), 400
+
+    # No aceptar decimales, booleanos ni cadenas arbitrarias.
+    if (
+        isinstance(cantidad, bool)
+        or not isinstance(cantidad, int)
+        or cantidad <= 0
+        or cantidad > 1_000_000
+    ):
+        return jsonify({
+            "error": "La cantidad debe ser un entero positivo."
+        }), 400
+
+    conexion = sqlite3.connect(BASE_DATOS)
+
+    try:
+        cursor = conexion.execute("""
+            UPDATE productos
+            SET stock = stock + ?
+            WHERE codigo = ?
+              AND stock >= 0
+              AND stock <= 2000000000 - ?
+        """, (cantidad, codigo, cantidad))
+
+        if cursor.rowcount == 0:
+            existe = conexion.execute(
+                "SELECT 1 FROM productos WHERE codigo = ?",
+                (codigo,)
+            ).fetchone()
+
+            conexion.rollback()
+
+            if existe:
+                return jsonify({
+                    "error": "La cantidad supera el límite permitido."
+                }), 400
+
+            return jsonify({
+                "error": "No existe un producto con ese código."
+            }), 404
+
+        conexion.commit()
+
+        return jsonify({
+            "mensaje": f"Se añadieron {cantidad} unidades."
+        })
+
+    except sqlite3.Error:
+        conexion.rollback()
+        app.logger.exception("Error actualizando stock")
+        return jsonify({
+            "error": "No se pudo actualizar el stock."
+        }), 500
+
+    finally:
+        conexion.close()
+@app.route("/api/admin/usuarios", methods=["GET"])
+@administrador_requerido
+def admin_listar_usuarios():
+    usuarios = db.session.scalars(
+        select(User).order_by(User.id.desc())
+    ).all()
+
+    return jsonify([
+        {
+            "id": usuario.id,
+            "username": usuario.username,
+            "email": usuario.email,
+            "phone": usuario.phone,
+            "rol": usuario.rol
+        }
+        for usuario in usuarios
+    ])
 @app.route("/imagenes/<path:nombre_archivo>")
 def imagenes(nombre_archivo):
     return send_from_directory(

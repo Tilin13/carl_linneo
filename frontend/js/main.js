@@ -16,6 +16,275 @@ document.addEventListener("DOMContentLoaded", function () {
     const atras_novedades = document.getElementById("atras_novedades");
     const adelante_novedades = document.getElementById("adelante_novedades");
     const imagenNovedades = document.getElementById("imagen");
+    
+const inventario = document.getElementById("inventario_section");
+const clientes = document.getElementById("clientes_section");
+const formulario = document.getElementById("modificar_inv");
+const formularioStock = document.getElementById("form_stock");
+const mensaje = document.getElementById("mensaje_admin");
+
+const csrfToken = document.querySelector(
+    'meta[name="csrf-token"]'
+).content;
+
+async function peticion(url, opciones = {}) {
+    const respuesta = await fetch(url, {
+        ...opciones,
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken,
+            ...opciones.headers
+        }
+    });
+
+    const datos = await respuesta.json().catch(() => ({}));
+
+    if (!respuesta.ok) {
+        throw new Error(
+            datos.error || "No se pudo completar la operación."
+        );
+    }
+
+    return datos;
+}
+
+function mostrarMensaje(texto, error = false) {
+    mensaje.textContent = texto;
+    mensaje.style.color = error ? "red" : "inherit";
+}
+
+function crearTabla(columnas, filas) {
+    const tabla = document.createElement("table");
+    const cabecera = tabla.createTHead().insertRow();
+
+    for (const columna of columnas) {
+        const th = document.createElement("th");
+        th.textContent = columna;
+        cabecera.appendChild(th);
+    }
+
+    const cuerpo = tabla.createTBody();
+
+    for (const valores of filas) {
+        const fila = cuerpo.insertRow();
+
+        for (const valor of valores) {
+            const celda = fila.insertCell();
+            celda.textContent = valor == null ? "" : String(valor);
+        }
+    }
+
+    return tabla;
+}
+
+function boton(texto, accion) {
+    const elemento = document.createElement("button");
+    elemento.type = "button";
+    elemento.textContent = texto;
+    elemento.addEventListener("click", accion);
+    return elemento;
+}
+
+// ---------------- INVENTARIO ----------------
+
+async function cargarInventario() {
+    try {
+        const productos = await peticion(
+            "/api/admin/productos"
+        );
+
+        inventario.replaceChildren();
+
+        const tabla = crearTabla(
+            [
+                "Código", "Nombre", "Categoría",
+                "Compra", "Producción", "Venta", "Stock",
+                "Acciones"
+            ],
+            []
+        );
+
+        const cuerpo = tabla.tBodies[0];
+
+        for (const p of productos) {
+            const fila = cuerpo.insertRow();
+
+            const valores = [
+                p.codigo,
+                p.nombre,
+                p.categoria,
+                p.precio_compra,
+                p.precio_manofactura,
+                p.precio_venta,
+                p.stock
+            ];
+
+            for (const valor of valores) {
+                const celda = fila.insertCell();
+                celda.textContent = String(valor ?? "");
+            }
+
+            const acciones = fila.insertCell();
+
+            acciones.appendChild(
+                boton("Editar", () => editarProducto(p))
+            );
+
+            acciones.appendChild(
+                boton("Eliminar", () => eliminarProducto(p.codigo))
+            );
+        }
+
+        inventario.appendChild(tabla);
+
+    } catch (error) {
+        mostrarMensaje(error.message, true);
+    }
+}
+
+function editarProducto(p) {
+    document.getElementById("codigo_original").value = p.codigo;
+    document.getElementById("codigo").value = p.codigo;
+    document.getElementById("nombre").value = p.nombre;
+    document.getElementById("categoria").value = p.categoria;
+
+    document.getElementById("precio_compra").value = p.precio_compra;
+    document.getElementById("precio_manofactura").value =
+        p.precio_manofactura;
+    document.getElementById("precio_venta").value = p.precio_venta;
+    document.getElementById("stock").value = p.stock;
+
+    document.getElementById("titulo_formulario").textContent =
+        "Editar producto";
+
+    formulario.scrollIntoView({ behavior: "smooth" });
+}
+
+formulario.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+
+    const datos = {
+        codigo_original:
+            document.getElementById("codigo_original").value,
+        codigo: document.getElementById("codigo").value.trim(),
+        nombre: document.getElementById("nombre").value.trim(),
+        categoria: document.getElementById("categoria").value.trim(),
+        precio_compra:
+            document.getElementById("precio_compra").value,
+        precio_manofactura:
+            document.getElementById("precio_manofactura").value,
+        precio_venta:
+            document.getElementById("precio_venta").value,
+        stock: document.getElementById("stock").value
+    };
+
+    try {
+        const resultado = await peticion(
+            "/api/admin/productos",
+            {
+                method: "POST",
+                body: JSON.stringify(datos)
+            }
+        );
+
+        mostrarMensaje(resultado.mensaje);
+        formulario.reset();
+        document.getElementById("codigo_original").value = "";
+        document.getElementById("titulo_formulario").textContent =
+            "Añadir producto";
+
+        await cargarInventario();
+
+    } catch (error) {
+        mostrarMensaje(error.message, true);
+    }
+});
+
+async function eliminarProducto(codigo) {
+    if (!confirm(`¿Eliminar el producto ${codigo}?`)) {
+        return;
+    }
+
+    try {
+        const resultado = await peticion(
+            `/api/admin/productos/${encodeURIComponent(codigo)}`,
+            { method: "DELETE" }
+        );
+
+        mostrarMensaje(resultado.mensaje);
+        await cargarInventario();
+
+    } catch (error) {
+        mostrarMensaje(error.message, true);
+    }
+}
+
+document.getElementById("cancelar_edicion")
+    .addEventListener("click", () => {
+        formulario.reset();
+        document.getElementById("codigo_original").value = "";
+        document.getElementById("titulo_formulario").textContent =
+            "Añadir producto";
+    });
+
+// ---------------- AÑADIR STOCK ----------------
+
+formularioStock.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+
+    const codigo = document.getElementById("producto_codigo")
+        .value.trim();
+
+    const cantidad = Number(
+        document.getElementById("cantidad_producto").value
+    );
+
+    if (!Number.isSafeInteger(cantidad) || cantidad <= 0) {
+        mostrarMensaje("Introduce una cantidad entera positiva.", true);
+        return;
+    }
+
+    try {
+        const resultado = await peticion("/api/admin/stock", {
+            method: "POST",
+            body: JSON.stringify({ codigo, cantidad })
+        });
+
+        mostrarMensaje(resultado.mensaje);
+        formularioStock.reset();
+        await cargarInventario();
+
+    } catch (error) {
+        mostrarMensaje(error.message, true);
+    }
+});
+
+// ---------------- USUARIOS ----------------
+
+async function cargarUsuarios() {
+    try {
+        const usuarios = await peticion("/api/admin/usuarios");
+
+        clientes.replaceChildren();
+
+        const tabla = crearTabla(
+            ["ID", "Usuario", "Correo", "Teléfono", "Rol"],
+            usuarios.map(u => [
+                u.id, u.username, u.email, u.phone, u.rol
+            ])
+        );
+
+        clientes.appendChild(tabla);
+
+    } catch (error) {
+        mostrarMensaje(error.message, true);
+    }
+}
+
+// Inicialización del panel.
+cargarInventario();
+cargarUsuarios();
+
     const contadorNovedades = document.getElementById("contador");
 
     const imagenes = [
