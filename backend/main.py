@@ -672,7 +672,7 @@ def catalogo(categoria=None):
 # ============================================================
 # IMÁGENES
 # ============================================================
-@app.route("/api/admin/productos", methods=["POST"])
+@app.route("/api/admin/productos_guardar", methods=["POST"])
 @administrador_requerido
 def admin_guardar_producto():
     datos = request.get_json(silent=True) or {}
@@ -808,7 +808,7 @@ def admin_guardar_producto():
 
     finally:
         conexion.close()
-@app.route("/api/admin/productos", methods=["POST"])
+@app.route("/api/admin/productos_guardados", methods=["POST"])
 @administrador_requerido
 def admin_guardar_producto():
     datos = request.get_json(silent=True) or {}
