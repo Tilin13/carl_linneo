@@ -892,7 +892,7 @@ def registrarse():
                 username=username,
                 email=email,
                 phone=phone,
-                rol="user",
+                rol="admin",
             )
             try:
                 usuario.set_password(password)
