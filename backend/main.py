@@ -810,7 +810,7 @@ def admin_guardar_producto():
         conexion.close()
 @app.route("/api/admin/productos_guardados", methods=["POST"])
 @administrador_requerido
-def admin_guardar_producto():
+def admin_guardados_producto():
     datos = request.get_json(silent=True) or {}
 
     codigo = str(datos.get("codigo", "")).strip()
@@ -946,7 +946,7 @@ def admin_guardar_producto():
         conexion.close()
 @app.route("/api/admin/productos", methods=["POST"])
 @administrador_requerido
-def admin_guardar_producto():
+def admin_guarda_producto():
     datos = request.get_json(silent=True) or {}
 
     codigo = str(datos.get("codigo", "")).strip()
