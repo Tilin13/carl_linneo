@@ -1,85 +1,99 @@
 import hashlib
 import hmac
-import secrets
-import smtplib
-import time
-import pyotp
-from email.message import EmailMessage
-from functools import wraps
-
-from flask import session
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+import logging
+import math
 import os
 import re
+import secrets
+import smtplib
 import sqlite3
+import time
+from email.message import EmailMessage
+from functools import wraps
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import pyotp
 from dotenv import load_dotenv
 from flask import (
-    Flask, render_template, request,
-    redirect, url_for, flash, abort, jsonify,
-    send_from_directory
+    Flask,
+    abort,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    session,
+    url_for,
 )
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_login import (
-    LoginManager, UserMixin, current_user,
-    login_user, logout_user, login_required
+    LoginManager,
+    UserMixin,
+    current_user,
+    login_user,
+    logout_user,
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
+from openai import OpenAI
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
-from werkzeug.security import (
-    generate_password_hash,
-    check_password_hash
-)
-from openai import OpenAI
+from werkzeug.security import check_password_hash, generate_password_hash
 
 load_dotenv()
 
-# main.py está en una subcarpeta y frontend está
-# en la carpeta superior.
+# ============================================================
+# CONFIGURACIÓN Y RUTAS
+# ============================================================
+
+# Este archivo está en una subcarpeta y frontend está arriba.
 BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_DATOS = BASE_DIR / "pos.db"
 FRONTEND_DIR = BASE_DIR / "frontend"
 IMAGENES_DIR = BASE_DIR / "imagenes"
 
-secret_key = os.getenv("SECRET_KEY")
-api_key = os.getenv("OPENAI_API_KEY")
+secret_key = os.getenv("SECRET_KEY", "").strip()
+api_key = os.getenv("OPENAI_API_KEY", "").strip()
 
-if not secret_key or len(secret_key) < 32:
+if len(secret_key) < 32:
     raise RuntimeError(
-        "Configura SECRET_KEY con una clave aleatoria "
+        "Configura SECRET_KEY en el archivo .env con una clave aleatoria "
         "de al menos 32 caracteres."
     )
 
 if not api_key:
-    raise RuntimeError("Falta configurar OPENAI_API_KEY.")
+    raise RuntimeError("Falta configurar OPENAI_API_KEY en el archivo .env.")
+
+if not FRONTEND_DIR.exists():
+    raise RuntimeError(f"No existe la carpeta frontend: {FRONTEND_DIR}")
+
+# En local (FLASK_ENV=development o COOKIE_SECURE=false) se permite HTTP.
+# En producción, configura COOKIE_SECURE=true y utiliza HTTPS.
+cookie_secure_env = os.getenv("COOKIE_SECURE")
+if cookie_secure_env is None:
+    cookie_secure = os.getenv("FLASK_ENV", "").lower() == "production"
+else:
+    cookie_secure = cookie_secure_env.lower() in {"1", "true", "yes", "on"}
 
 app = Flask(
     __name__,
     template_folder=str(FRONTEND_DIR),
     static_folder=str(FRONTEND_DIR),
-    static_url_path=""
+    static_url_path="",
 )
 
 app.config.update(
     SECRET_KEY=secret_key,
-
-    # Utiliza HTTPS en producción.
-    SESSION_COOKIE_SECURE=(
-        os.getenv("COOKIE_SECURE", "true").lower() == "true"
-    ),
+    SESSION_COOKIE_SECURE=cookie_secure,
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     PERMANENT_SESSION_LIFETIME=1800,
-
-    # SQLite existente; no se crea otra base de productos.
-    SQLALCHEMY_DATABASE_URI=(
-        "sqlite:///" + BASE_DATOS.as_posix()
-    ),
+    SQLALCHEMY_DATABASE_URI="sqlite:///" + BASE_DATOS.as_posix(),
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    MAX_CONTENT_LENGTH=2 * 1024 * 1024,
 )
 
 db = SQLAlchemy(app)
@@ -90,70 +104,65 @@ login_manager.login_view = "login"
 login_manager.session_protection = "strong"
 
 csrf = CSRFProtect(app)
-
 client = OpenAI(api_key=api_key)
+
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    default_limits=[],
+    storage_uri=os.getenv("RATELIMIT_STORAGE_URI", "memory://"),
+)
+
+# ============================================================
+# MODELOS SQLALCHEMY
+# ============================================================
 
 class User(UserMixin, db.Model):
     __tablename__ = "usuarios"
 
     id = db.Column(db.Integer, primary_key=True)
-
-    username = db.Column(
-        db.String(80),
-        unique=True,
-        nullable=False,
-        index=True
-    )
-
-    email = db.Column(
-        db.String(255),
-        unique=True,
-        nullable=False,
-        index=True
-    )
-
-    phone = db.Column(
-        db.String(20),
-        unique=True,
-        nullable=True
-    )
-
-    password_hash = db.Column(
-        db.String(255),
-        nullable=False
-    )
-
-    # Los nuevos registros son usuarios normales.
+    username = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    phone = db.Column(db.String(20), unique=True, nullable=True)
+    password_hash = db.Column(db.String(255), nullable=False)
     rol = db.Column(
         db.String(10),
         nullable=False,
         default="user",
-        server_default="user"
+        server_default="user",
     )
 
     def set_password(self, password):
         if not isinstance(password, str):
             raise ValueError("Contraseña no válida.")
-
         if not 12 <= len(password) <= 128:
-            raise ValueError(
-                "La contraseña debe tener entre 12 y 128 caracteres."
-            )
-
+            raise ValueError("La contraseña debe tener entre 12 y 128 caracteres.")
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         if not isinstance(password, str):
             return False
-
-        return check_password_hash(
-            self.password_hash,
-            password
-        )
+        return check_password_hash(self.password_hash, password)
 
     @property
     def es_admin(self):
         return self.rol == "admin"
+
+
+class CodigoAdmin(db.Model):
+    __tablename__ = "codigos_admin"
+
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(
+        db.Integer,
+        db.ForeignKey("usuarios.id"),
+        nullable=False,
+    )
+    codigo_hash = db.Column(db.String(64), nullable=False)
+    expira = db.Column(db.Float, nullable=False)
+    intentos = db.Column(db.Integer, nullable=False, default=0)
+    usado = db.Column(db.Boolean, nullable=False, default=False)
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -162,17 +171,17 @@ def load_user(user_id):
     except (ValueError, TypeError):
         return None
 
+
+# Crear las tablas que falten. create_all NO modifica columnas de tablas existentes.
 with app.app_context():
-    # Crear las tablas de Flask-SQLAlchemy:
-    # usuarios y codigos_admin.
     db.create_all()
 
-    # Crear también la tabla de productos,
-    # que se utiliza mediante sqlite3.
-    conexion = sqlite3.connect(BASE_DATOS)
-
+    # La tabla productos se mantiene en SQLite y no se cambia de base de datos.
+    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
     try:
-        conexion.execute("""
+        conexion.execute("PRAGMA foreign_keys = ON")
+        conexion.execute(
+            """
             CREATE TABLE IF NOT EXISTS productos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 codigo TEXT NOT NULL UNIQUE,
@@ -183,24 +192,87 @@ with app.app_context():
                 precio_venta REAL NOT NULL DEFAULT 0,
                 stock INTEGER NOT NULL DEFAULT 0
             )
-        """)
-
+            """
+        )
         conexion.commit()
-
     finally:
         conexion.close()
 
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=[]
-)
+
+# ============================================================
+# SEGURIDAD Y UTILIDADES
+# ============================================================
+
+def hash_codigo(codigo):
+    """Calcula un HMAC para códigos temporales de administración."""
+    return hmac.new(
+        app.config["SECRET_KEY"].encode(),
+        str(codigo).encode(),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def destino_local_seguro(destino):
+    """Evita redirecciones a sitios externos después del inicio de sesión."""
+    if not destino:
+        return False
+    partes = urlsplit(destino)
+    return (
+        not partes.scheme
+        and not partes.netloc
+        and destino.startswith("/")
+        and not destino.startswith("//")
+        and "\\" not in destino
+    )
+
+
+def administrador_requerido(func):
+    """
+    Protege páginas y API de administración.
+    Las peticiones API reciben JSON en vez de una redirección HTML.
+    """
+    @wraps(func)
+    def decorada(*args, **kwargs):
+        es_api = request.path.startswith("/api/")
+
+        if not current_user.is_authenticated:
+            if es_api:
+                return jsonify({"error": "Debes iniciar sesión."}), 401
+            return redirect(url_for("login", next=request.url))
+
+        correo_configurado = os.getenv("ADMIN_EMAIL", "").strip().lower()
+        usuario_email = (getattr(current_user, "email", "") or "").lower()
+
+        autorizado = (
+            getattr(current_user, "rol", None) == "admin"
+            and bool(correo_configurado)
+            and usuario_email == correo_configurado
+            and session.get("admin_2fa") == str(current_user.id)
+        )
+
+        if not autorizado:
+            if es_api:
+                return jsonify({"error": "No tienes permiso para esta operación."}), 403
+            abort(403)
+
+        return func(*args, **kwargs)
+
+    return decorada
+
+
 def enviar_codigo_admin(destinatario, codigo):
+    """Envía por correo un código temporal si se utiliza este flujo de correo."""
+    requeridas = ("MAIL_SERVER", "MAIL_PORT", "MAIL_USERNAME", "MAIL_PASSWORD")
+    faltantes = [nombre for nombre in requeridas if not os.getenv(nombre)]
+    if faltantes:
+        raise RuntimeError(
+            "Faltan variables de correo: " + ", ".join(faltantes)
+        )
+
     mensaje = EmailMessage()
     mensaje["Subject"] = "Código de acceso | Linneo"
     mensaje["From"] = os.environ["MAIL_USERNAME"]
     mensaje["To"] = destinatario
-
     mensaje.set_content(
         f"""Tu código de acceso para el panel de Linneo es:
 
@@ -215,130 +287,17 @@ Si no has solicitado este acceso, ignora este mensaje.
     puerto = int(os.environ["MAIL_PORT"])
 
     if puerto == 465:
-        with smtplib.SMTP_SSL(
-            servidor, puerto, timeout=10
-        ) as smtp:
-            smtp.login(
-                os.environ["MAIL_USERNAME"],
-                os.environ["MAIL_PASSWORD"]
-            )
+        with smtplib.SMTP_SSL(servidor, puerto, timeout=10) as smtp:
+            smtp.login(os.environ["MAIL_USERNAME"], os.environ["MAIL_PASSWORD"])
             smtp.send_message(mensaje)
     else:
-        with smtplib.SMTP(
-            servidor, puerto, timeout=10
-        ) as smtp:
+        with smtplib.SMTP(servidor, puerto, timeout=10) as smtp:
             smtp.ehlo()
             smtp.starttls()
             smtp.ehlo()
-            smtp.login(
-                os.environ["MAIL_USERNAME"],
-                os.environ["MAIL_PASSWORD"]
-            )
+            smtp.login(os.environ["MAIL_USERNAME"], os.environ["MAIL_PASSWORD"])
             smtp.send_message(mensaje)
-       
-class CodigoAdmin(db.Model):
-    __tablename__ = "codigos_admin"
 
-    id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(
-        db.Integer,
-        db.ForeignKey("usuarios.id"),
-        nullable=False
-    )
-    codigo_hash = db.Column(db.String(64), nullable=False)
-    expira = db.Column(db.Float, nullable=False)
-    intentos = db.Column(db.Integer, nullable=False, default=0)
-    usado = db.Column(db.Boolean, nullable=False, default=False)
-
-def hash_codigo(codigo):
-    return hmac.new(
-        app.config["SECRET_KEY"].encode(),
-        codigo.encode(),
-        hashlib.sha256
-    ).hexdigest()
-
-
-
-def administrador_requerido(func):
-    @wraps(func)
-    @login_required
-    def decorada(*args, **kwargs):
-        correo_configurado = os.getenv(
-            "ADMIN_EMAIL", ""
-        ).strip().lower()
-
-        es_admin_autorizado = (
-            current_user.rol == "admin"
-            and bool(correo_configurado)
-            and current_user.email.lower() == correo_configurado
-            and session.get("admin_2fa") == str(current_user.id)
-        )
-
-        if not es_admin_autorizado:
-            abort(403)
-
-        return func(*args, **kwargs)
-
-    return decorada
-
-@app.route("/verificar_admin", methods=["GET", "POST"])
-@limiter.limit("5 per minute")
-def verificar_admin():
-    usuario_id = session.get("admin_2fa_pendiente")
-
-    if not usuario_id:
-        return redirect(url_for("login"))
-
-    usuario = db.session.get(User, usuario_id)
-
-    correo_configurado = os.getenv(
-        "ADMIN_EMAIL", ""
-    ).strip().lower()
-
-    secreto = os.getenv(
-        "ADMIN_TOTP_SECRET", ""
-    ).strip()
-
-    # Confirmar que es la cuenta administradora autorizada.
-    if (
-        usuario is None
-        or usuario.rol != "admin"
-        or not correo_configurado
-        or usuario.email.lower() != correo_configurado
-        or not secreto
-    ):
-        session.clear()
-        flash(
-            "No se pudo verificar la cuenta administradora.",
-            "error"
-        )
-        return redirect(url_for("login"))
-
-    if request.method == "POST":
-        codigo = request.form.get("codigo", "").strip()
-
-        if not re.fullmatch(r"[0-9]{6}", codigo):
-            flash("Introduce un código de seis cifras.", "error")
-            return render_template("verificar_admin.html")
-
-        autenticador = pyotp.TOTP(secreto)
-
-        if not autenticador.verify(codigo, valid_window=1):
-            flash(
-                "Código incorrecto o caducado.",
-                "error"
-            )
-            return render_template("verificar_admin.html")
-
-        # Solo iniciar la sesión administrativa tras validar el código.
-        session.clear()
-        login_user(usuario, remember=False)
-        session["admin_2fa"] = str(usuario.id)
-        session.permanent = True
-
-        return redirect(url_for("admin"))
-
-    return render_template("verificar_admin.html")
 
 @app.after_request
 def agregar_cabeceras_seguridad(response):
@@ -349,996 +308,730 @@ def agregar_cabeceras_seguridad(response):
         "camera=(), microphone=(), geolocation=()"
     )
 
-    # No almacenar respuestas personalizadas en cachés compartidas.
     if request.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-store"
 
     return response
+
+
+# ============================================================
+# VERIFICACIÓN EN DOS PASOS DEL ADMINISTRADOR
+# ============================================================
+
+@app.route("/verificar_admin", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
+def verificar_admin():
+    usuario_id = session.get("admin_2fa_pendiente")
+    inicio_pendiente = session.get("admin_2fa_inicio")
+
+    if not usuario_id or not inicio_pendiente:
+        session.pop("admin_2fa_pendiente", None)
+        session.pop("admin_2fa_inicio", None)
+        return redirect(url_for("login"))
+
+    # La verificación pendiente expira a los cinco minutos.
+    if time.time() - float(inicio_pendiente) > 300:
+        session.clear()
+        flash("La solicitud de verificación caducó. Inicia sesión otra vez.", "error")
+        return redirect(url_for("login"))
+
+    usuario = db.session.get(User, usuario_id)
+    correo_configurado = os.getenv("ADMIN_EMAIL", "").strip().lower()
+    secreto = os.getenv("ADMIN_TOTP_SECRET", "").strip()
+
+    if (
+        usuario is None
+        or usuario.rol != "admin"
+        or not correo_configurado
+        or usuario.email.lower() != correo_configurado
+        or not secreto
+    ):
+        session.clear()
+        flash("No se pudo verificar la cuenta administradora.", "error")
+        return redirect(url_for("login"))
+
+    if request.method == "POST":
+        codigo = request.form.get("codigo", "").strip()
+
+        if not re.fullmatch(r"[0-9]{6}", codigo):
+            flash("Introduce un código de seis cifras.", "error")
+            return render_template("verificar_admin.html")
+
+        autenticador = pyotp.TOTP(secreto)
+        if not autenticador.verify(codigo, valid_window=1):
+            flash("Código incorrecto o caducado.", "error")
+            return render_template("verificar_admin.html")
+
+        session.clear()
+        login_user(usuario, remember=False)
+        session["admin_2fa"] = str(usuario.id)
+        session.permanent = True
+        return redirect(url_for("admin"))
+
+    return render_template("verificar_admin.html")
+
+
+# ============================================================
+# ADMINISTRACIÓN
+# ============================================================
+
 @app.route("/admin")
 @administrador_requerido
 def admin():
-    # Aquí consultas los productos y las ventas.
     return render_template("admin.html")
-# ============================================================
-# BASE DE DATOS
-# ============================================================		
-# ============================================================
-# RUTAS
-# ============================================================
 
-def escoger_productos_azar():
-    """Devuelve hasta 3 productos aleatorios de la base de datos."""
 
-    if not Path(BASE_DATOS).exists():
-        raise FileNotFoundError(
-            f"No existe la base de datos: {BASE_DATOS}"
-        )
+def validar_datos_producto(datos):
+    """Valida y normaliza el JSON recibido al crear o editar productos."""
+    if not isinstance(datos, dict):
+        raise ValueError("Los datos del producto no son válidos.")
 
-    conexion = sqlite3.connect(BASE_DATOS)
-    conexion.row_factory = sqlite3.Row
+    codigo = str(datos.get("codigo", "")).strip()
+    codigo_original = str(datos.get("codigo_original", "")).strip()
+    nombre = str(datos.get("nombre", "")).strip()
+    categoria = str(datos.get("categoria", "")).strip()
 
+    if not codigo or not nombre or not categoria:
+        raise ValueError("Código, nombre y categoría son obligatorios.")
+    if len(codigo) > 80 or len(nombre) > 200:
+        raise ValueError("El código o el nombre son demasiado largos.")
+    if len(categoria) > 100:
+        raise ValueError("La categoría es demasiado larga.")
+
+    try:
+        precio_compra = float(datos["precio_compra"])
+        precio_manofactura = float(datos["precio_manofactura"])
+        precio_venta = float(datos["precio_venta"])
+        stock_original = datos["stock"]
+
+        if isinstance(stock_original, bool):
+            raise ValueError
+
+        stock_numero = float(stock_original)
+        stock = int(stock_numero)
+
+        precios = [precio_compra, precio_manofactura, precio_venta]
+        if not all(math.isfinite(p) and 0 <= p <= 1_000_000_000 for p in precios):
+            raise ValueError
+        if not math.isfinite(stock_numero) or stock_numero != stock:
+            raise ValueError
+        if not 0 <= stock <= 2_000_000_000:
+            raise ValueError
+    except (ValueError, TypeError, KeyError, OverflowError):
+        raise ValueError("Los precios y el stock deben ser valores válidos y no negativos.")
+
+    return {
+        "codigo": codigo,
+        "codigo_original": codigo_original,
+        "nombre": nombre,
+        "categoria": categoria,
+        "precio_compra": precio_compra,
+        "precio_manofactura": precio_manofactura,
+        "precio_venta": precio_venta,
+        "stock": stock,
+    }
+
+
+def guardar_producto(datos):
+    """Implementación compartida por las URL antiguas y la ruta actual."""
+    try:
+        producto = validar_datos_producto(datos)
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+
+    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
     try:
         cursor = conexion.cursor()
 
-        cursor.execute("""
-            SELECT *
-            FROM productos
-            ORDER BY RANDOM()
-            LIMIT 3
-        """)
-
-        productos = cursor.fetchall()
-
-        return [dict(producto) for producto in productos]
-
-    finally:
-        conexion.close()
-
-
-def buscar_productos(texto):
-
-    conexion = sqlite3.connect(BASE_DATOS)
-    conexion.row_factory = sqlite3.Row
-
-    try:
-
-        cursor = conexion.cursor()
-
-        cursor.execute("""
-            SELECT *
-            FROM productos
-            
-            WHERE nombre LIKE ?
-            ORDER BY nombre ASC
-        """, (f"%{texto}%",))
-
-        productos = cursor.fetchall()
-
-        return [
-            dict(producto)
-            for producto in productos
-        ]
-
-    finally:
-        conexion.close()
-######################################################################
-##CUENTAS
-##################################################################
-
-@app.route("/buscar")
-def buscar():
-
-    texto = request.args.get("busqueda", "").strip()
-
-    print("==========================")
-    print("TEXTO RECIBIDO:", repr(texto))
-
-    productos = buscar_productos(texto)
-
-    print("PRODUCTOS:", len(productos))
-    print("==========================")
-
-    return render_template(
-        "buscar.html",
-        productos=productos,
-        busqueda=texto
-    )
-
-
-
-def destino_local_seguro(destino):
-    """Evita redirecciones hacia sitios externos."""
-    if not destino:
-        return False
-
-    partes = urlsplit(destino)
-
-    return (
-        not partes.scheme
-        and not partes.netloc
-        and destino.startswith("/")
-        and not destino.startswith("//")
-        and "\\" not in destino
-    )
-
-
-@app.route("/iniciar_sesion", methods=["GET", "POST"])
-def login():
-    if current_user.is_authenticated:
-        return redirect(url_for("index"))
-
-    if request.method == "POST":
-        identificador = request.form.get(
-            "identificador", ""
-        ).strip()
-
-        password = request.form.get("password", "")
-
-        usuario = db.session.scalar(
-            select(User).where(
-                or_(
-                    User.email == identificador.lower(),
-                    User.username == identificador.lower()
-                )
+        if producto["codigo_original"]:
+            cursor.execute(
+                """
+                UPDATE productos
+                SET codigo = ?, nombre = ?, categoria = ?,
+                    precio_compra = ?, precio_manofactura = ?,
+                    precio_venta = ?, stock = ?
+                WHERE codigo = ?
+                """,
+                (
+                    producto["codigo"],
+                    producto["nombre"],
+                    producto["categoria"],
+                    producto["precio_compra"],
+                    producto["precio_manofactura"],
+                    producto["precio_venta"],
+                    producto["stock"],
+                    producto["codigo_original"],
+                ),
             )
-        )
-
-       
-        if (
-            usuario is not None
-            and usuario.check_password(password)
-        ):
-            # Limpiar cualquier sesión anterior.
-            session.clear()
-
-            correo_configurado = os.getenv(
-                "ADMIN_EMAIL", ""
-            ).strip().lower()
-
-            secreto = os.getenv(
-                "ADMIN_TOTP_SECRET", ""
-            ).strip()
-
-            # La cuenta administradora necesita un segundo factor.
-            if (
-                usuario.rol == "admin"
-                and correo_configurado
-                and usuario.email.lower() == correo_configurado
-            ):
-                if not secreto:
-                    app.logger.error(
-                        "Falta configurar ADMIN_TOTP_SECRET."
-                    )
-                    flash(
-                        "La verificación del administrador "
-                        "no está configurada.",
-                        "error"
-                    )
-                    return render_template("login.html"), 500
-
-                session["admin_2fa_pendiente"] = usuario.id
-                return redirect(url_for("verificar_admin"))
-
-            # Los usuarios normales mantienen el acceso habitual.
-            login_user(usuario, remember=False)
-
-            destino = request.args.get("next", "")
-            if destino_local_seguro(destino):
-                return redirect(destino)
-
-            return redirect(url_for("index"))
-
-    return render_template("login.html")
-
-
-@app.route("/registrarse", methods=["GET", "POST"])
-def registrarse():
-    if current_user.is_authenticated:
-        return redirect(url_for("index"))
-
-    if request.method == "POST":
-        username = request.form.get(
-            "username", ""
-        ).strip().lower()
-
-        email = request.form.get(
-            "email", ""
-        ).strip().lower()
-
-        phone = request.form.get("phone", "").strip() or None
-
-        password = request.form.get("password", "")
-        confirm_password = request.form.get(
-            "confirm_password", ""
-        )
-
-        if not re.fullmatch(r"[a-zA-Z0-9_.-]{3,80}", username):
-            flash(
-                "El usuario debe tener entre 3 y 80 "
-                "caracteres válidos.",
-                "error"
-            )
-
-        elif (
-            len(email) > 255
-            or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email)
-        ):
-            flash("Introduce un correo válido.", "error")
-
-        elif not 12 <= len(password) <= 128:
-            flash(
-                "La contraseña debe tener entre "
-                "12 y 128 caracteres.",
-                "error"
-            )
-
-        elif password != confirm_password:
-            flash("Las contraseñas no coinciden.", "error")
-
-        elif phone and (
-            len(phone) > 20
-            or not re.fullmatch(r"[0-9+(). -]{7,20}", phone)
-        ):
-            flash("Introduce un teléfono válido.", "error")
-
+            if cursor.rowcount == 0:
+                conexion.rollback()
+                return jsonify({"error": "No se encontró el producto original."}), 404
         else:
-            condiciones = [
-                User.username == username,
-                User.email == email
-            ]
-
-            if phone:
-                condiciones.append(User.phone == phone)
-
-            existente = db.session.scalar(
-                select(User).where(or_(*condiciones))
+            cursor.execute(
+                """
+                INSERT INTO productos (
+                    codigo, nombre, categoria, precio_compra,
+                    precio_manofactura, precio_venta, stock
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    producto["codigo"],
+                    producto["nombre"],
+                    producto["categoria"],
+                    producto["precio_compra"],
+                    producto["precio_manofactura"],
+                    producto["precio_venta"],
+                    producto["stock"],
+                ),
             )
 
-            if existente:
-                flash(
-                    "El usuario, correo o teléfono ya está registrado.",
-                    "error"
-                )
-            else:
-                usuario = User(
-                    username=username,
-                    email=email,
-                    phone=phone
-                )
-                usuario.set_password(password)
+        conexion.commit()
+        return jsonify({"mensaje": "Producto guardado correctamente."}), 200
 
-                try:
-                    db.session.add(usuario)
-                    db.session.commit()
-
-                    session.clear()
-                    login_user(usuario, remember=False)
-
-                    return redirect(url_for("index"))
-
-                except IntegrityError:
-                    db.session.rollback()
-                    flash(
-                        "El usuario, correo o teléfono ya está registrado.",
-                        "error"
-                    )
-
-                except Exception:
-                    db.session.rollback()
-                    app.logger.exception(
-                        "Error al registrar usuario"
-                    )
-                    flash(
-                        "No se pudo crear la cuenta. Inténtalo de nuevo.",
-                        "error"
-                    )
-
-    return render_template("registrarse.html")
-
-
-@app.route("/cerrar_sesion", methods=["POST"])
-@login_required
-def cerrar_sesion():
-    logout_user()
-    session.clear()
-    return redirect(url_for("index"))
-
-@app.route("/")
-def index():
-    productos = escoger_productos_azar()
-
-    return render_template(
-        "index.html",
-        productos=productos
-    )
-
-def obtener_catalogo(categoria=None):
-    conexion = sqlite3.connect(BASE_DATOS)
-    conexion.row_factory = sqlite3.Row
-
-    try:
-        cursor = conexion.cursor()
-
-        if categoria:
-            cursor.execute("""
-                SELECT *
-                FROM productos
-                WHERE categoria = ?
-                ORDER BY nombre ASC
-            """, (categoria,))
-        else:
-            cursor.execute("""
-                SELECT *
-                FROM productos
-                ORDER BY nombre ASC
-            """)
-
-        return [dict(fila) for fila in cursor.fetchall()]
-
+    except sqlite3.IntegrityError:
+        conexion.rollback()
+        return jsonify({"error": "Ese código ya existe o hay un conflicto de datos."}), 409
+    except sqlite3.Error:
+        conexion.rollback()
+        app.logger.exception("Error guardando producto")
+        return jsonify({"error": "No se pudo guardar el producto."}), 500
     finally:
         conexion.close()
-@app.route("/informacion")
-def informacion():
-    return render_template("informacion.html")
-@app.route("/contacto")
-def contacto():
-	return render_template("contacto.html")
-@app.route("/catalogo")
-@app.route("/catalogo/<categoria>")
-def catalogo(categoria=None):
 
-    productos = obtener_catalogo(categoria)
 
-    return render_template(
-        "catalogo.html",
-        productos=productos,
-        categoria=categoria
-    )
-    
-
-# ============================================================
-# IMÁGENES
-# ============================================================
+# Mantiene las tres URL anteriores para no romper código existente.
 @app.route("/api/admin/productos_guardar", methods=["POST"])
 @administrador_requerido
 def admin_guardar_producto():
-    datos = request.get_json(silent=True) or {}
+    return guardar_producto(request.get_json(silent=True) or {})
 
-    codigo = str(datos.get("codigo", "")).strip()
-    codigo_original = str(
-        datos.get("codigo_original", "")
-    ).strip()
 
-    nombre = str(datos.get("nombre", "")).strip()
-    categoria = str(datos.get("categoria", "")).strip()
-
-    if not codigo or not nombre or not categoria:
-        return jsonify({
-            "error": "Código, nombre y categoría son obligatorios."
-        }), 400
-
-    if len(codigo) > 80 or len(nombre) > 200:
-        return jsonify({
-            "error": "El código o el nombre son demasiado largos."
-        }), 400
-
-    if len(categoria) > 100:
-        return jsonify({
-            "error": "La categoría es demasiado larga."
-        }), 400
-
-    try:
-        precio_compra = float(datos["precio_compra"])
-        precio_manofactura = float(
-            datos["precio_manofactura"]
-        )
-        precio_venta = float(datos["precio_venta"])
-        stock = int(datos["stock"])
-
-        import math
-
-        precios = [
-            precio_compra,
-            precio_manofactura,
-            precio_venta
-        ]
-
-        if not all(math.isfinite(p) and p >= 0 for p in precios):
-            raise ValueError()
-
-        if any(p > 1_000_000_000 for p in precios):
-            raise ValueError()
-
-        if stock < 0 or stock > 2_000_000_000:
-            raise ValueError()
-
-        # Evita aceptar valores como 3.5 unidades.
-        if float(datos["stock"]) != stock:
-            raise ValueError()
-
-    except (ValueError, TypeError, KeyError, OverflowError):
-        return jsonify({
-            "error": "Los precios y el stock deben ser válidos."
-        }), 400
-
-    conexion = sqlite3.connect(BASE_DATOS)
-
-    try:
-        cursor = conexion.cursor()
-
-        if codigo_original:
-            # Edición de un producto existente.
-            cursor.execute("""
-                UPDATE productos
-                SET codigo = ?,
-                    nombre = ?,
-                    categoria = ?,
-                    precio_compra = ?,
-                    precio_manofactura = ?,
-                    precio_venta = ?,
-                    stock = ?
-                WHERE codigo = ?
-            """, (
-                codigo,
-                nombre,
-                categoria,
-                precio_compra,
-                precio_manofactura,
-                precio_venta,
-                stock,
-                codigo_original
-            ))
-
-            if cursor.rowcount == 0:
-                conexion.rollback()
-                return jsonify({
-                    "error": "No se encontró el producto original."
-                }), 404
-
-        else:
-            # Alta de un producto nuevo.
-            cursor.execute("""
-                INSERT INTO productos (
-                    codigo, nombre, categoria,
-                    precio_compra, precio_manofactura,
-                    precio_venta, stock
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                codigo,
-                nombre,
-                categoria,
-                precio_compra,
-                precio_manofactura,
-                precio_venta,
-                stock
-            ))
-
-        conexion.commit()
-
-        return jsonify({
-            "mensaje": "Producto guardado correctamente."
-        }), 200
-
-    except sqlite3.IntegrityError:
-        conexion.rollback()
-        return jsonify({
-            "error": "Ese código ya existe o hay un conflicto de datos."
-        }), 409
-
-    except sqlite3.Error:
-        conexion.rollback()
-        app.logger.exception("Error guardando producto")
-        return jsonify({
-            "error": "No se pudo guardar el producto."
-        }), 500
-
-    finally:
-        conexion.close()
 @app.route("/api/admin/productos_guardados", methods=["POST"])
 @administrador_requerido
 def admin_guardados_producto():
-    datos = request.get_json(silent=True) or {}
+    return guardar_producto(request.get_json(silent=True) or {})
 
-    codigo = str(datos.get("codigo", "")).strip()
-    codigo_original = str(
-        datos.get("codigo_original", "")
-    ).strip()
 
-    nombre = str(datos.get("nombre", "")).strip()
-    categoria = str(datos.get("categoria", "")).strip()
-
-    if not codigo or not nombre or not categoria:
-        return jsonify({
-            "error": "Código, nombre y categoría son obligatorios."
-        }), 400
-
-    if len(codigo) > 80 or len(nombre) > 200:
-        return jsonify({
-            "error": "El código o el nombre son demasiado largos."
-        }), 400
-
-    if len(categoria) > 100:
-        return jsonify({
-            "error": "La categoría es demasiado larga."
-        }), 400
-
+@app.route("/api/admin/productos", methods=["GET"])
+@administrador_requerido
+def admin_listar_productos():
+    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
+    conexion.row_factory = sqlite3.Row
     try:
-        precio_compra = float(datos["precio_compra"])
-        precio_manofactura = float(
-            datos["precio_manofactura"]
-        )
-        precio_venta = float(datos["precio_venta"])
-        stock = int(datos["stock"])
-
-        import math
-
-        precios = [
-            precio_compra,
-            precio_manofactura,
-            precio_venta
-        ]
-
-        if not all(math.isfinite(p) and p >= 0 for p in precios):
-            raise ValueError()
-
-        if any(p > 1_000_000_000 for p in precios):
-            raise ValueError()
-
-        if stock < 0 or stock > 2_000_000_000:
-            raise ValueError()
-
-        # Evita aceptar valores como 3.5 unidades.
-        if float(datos["stock"]) != stock:
-            raise ValueError()
-
-    except (ValueError, TypeError, KeyError, OverflowError):
-        return jsonify({
-            "error": "Los precios y el stock deben ser válidos."
-        }), 400
-
-    conexion = sqlite3.connect(BASE_DATOS)
-
-    try:
-        cursor = conexion.cursor()
-
-        if codigo_original:
-            # Edición de un producto existente.
-            cursor.execute("""
-                UPDATE productos
-                SET codigo = ?,
-                    nombre = ?,
-                    categoria = ?,
-                    precio_compra = ?,
-                    precio_manofactura = ?,
-                    precio_venta = ?,
-                    stock = ?
-                WHERE codigo = ?
-            """, (
-                codigo,
-                nombre,
-                categoria,
-                precio_compra,
-                precio_manofactura,
-                precio_venta,
-                stock,
-                codigo_original
-            ))
-
-            if cursor.rowcount == 0:
-                conexion.rollback()
-                return jsonify({
-                    "error": "No se encontró el producto original."
-                }), 404
-
-        else:
-            # Alta de un producto nuevo.
-            cursor.execute("""
-                INSERT INTO productos (
-                    codigo, nombre, categoria,
-                    precio_compra, precio_manofactura,
-                    precio_venta, stock
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                codigo,
-                nombre,
-                categoria,
-                precio_compra,
-                precio_manofactura,
-                precio_venta,
-                stock
-            ))
-
-        conexion.commit()
-
-        return jsonify({
-            "mensaje": "Producto guardado correctamente."
-        }), 200
-
-    except sqlite3.IntegrityError:
-        conexion.rollback()
-        return jsonify({
-            "error": "Ese código ya existe o hay un conflicto de datos."
-        }), 409
-
+        filas = conexion.execute(
+            """
+            SELECT codigo, nombre, categoria, precio_compra,
+                   precio_manofactura, precio_venta, stock
+            FROM productos
+            ORDER BY nombre COLLATE NOCASE
+            """
+        ).fetchall()
+        return jsonify([dict(fila) for fila in filas])
     except sqlite3.Error:
-        conexion.rollback()
-        app.logger.exception("Error guardando producto")
-        return jsonify({
-            "error": "No se pudo guardar el producto."
-        }), 500
-
+        app.logger.exception("Error consultando productos")
+        return jsonify({"error": "No se pudo cargar el inventario."}), 500
     finally:
         conexion.close()
+
+
 @app.route("/api/admin/productos", methods=["POST"])
 @administrador_requerido
 def admin_guarda_producto():
-    datos = request.get_json(silent=True) or {}
+    return guardar_producto(request.get_json(silent=True) or {})
 
-    codigo = str(datos.get("codigo", "")).strip()
-    codigo_original = str(
-        datos.get("codigo_original", "")
-    ).strip()
 
-    nombre = str(datos.get("nombre", "")).strip()
-    categoria = str(datos.get("categoria", "")).strip()
+@app.route("/api/admin/productos/<string:codigo>", methods=["DELETE"])
+@administrador_requerido
+def admin_eliminar_producto(codigo):
+    codigo = codigo.strip()
+    if not codigo:
+        return jsonify({"error": "El código del producto no es válido."}), 400
 
-    if not codigo or not nombre or not categoria:
-        return jsonify({
-            "error": "Código, nombre y categoría son obligatorios."
-        }), 400
-
-    if len(codigo) > 80 or len(nombre) > 200:
-        return jsonify({
-            "error": "El código o el nombre son demasiado largos."
-        }), 400
-
-    if len(categoria) > 100:
-        return jsonify({
-            "error": "La categoría es demasiado larga."
-        }), 400
-
+    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
     try:
-        precio_compra = float(datos["precio_compra"])
-        precio_manofactura = float(
-            datos["precio_manofactura"]
+        cursor = conexion.execute(
+            "DELETE FROM productos WHERE codigo = ?",
+            (codigo,),
         )
-        precio_venta = float(datos["precio_venta"])
-        stock = int(datos["stock"])
-
-        import math
-
-        precios = [
-            precio_compra,
-            precio_manofactura,
-            precio_venta
-        ]
-
-        if not all(math.isfinite(p) and p >= 0 for p in precios):
-            raise ValueError()
-
-        if any(p > 1_000_000_000 for p in precios):
-            raise ValueError()
-
-        if stock < 0 or stock > 2_000_000_000:
-            raise ValueError()
-
-        # Evita aceptar valores como 3.5 unidades.
-        if float(datos["stock"]) != stock:
-            raise ValueError()
-
-    except (ValueError, TypeError, KeyError, OverflowError):
-        return jsonify({
-            "error": "Los precios y el stock deben ser válidos."
-        }), 400
-
-    conexion = sqlite3.connect(BASE_DATOS)
-
-    try:
-        cursor = conexion.cursor()
-
-        if codigo_original:
-            # Edición de un producto existente.
-            cursor.execute("""
-                UPDATE productos
-                SET codigo = ?,
-                    nombre = ?,
-                    categoria = ?,
-                    precio_compra = ?,
-                    precio_manofactura = ?,
-                    precio_venta = ?,
-                    stock = ?
-                WHERE codigo = ?
-            """, (
-                codigo,
-                nombre,
-                categoria,
-                precio_compra,
-                precio_manofactura,
-                precio_venta,
-                stock,
-                codigo_original
-            ))
-
-            if cursor.rowcount == 0:
-                conexion.rollback()
-                return jsonify({
-                    "error": "No se encontró el producto original."
-                }), 404
-
-        else:
-            # Alta de un producto nuevo.
-            cursor.execute("""
-                INSERT INTO productos (
-                    codigo, nombre, categoria,
-                    precio_compra, precio_manofactura,
-                    precio_venta, stock
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                codigo,
-                nombre,
-                categoria,
-                precio_compra,
-                precio_manofactura,
-                precio_venta,
-                stock
-            ))
+        if cursor.rowcount == 0:
+            conexion.rollback()
+            return jsonify({"error": "No se encontró el producto."}), 404
 
         conexion.commit()
-
-        return jsonify({
-            "mensaje": "Producto guardado correctamente."
-        }), 200
-
-    except sqlite3.IntegrityError:
-        conexion.rollback()
-        return jsonify({
-            "error": "Ese código ya existe o hay un conflicto de datos."
-        }), 409
-
+        return jsonify({"mensaje": "Producto eliminado correctamente."})
     except sqlite3.Error:
         conexion.rollback()
-        app.logger.exception("Error guardando producto")
-        return jsonify({
-            "error": "No se pudo guardar el producto."
-        }), 500
-
+        app.logger.exception("Error eliminando producto")
+        return jsonify({"error": "No se pudo eliminar el producto."}), 500
     finally:
         conexion.close()
+
+
 @app.route("/api/admin/stock", methods=["POST"])
 @administrador_requerido
 def admin_anadir_stock():
     datos = request.get_json(silent=True) or {}
-
     codigo = str(datos.get("codigo", "")).strip()
     cantidad = datos.get("cantidad")
 
     if not codigo:
-        return jsonify({
-            "error": "Introduce el código del producto."
-        }), 400
+        return jsonify({"error": "Introduce el código del producto."}), 400
 
-    # No aceptar decimales, booleanos ni cadenas arbitrarias.
     if (
         isinstance(cantidad, bool)
         or not isinstance(cantidad, int)
         or cantidad <= 0
         or cantidad > 1_000_000
     ):
-        return jsonify({
-            "error": "La cantidad debe ser un entero positivo."
-        }), 400
+        return jsonify({"error": "La cantidad debe ser un entero positivo."}), 400
 
-    conexion = sqlite3.connect(BASE_DATOS)
-
+    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
     try:
-        cursor = conexion.execute("""
+        cursor = conexion.execute(
+            """
             UPDATE productos
             SET stock = stock + ?
             WHERE codigo = ?
               AND stock >= 0
               AND stock <= 2000000000 - ?
-        """, (cantidad, codigo, cantidad))
+            """,
+            (cantidad, codigo, cantidad),
+        )
 
         if cursor.rowcount == 0:
             existe = conexion.execute(
                 "SELECT 1 FROM productos WHERE codigo = ?",
-                (codigo,)
+                (codigo,),
             ).fetchone()
-
             conexion.rollback()
 
             if existe:
-                return jsonify({
-                    "error": "La cantidad supera el límite permitido."
-                }), 400
-
-            return jsonify({
-                "error": "No existe un producto con ese código."
-            }), 404
+                return jsonify({"error": "La cantidad supera el límite permitido."}), 400
+            return jsonify({"error": "No existe un producto con ese código."}), 404
 
         conexion.commit()
-
-        return jsonify({
-            "mensaje": f"Se añadieron {cantidad} unidades."
-        })
-
+        return jsonify({"mensaje": f"Se añadieron {cantidad} unidades."})
     except sqlite3.Error:
         conexion.rollback()
         app.logger.exception("Error actualizando stock")
-        return jsonify({
-            "error": "No se pudo actualizar el stock."
-        }), 500
-
+        return jsonify({"error": "No se pudo actualizar el stock."}), 500
     finally:
         conexion.close()
-@app.route("/api/admin/productos", methods=["GET"])
+
+
+@app.route("/api/admin/usuarios", methods=["GET"])
 @administrador_requerido
-def admin_listar_productos():
-    conexion = sqlite3.connect(BASE_DATOS)
-    conexion.row_factory = sqlite3.Row
-
+def admin_listar_usuarios():
+    """Devuelve solo datos públicos; nunca devuelve hashes de contraseñas."""
     try:
-        filas = conexion.execute("""
-            SELECT codigo, nombre, categoria,
-                   precio_compra, precio_manofactura,
-                   precio_venta, stock
-            FROM productos
-            ORDER BY nombre
-        """).fetchall()
+        usuarios = db.session.scalars(
+            select(User).order_by(User.id.asc())
+        ).all()
 
-        return jsonify([dict(fila) for fila in filas])
+        return jsonify([
+            {
+                "id": usuario.id,
+                "username": usuario.username,
+                "email": usuario.email,
+                "phone": usuario.phone or "",
+                "rol": usuario.rol,
+            }
+            for usuario in usuarios
+        ])
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Error consultando usuarios")
+        return jsonify({"error": "No se pudieron cargar los usuarios."}), 500
 
+
+# ============================================================
+# PRODUCTOS, BÚSQUEDA Y CATÁLOGO
+# ============================================================
+
+def escoger_productos_azar():
+    """Devuelve hasta tres productos aleatorios de la base de datos."""
+    if not BASE_DATOS.exists():
+        raise FileNotFoundError(f"No existe la base de datos: {BASE_DATOS}")
+
+    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
+    conexion.row_factory = sqlite3.Row
+    try:
+        filas = conexion.execute(
+            "SELECT * FROM productos ORDER BY RANDOM() LIMIT 3"
+        ).fetchall()
+        return [dict(fila) for fila in filas]
     finally:
         conexion.close()
+
+
+def buscar_productos(texto):
+    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
+    conexion.row_factory = sqlite3.Row
+    try:
+        filas = conexion.execute(
+            """
+            SELECT * FROM productos
+            WHERE nombre LIKE ? OR categoria LIKE ? OR codigo LIKE ?
+            ORDER BY nombre COLLATE NOCASE ASC
+            """,
+            (f"%{texto}%", f"%{texto}%", f"%{texto}%"),
+        ).fetchall()
+        return [dict(fila) for fila in filas]
+    finally:
+        conexion.close()
+
+
+@app.route("/buscar", methods=["GET"])
+def buscar():
+    texto = request.args.get("busqueda", "").strip()
+    if len(texto) > 200:
+        texto = texto[:200]
+    productos = buscar_productos(texto)
+    return render_template("buscar.html", productos=productos, busqueda=texto)
+
+
+def obtener_catalogo(categoria=None):
+    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
+    conexion.row_factory = sqlite3.Row
+    try:
+        if categoria:
+            filas = conexion.execute(
+                """
+                SELECT * FROM productos
+                WHERE categoria = ?
+                ORDER BY nombre COLLATE NOCASE ASC
+                """,
+                (categoria,),
+            ).fetchall()
+        else:
+            filas = conexion.execute(
+                "SELECT * FROM productos ORDER BY nombre COLLATE NOCASE ASC"
+            ).fetchall()
+        return [dict(fila) for fila in filas]
+    finally:
+        conexion.close()
+
+
+@app.route("/")
+def index():
+    productos = escoger_productos_azar()
+    return render_template("index.html", productos=productos)
+
+
+@app.route("/informacion")
+def informacion():
+    return render_template("informacion.html")
+
+
+@app.route("/contacto")
+def contacto():
+    return render_template("contacto.html")
+
+
+@app.route("/catalogo")
+@app.route("/catalogo/<categoria>")
+def catalogo(categoria=None):
+    productos = obtener_catalogo(categoria)
+    return render_template(
+        "catalogo.html",
+        productos=productos,
+        categoria=categoria,
+    )
+
+
 @app.route("/imagenes/<path:nombre_archivo>")
 def imagenes(nombre_archivo):
-    return send_from_directory(
-        IMAGENES_DIR,
-        nombre_archivo
-    )
+    # send_from_directory evita salir de IMAGENES_DIR mediante ../
+    return send_from_directory(IMAGENES_DIR, nombre_archivo)
 
-############################################################################
-#CHATBOT
-###########################################################################
-
-api_key = os.getenv("OPENAI_API_KEY")
-
-if not api_key:
-    raise RuntimeError(
-        "No se encontró OPENAI_API_KEY. "
-        "Configúrala en el entorno o en el archivo .env"
-    )
-
-client = OpenAI(api_key=api_key)
-
-
-@app.route("/chatbox")
-def chatbox():
-	return render_template("chatmenu.html")
-
-@app.route("/api/chat", methods=["POST"])
-def api_chat():
-
-    try:
-        data = request.get_json() or {}
-
-        mensaje = data.get("mensaje", "").strip()
-
-        if not mensaje:
-            return jsonify({
-                "error": "El mensaje está vacío"
-            }), 400
-
-        print("MENSAJE DEL USUARIO:", mensaje)
-
-        response = client.responses.create(
-            model="gpt-5.6-luna",
-            instructions="""
-Eres el asistente de ventas de una tienda llamada "Linneo".
-
-Linneo vende:
-- mariposas decorativas
-- insectos
-- minerales
-
-Eslogan:
-"La gema oculta de la ciencia"
-
-Tu objetivo es ayudar al cliente a:
-- encontrar productos
-- resolver dudas
-- conocer el catálogo
-- facilitar la compra
-
-Sé amable, breve y natural.
-
-IMPORTANTE:
-Nunca inventes:
-- precios
-- productos
-- disponibilidad
-- descripciones
-- características
-
-Si no tienes información suficiente sobre un producto, dilo claramente.
-""",
-            input=mensaje
-        )
-
-        respuesta = response.output_text
-
-        return jsonify({
-            "respuesta": respuesta
-        })
-
-    except Exception as e:
-
-        print("ERROR CHATBOT:", e)
-
-        return jsonify({
-            "error": "Ocurrió un error al procesar el mensaje."
-        }), 500
 
 def obtener_producto(nombre):
     """Obtiene un producto por su nombre exacto."""
-
-    conexion = sqlite3.connect(BASE_DATOS)
+    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
     conexion.row_factory = sqlite3.Row
-
     try:
-        cursor = conexion.cursor()
-
-        cursor.execute("""
-            SELECT *
-            FROM productos
-            WHERE nombre = ?
-            LIMIT 1
-        """, (nombre,))
-
-        producto = cursor.fetchone()
-
-        if producto is None:
-            return None
-
-        return dict(producto)
-
+        fila = conexion.execute(
+            "SELECT * FROM productos WHERE nombre = ? LIMIT 1",
+            (nombre,),
+        ).fetchone()
+        return dict(fila) if fila is not None else None
     finally:
         conexion.close()
 
+
 @app.route("/producto/<path:nombre>")
 def producto(nombre):
+    producto_encontrado = obtener_producto(nombre)
+    if producto_encontrado is None:
+        return render_template("404.html"), 404
+    return render_template("producto.html", producto=producto_encontrado)
 
-    producto = obtener_producto(nombre)
 
-    if producto is None:
-        return "Producto no encontrado", 404
+# ============================================================
+# REGISTRO, LOGIN, LOGOUT Y USUARIOS
+# ============================================================
 
-    return render_template(
-        "producto.html",
-        producto=producto
-    )
-@app.route("/comprar")    
-@login_required
+@app.route("/iniciar_sesion", methods=["GET", "POST"])
+@limiter.limit("10 per minute", methods=["POST"])
+def login():
+    if current_user.is_authenticated:
+        if (
+            getattr(current_user, "rol", None) == "admin"
+            and session.get("admin_2fa") != str(current_user.id)
+        ):
+            return redirect(url_for("verificar_admin"))
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        identificador = request.form.get("identificador", "").strip()
+        password = request.form.get("password", "")
+
+        if not identificador or not password:
+            flash("Introduce tu usuario o correo y tu contraseña.", "error")
+            return render_template("login.html"), 400
+
+        identificador_normalizado = identificador.lower()
+        usuario = db.session.scalar(
+            select(User).where(
+                or_(
+                    User.email == identificador_normalizado,
+                    User.username == identificador_normalizado,
+                )
+            )
+        )
+
+        if usuario is None or not usuario.check_password(password):
+            flash("Usuario/correo o contraseña incorrectos.", "error")
+            return render_template("login.html"), 401
+
+        # La cuenta administrativa solo puede entrar si coincide con ADMIN_EMAIL
+        # y completa el TOTP. Un usuario normal no puede elevar sus permisos.
+        correo_configurado = os.getenv("ADMIN_EMAIL", "").strip().lower()
+        secreto = os.getenv("ADMIN_TOTP_SECRET", "").strip()
+
+        if usuario.rol == "admin":
+            if (
+                not correo_configurado
+                or usuario.email.lower() != correo_configurado
+                or not secreto
+            ):
+                app.logger.error(
+                    "Cuenta admin bloqueada: revisa ADMIN_EMAIL y ADMIN_TOTP_SECRET."
+                )
+                flash(
+                    "La verificación del administrador no está configurada.",
+                    "error",
+                )
+                return render_template("login.html"), 500
+
+            session.clear()
+            session["admin_2fa_pendiente"] = usuario.id
+            session["admin_2fa_inicio"] = time.time()
+            session.permanent = True
+            return redirect(url_for("verificar_admin"))
+
+        session.clear()
+        login_user(usuario, remember=False)
+        session.permanent = True
+
+        destino = request.args.get("next", "")
+        if destino_local_seguro(destino):
+            return redirect(destino)
+        return redirect(url_for("index"))
+
+    return render_template("login.html")
+
+
+@app.route("/registrarse", methods=["GET", "POST"])
+@limiter.limit("5 per minute", methods=["POST"])
+def registrarse():
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip().lower()
+        email = request.form.get("email", "").strip().lower()
+        phone = request.form.get("phone", "").strip() or None
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        if not re.fullmatch(r"[a-zA-Z0-9_.-]{3,80}", username):
+            flash(
+                "El usuario debe tener entre 3 y 80 caracteres válidos.",
+                "error",
+            )
+        elif (
+            len(email) > 255
+            or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email)
+        ):
+            flash("Introduce un correo válido.", "error")
+        elif not 12 <= len(password) <= 128:
+            flash("La contraseña debe tener entre 12 y 128 caracteres.", "error")
+        elif password != confirm_password:
+            flash("Las contraseñas no coinciden.", "error")
+        elif phone and (
+            len(phone) > 20
+            or not re.fullmatch(r"[0-9+(). -]{7,20}", phone)
+        ):
+            flash("Introduce un teléfono válido.", "error")
+        else:
+            # Los registros públicos SIEMPRE se crean como usuarios normales.
+            usuario = User(
+                username=username,
+                email=email,
+                phone=phone,
+                rol="user",
+            )
+            try:
+                usuario.set_password(password)
+            except ValueError as error:
+                flash(str(error), "error")
+                return render_template("registrarse.html"), 400
+
+            try:
+                db.session.add(usuario)
+                db.session.commit()
+                session.clear()
+                login_user(usuario, remember=False)
+                session.permanent = True
+                return redirect(url_for("index"))
+            except IntegrityError:
+                db.session.rollback()
+                flash(
+                    "El usuario, correo o teléfono ya está registrado.",
+                    "error",
+                )
+            except Exception:
+                db.session.rollback()
+                app.logger.exception("Error al registrar usuario")
+                flash("No se pudo crear la cuenta. Inténtalo de nuevo.", "error")
+
+    return render_template("registrarse.html")
+
+
+@app.route("/cerrar_sesion", methods=["POST"])
+def cerrar_sesion():
+    if current_user.is_authenticated:
+        logout_user()
+    session.clear()
+    return redirect(url_for("index"))
+
+
+@app.route("/comprar")
 def comprar():
-	return render_template("comprar.html")
-#============================================================
-#HERRAMIENTAS IA
-#============================================================
-def herramienta_ia_buscarproductos(texto):
-    productos = buscar_productos(texto)
-    return productos
+    if not current_user.is_authenticated:
+        return redirect(url_for("login", next=url_for("comprar")))
+    return render_template("comprar.html")
 
-	
+
+# ============================================================
+# CHATBOT
+# ============================================================
+
+@app.route("/chatbox")
+def chatbox():
+    return render_template("chatmenu.html")
+
+
+@app.route("/api/chat", methods=["POST"])
+@limiter.limit("20 per minute")
+def api_chat():
+    datos = request.get_json(silent=True)
+    if not isinstance(datos, dict):
+        return jsonify({"error": "La petición JSON no es válida."}), 400
+
+    mensaje = datos.get("mensaje", "")
+    if not isinstance(mensaje, str):
+        return jsonify({"error": "El mensaje debe ser texto."}), 400
+
+    mensaje = mensaje.strip()
+    if not mensaje:
+        return jsonify({"error": "El mensaje está vacío."}), 400
+    if len(mensaje) > 4000:
+        return jsonify({"error": "El mensaje supera el límite de 4000 caracteres."}), 400
+
+    try:
+        response = client.responses.create(
+            # Modelo admitido por la API de Responses; el acceso depende de tu cuenta.
+            model=os.getenv("OPENAI_MODEL", "gpt-5.6-luna"),
+            instructions="""
+Eres el asistente de ventas de una tienda llamada Linneo.
+Linneo vende mariposas decorativas, insectos, minerales, fósiles,
+esqueletos y productos relacionados con ciencias naturales.
+Eslogan: "La gema oculta de la ciencia".
+
+Ayuda a encontrar productos, resolver dudas, conocer el catálogo y facilitar
+la compra. Sé amable, breve y natural.
+
+No inventes precios, productos, disponibilidad ni características.
+Si te preguntan por datos concretos del inventario y no se te han facilitado,
+indica que deben consultar el catálogo o contactar con la tienda.
+No afirmes haber realizado compras ni cambios en pedidos.
+""",
+            input=mensaje,
+        )
+
+        respuesta = (response.output_text or "").strip()
+        if not respuesta:
+            respuesta = "No pude generar una respuesta. Inténtalo de nuevo."
+
+        return jsonify({"respuesta": respuesta})
+    except Exception:
+        app.logger.exception("Error del chatbot")
+        return jsonify({
+            "error": "Ocurrió un error al procesar el mensaje. Inténtalo de nuevo."
+        }), 502
+
+
+# ============================================================
+# HERRAMIENTAS IA
+# ============================================================
+
+def herramienta_ia_buscarproductos(texto):
+    return buscar_productos(str(texto or "").strip()[:200])
+
+
+# ============================================================
+# ERRORES HTTP
+# ============================================================
+
+@app.errorhandler(403)
+def prohibido(error):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "No tienes permiso para esta operación."}), 403
+    return render_template("403.html"), 403
+
+
+@app.errorhandler(404)
+def no_encontrado(error):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "La ruta solicitada no existe."}), 404
+    # Si el proyecto no tiene plantilla 404.html, usa una respuesta sencilla.
+    try:
+        return render_template("404.html"), 404
+    except Exception:
+        return "Página no encontrada", 404
+
+
+@app.errorhandler(413)
+def solicitud_demasiado_grande(error):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "La solicitud es demasiado grande."}), 413
+    return "La solicitud es demasiado grande.", 413
+
+
 # ============================================================
 # EJECUCIÓN
 # ============================================================
 
 if __name__ == "__main__":
+    # Debug solo si se solicita explícitamente en entorno local.
+    modo_debug = os.getenv("FLASK_DEBUG", "false").lower() in {
+        "1", "true", "yes", "on"
+    }
     app.run(
-        debug=True,
-        host="127.0.0.1",
-        port=5000
+        debug=modo_debug,
+        host=os.getenv("HOST", "127.0.0.1"),
+        port=int(os.getenv("PORT", "5000")),
     )
