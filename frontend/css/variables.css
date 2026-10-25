@@ -1859,3 +1859,366 @@ body:has(.popup.visible) {
         transition: none;
     }
 }
+
+/* =========================================
+   LINNEO — PANEL DE ADMINISTRACIÓN
+========================================= */
+
+/* 1. ESTRUCTURA GENERAL */
+
+.admin-pagina {
+    width: min(1100px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 36px 0 24px;
+}
+
+.admin-pagina h1,
+.admin-pagina h2,
+.admin-pagina p {
+    overflow-wrap: anywhere;
+}
+
+.admin-encabezado {
+    margin-bottom: 32px;
+    padding: 28px;
+
+    background-color: var(--beige);
+    border: 1px solid var(--borde);
+    border-radius: 18px;
+}
+
+.admin-encabezado h1 {
+    margin: 4px 0 10px;
+    font-size: clamp(2rem, 5vw, 3rem);
+    line-height: 1.15;
+    color: var(--texto);
+}
+
+.admin-descripcion {
+    max-width: 650px;
+    margin: 0;
+    color: var(--texto-secundario);
+    font-size: 1.05rem;
+}
+
+/* 2. TEXTOS AUXILIARES */
+
+.admin-etiqueta {
+    margin: 0 0 6px;
+
+    color: var(--verde-musgo);
+    font-family: Arial, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+}
+
+.admin-ayuda {
+    margin: 6px 0 0;
+    color: var(--texto-secundario);
+    font-size: 0.98rem;
+}
+
+/* 3. SECCIONES */
+
+.admin-seccion {
+    margin-bottom: 28px;
+    padding: 26px;
+
+    background-color: var(--tarjeta);
+    border: 1px solid var(--borde);
+    border-radius: 16px;
+
+    box-shadow: var(--sombra);
+}
+
+.admin-seccion-encabezado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+
+    margin-bottom: 22px;
+}
+
+.admin-seccion-encabezado h2 {
+    margin: 0;
+    font-size: clamp(1.4rem, 3vw, 1.8rem);
+    color: var(--texto);
+}
+
+/* 4. FORMULARIOS */
+
+.admin-formulario {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.admin-campo {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+}
+
+.admin-campo label {
+    color: var(--texto);
+    font-size: 0.98rem;
+    font-weight: 600;
+}
+
+.admin-campo input,
+.admin-campo select,
+.admin-campo textarea {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+
+    padding: 11px 13px;
+
+    background-color: #fff;
+    color: var(--texto);
+
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+
+    font: inherit;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.admin-campo input:hover,
+.admin-campo select:hover,
+.admin-campo textarea:hover {
+    border-color: var(--verde-musgo);
+}
+
+.admin-campo input:focus,
+.admin-campo select:focus,
+.admin-campo textarea:focus {
+    outline: none;
+    border-color: var(--verde-musgo);
+    box-shadow: 0 0 0 3px rgba(76, 99, 67, 0.16);
+}
+
+.admin-campo input:disabled,
+.admin-campo select:disabled,
+.admin-campo textarea:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.admin-formulario-completo {
+    grid-column: 1 / -1;
+}
+
+/* 5. BOTONES */
+
+.admin-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+
+    margin-top: 4px;
+}
+
+.admin-boton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 44px;
+    padding: 11px 20px;
+
+    border: 1px solid transparent;
+    border-radius: 9px;
+
+    font: inherit;
+    font-weight: 600;
+    text-align: center;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.admin-boton:hover {
+    transform: translateY(-1px);
+}
+
+.admin-boton:active {
+    transform: translateY(0);
+}
+
+.admin-boton:focus-visible {
+    outline: 3px solid var(--ocre);
+    outline-offset: 3px;
+}
+
+.admin-boton-principal {
+    background-color: var(--verde-musgo);
+    color: var(--tarjeta);
+}
+
+.admin-boton-principal:hover {
+    background-color: var(--verde-hover);
+}
+
+.admin-boton-secundario {
+    background-color: transparent;
+    color: var(--terracota);
+    border-color: var(--terracota);
+}
+
+.admin-boton-secundario:hover {
+    background-color: var(--terracota);
+    color: #fff;
+}
+
+/* 6. FORMULARIO DE STOCK */
+
+.admin-formulario-stock {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* 7. INVENTARIO Y CLIENTES */
+
+.admin-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    min-width: 0;
+}
+
+/*
+   Estilos para los elementos que JavaScript
+   inserte directamente en las listas.
+*/
+
+#inventario_section > *,
+#clientes_section > * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+#inventario_section img,
+#clientes_section img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* 8. MENSAJES DE ESTADO */
+
+.admin-mensaje {
+    margin: 0 0 24px;
+    padding: 0;
+
+    color: var(--texto-secundario);
+    overflow-wrap: anywhere;
+}
+
+.admin-mensaje:empty {
+    display: none;
+}
+
+/* 9. PIE DE PÁGINA */
+
+.admin-footer {
+    padding: 16px 0;
+    border-top: 1px solid var(--borde);
+
+    text-align: center;
+    color: var(--texto-secundario);
+    font-size: 0.9rem;
+}
+
+.admin-footer p {
+    margin: 0;
+}
+
+/* 10. TABLETAS */
+
+@media (max-width: 800px) {
+    .admin-pagina {
+        padding-top: 24px;
+    }
+
+    .admin-encabezado,
+    .admin-seccion {
+        padding: 22px;
+    }
+
+    .admin-formulario,
+    .admin-formulario-stock {
+        gap: 16px;
+    }
+}
+
+/* 11. MÓVILES */
+
+@media (max-width: 600px) {
+    .admin-pagina {
+        width: calc(100% - 24px);
+        padding: 16px 0;
+    }
+
+    .admin-encabezado {
+        margin-bottom: 20px;
+        padding: 22px 18px;
+        border-radius: 14px;
+    }
+
+    .admin-seccion {
+        margin-bottom: 18px;
+        padding: 18px 14px;
+        border-radius: 12px;
+    }
+
+    .admin-seccion-encabezado {
+        margin-bottom: 18px;
+    }
+
+    .admin-formulario,
+    .admin-formulario-stock {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+    }
+
+    .admin-formulario-completo {
+        grid-column: auto;
+    }
+
+    .admin-acciones {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-boton {
+        width: 100%;
+    }
+}
+
+/* 12. ACCESIBILIDAD */
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-boton,
+    .admin-campo input,
+    .admin-campo select,
+    .admin-campo textarea {
+        transition: none;
+    }
+
+    .admin-boton:hover,
+    .admin-boton:active {
+        transform: none;
+    }
+}

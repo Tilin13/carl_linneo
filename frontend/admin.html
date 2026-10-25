@@ -1,126 +1,278 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-	<meta charset="utf-8">
-	<title>admin</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-		<link rel="stylesheet" href="/css/variables.css">
-	<meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Administración | Linneo</title>
+
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <!-- Estilos generales -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/variables.css') }}"
+    >
+
+    <!-- Estilos de administración -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/admin.css') }}"
+    >
+
+    <!-- JavaScript -->
+    <script
+        src="{{ url_for('static', filename='js/main.js') }}"
+        defer
+    ></script>
 </head>
+
 <body>
-<h1>Inventario</h1>
+    <main class="admin-pagina">
 
-<p id="mensaje_admin" role="status"></p>
+        <!-- Encabezado -->
+        <header class="admin-encabezado">
+            <div>
+                <p class="admin-etiqueta">LINNEO · PANEL DE CONTROL</p>
+                <h1>Administración</h1>
+                <p class="admin-descripcion">
+                    Gestiona el inventario, los productos y los usuarios
+                    registrados en tu tienda.
+                </p>
+            </div>
+        </header>
 
-<section id="inventario_section">
-    <!-- main.js cargará aquí los productos -->
-</section>
+        <!-- Mensajes de JavaScript -->
+        <p
+            id="mensaje_admin"
+            class="admin-mensaje"
+            role="status"
+            aria-live="polite"
+        ></p>
 
-<h2 id="titulo_formulario">Añadir producto</h2>
+        <!-- Inventario -->
+        <section class="admin-seccion" aria-labelledby="titulo_inventario">
+            <div class="admin-seccion-encabezado">
+                <div>
+                    <p class="admin-etiqueta">PRODUCTOS</p>
+                    <h2 id="titulo_inventario">Inventario</h2>
+                    <p class="admin-ayuda">
+                        Consulta y administra los productos de la tienda.
+                    </p>
+                </div>
+            </div>
 
-<form id="modificar_inv">
-    <input
-        type="hidden"
-        id="codigo_original"
-        value=""
-    >
+            <div id="inventario_section" class="admin-lista">
+                <!-- main.js cargará aquí los productos -->
+            </div>
+        </section>
 
-    <label for="codigo">Código</label>
-    <input
-        id="codigo"
-        type="text"
-        maxlength="80"
-        required
-    >
+        <!-- Formulario para crear o editar productos -->
+        <section class="admin-seccion" aria-labelledby="titulo_formulario">
+            <div class="admin-seccion-encabezado">
+                <div>
+                    <p class="admin-etiqueta">GESTIÓN DE PRODUCTOS</p>
 
-    <label for="nombre">Nombre</label>
-    <input
-        id="nombre"
-        type="text"
-        maxlength="200"
-        required
-    >
+                    <h2 id="titulo_formulario">Añadir producto</h2>
 
-    <label for="categoria">Categoría</label>
-    <input
-        id="categoria"
-        type="text"
-        maxlength="100"
-        required
-    >
+                    <p class="admin-ayuda">
+                        Completa los datos para registrar un producto.
+                    </p>
+                </div>
+            </div>
 
-    <label for="precio_compra">Precio de compra</label>
-    <input
-        id="precio_compra"
-        type="number"
-        min="0"
-        step="0.01"
-        required
-    >
+            <form id="modificar_inv" class="admin-formulario">
 
-    <label for="precio_manofactura">
-        Precio de producción
-    </label>
-    <input
-        id="precio_manofactura"
-        type="number"
-        min="0"
-        step="0.01"
-        required
-    >
+                <!-- Se conserva para identificar el producto editado -->
+                <input
+                    type="hidden"
+                    id="codigo_original"
+                    value=""
+                >
 
-    <label for="precio_venta">Precio de venta</label>
-    <input
-        id="precio_venta"
-        type="number"
-        min="0"
-        step="0.01"
-        required
-    >
+                <div class="admin-campo">
+                    <label for="codigo">Código del producto</label>
+                    <input
+                        id="codigo"
+                        name="codigo"
+                        type="text"
+                        maxlength="80"
+                        autocomplete="off"
+                        required
+                    >
+                </div>
 
-    <label for="stock">Stock</label>
-    <input
-        id="stock"
-        type="number"
-        min="0"
-        step="1"
-        required
-    >
+                <div class="admin-campo">
+                    <label for="nombre">Nombre</label>
+                    <input
+                        id="nombre"
+                        name="nombre"
+                        type="text"
+                        maxlength="200"
+                        required
+                    >
+                </div>
 
-    <button type="submit">Guardar producto</button>
-    <button type="button" id="cancelar_edicion">
-        Cancelar
-    </button>
-</form>
+                <div class="admin-campo">
+                    <label for="categoria">Categoría</label>
+                    <input
+                        id="categoria"
+                        name="categoria"
+                        type="text"
+                        maxlength="100"
+                        required
+                    >
+                </div>
 
-<h2>Añadir stock</h2>
+                <div class="admin-campo">
+                    <label for="precio_compra">Precio de compra</label>
+                    <input
+                        id="precio_compra"
+                        name="precio_compra"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        inputmode="decimal"
+                        required
+                    >
+                </div>
 
-<form id="form_stock">
-    <label for="producto_codigo">
-        Código del producto
-    </label>
-    <input id="producto_codigo" required>
+                <div class="admin-campo">
+                    <label for="precio_manofactura">
+                        Precio de producción
+                    </label>
+                    <input
+                        id="precio_manofactura"
+                        name="precio_manofactura"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        inputmode="decimal"
+                        required
+                    >
+                </div>
 
-    <label for="cantidad_producto">
-        Unidades a añadir
-    </label>
-    <input
-        id="cantidad_producto"
-        type="number"
-        min="1"
-        step="1"
-        required
-    >
+                <div class="admin-campo">
+                    <label for="precio_venta">Precio de venta</label>
+                    <input
+                        id="precio_venta"
+                        name="precio_venta"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        inputmode="decimal"
+                        required
+                    >
+                </div>
 
-    <button type="submit">Añadir unidades</button>
-</form>
+                <div class="admin-campo">
+                    <label for="stock">Stock inicial</label>
+                    <input
+                        id="stock"
+                        name="stock"
+                        type="number"
+                        min="0"
+                        step="1"
+                        inputmode="numeric"
+                        required
+                    >
+                </div>
 
-<h2>Usuarios registrados</h2>
+                <div class="admin-acciones admin-formulario-completo">
+                    <button
+                        type="submit"
+                        class="admin-boton admin-boton-principal"
+                    >
+                        Guardar producto
+                    </button>
 
-<section id="clientes_section">
-    <!-- main.js cargará aquí los usuarios -->
-</section>
+                    <button
+                        type="button"
+                        id="cancelar_edicion"
+                        class="admin-boton admin-boton-secundario"
+                    >
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </section>
 
-<script src="{{ url_for('static', filename='js/main.js') }}"
-        defer></script>
+        <!-- Añadir stock -->
+        <section class="admin-seccion" aria-labelledby="titulo_stock">
+            <div class="admin-seccion-encabezado">
+                <div>
+                    <p class="admin-etiqueta">EXISTENCIAS</p>
+                    <h2 id="titulo_stock">Añadir stock</h2>
+                    <p class="admin-ayuda">
+                        Añade unidades a un producto existente.
+                    </p>
+                </div>
+            </div>
+
+            <form id="form_stock" class="admin-formulario admin-formulario-stock">
+
+                <div class="admin-campo">
+                    <label for="producto_codigo">
+                        Código del producto
+                    </label>
+                    <input
+                        id="producto_codigo"
+                        name="producto_codigo"
+                        type="text"
+                        maxlength="80"
+                        required
+                    >
+                </div>
+
+                <div class="admin-campo">
+                    <label for="cantidad_producto">
+                        Unidades a añadir
+                    </label>
+                    <input
+                        id="cantidad_producto"
+                        name="cantidad_producto"
+                        type="number"
+                        min="1"
+                        step="1"
+                        inputmode="numeric"
+                        required
+                    >
+                </div>
+
+                <div class="admin-acciones admin-formulario-completo">
+                    <button
+                        type="submit"
+                        class="admin-boton admin-boton-principal"
+                    >
+                        Añadir unidades
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Usuarios registrados -->
+        <section class="admin-seccion" aria-labelledby="titulo_clientes">
+            <div class="admin-seccion-encabezado">
+                <div>
+                    <p class="admin-etiqueta">CUENTAS</p>
+                    <h2 id="titulo_clientes">Usuarios registrados</h2>
+                    <p class="admin-ayuda">
+                        Consulta los usuarios registrados en la plataforma.
+                    </p>
+                </div>
+            </div>
+
+            <div id="clientes_section" class="admin-lista">
+                <!-- main.js cargará aquí los usuarios -->
+            </div>
+        </section>
+
+        <!-- Pie de página -->
+        <footer class="admin-footer">
+            <p>Linneo · Panel de administración</p>
+        </footer>
+
+    </main>
 </body>
+</html>
