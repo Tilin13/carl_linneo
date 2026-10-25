@@ -161,8 +161,35 @@ def load_user(user_id):
         return db.session.get(User, int(user_id))
     except (ValueError, TypeError):
         return None
+
 with app.app_context():
+    # Crear las tablas de Flask-SQLAlchemy:
+    # usuarios y codigos_admin.
     db.create_all()
+
+    # Crear también la tabla de productos,
+    # que se utiliza mediante sqlite3.
+    conexion = sqlite3.connect(BASE_DATOS)
+
+    try:
+        conexion.execute("""
+            CREATE TABLE IF NOT EXISTS productos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                codigo TEXT NOT NULL UNIQUE,
+                nombre TEXT NOT NULL,
+                categoria TEXT NOT NULL,
+                precio_compra REAL NOT NULL DEFAULT 0,
+                precio_manofactura REAL NOT NULL DEFAULT 0,
+                precio_venta REAL NOT NULL DEFAULT 0,
+                stock INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+
+        conexion.commit()
+
+    finally:
+        conexion.close()
+
 limiter = Limiter(
     get_remote_address,
     app=app,
