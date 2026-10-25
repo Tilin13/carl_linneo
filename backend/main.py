@@ -257,11 +257,6 @@ if usuario.rol == "admin":
     session["admin_2fa_pendiente"] = usuario.id
 
     return redirect(url_for("verificar_admin"))
-
-# Los clientes normales siguen utilizando su inicio de sesión habitual.
-session.clear()
-login_user(usuario, remember=False)
-return redirect(url_for("index"))
 @app.route("/verificar_admin", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
 def verificar_admin():
