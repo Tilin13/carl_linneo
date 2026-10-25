@@ -54,11 +54,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_DATOS = BASE_DIR / "pos.db"
 FRONTEND_DIR = BASE_DIR / "frontend"
 IMAGENES_DIR = BASE_DIR / "imagenes"
-with app.app_context():
-    User.__table__.drop(db.engine, checkfirst=True)
-    User.__table__.create(db.engine, checkfirst=True)
 
-print("La tabla usuarios se eliminó y se creó nuevamente.")
 secret_key = os.getenv("SECRET_KEY", "").strip()
 api_key = os.getenv("OPENAI_API_KEY", "").strip()
 
