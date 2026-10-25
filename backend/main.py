@@ -1,4 +1,15 @@
+import hashlib
+import hmac
+import secrets
+import smtplib
+import time
 
+from email.message import EmailMessage
+from functools import wraps
+
+from flask import session
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import os
 import re
 import sqlite3
@@ -128,7 +139,203 @@ def load_user(user_id):
         return None
 with app.app_context():
     db.create_all()
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=[]
+)
+def enviar_codigo_admin(destinatario, codigo):
+    mensaje = EmailMessage()
+    mensaje["Subject"] = "Código de acceso | Linneo"
+    mensaje["From"] = os.environ["MAIL_USERNAME"]
+    mensaje["To"] = destinatario
 
+    mensaje.set_content(
+        f"""Tu código de acceso para el panel de Linneo es:
+
+{codigo}
+
+Caduca en 5 minutos.
+Si no has solicitado este acceso, ignora este mensaje.
+"""
+    )
+
+    servidor = os.environ["MAIL_SERVER"]
+    puerto = int(os.environ["MAIL_PORT"])
+
+    if puerto == 465:
+        with smtplib.SMTP_SSL(
+            servidor, puerto, timeout=10
+        ) as smtp:
+            smtp.login(
+                os.environ["MAIL_USERNAME"],
+                os.environ["MAIL_PASSWORD"]
+            )
+            smtp.send_message(mensaje)
+    else:
+        with smtplib.SMTP(
+            servidor, puerto, timeout=10
+        ) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
+            smtp.login(
+                os.environ["MAIL_USERNAME"],
+                os.environ["MAIL_PASSWORD"]
+            )
+            smtp.send_message(mensaje)
+       
+class CodigoAdmin(db.Model):
+    __tablename__ = "codigos_admin"
+
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(
+        db.Integer,
+        db.ForeignKey("usuarios.id"),
+        nullable=False
+    )
+    codigo_hash = db.Column(db.String(64), nullable=False)
+    expira = db.Column(db.Float, nullable=False)
+    intentos = db.Column(db.Integer, nullable=False, default=0)
+    usado = db.Column(db.Boolean, nullable=False, default=False)
+
+def hash_codigo(codigo):
+    return hmac.new(
+        app.config["SECRET_KEY"].encode(),
+        codigo.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+
+def administrador_requerido(func):
+    @wraps(func)
+    @login_required
+    def decorada(*args, **kwargs):
+        if (
+            getattr(current_user, "rol", None) != "admin"
+            or session.get("admin_2fa") != str(current_user.id)
+        ):
+            abort(403)
+
+        return func(*args, **kwargs)
+
+    return decorada
+if usuario.rol == "admin":
+    correo_admin = os.environ["ADMIN_EMAIL"].strip().lower()
+
+    if usuario.email.lower() != correo_admin:
+        abort(403)
+
+    codigo = f"{secrets.randbelow(1_000_000):06d}"
+
+    try:
+        # Invalida los códigos anteriores del administrador.
+        CodigoAdmin.query.filter_by(
+            usuario_id=usuario.id,
+            usado=False
+        ).update({"usado": True})
+
+        registro = CodigoAdmin(
+            usuario_id=usuario.id,
+            codigo_hash=hash_codigo(codigo),
+            expira=time.time() + 300,
+            intentos=0
+        )
+
+        db.session.add(registro)
+        db.session.commit()
+
+        enviar_codigo_admin(correo_admin, codigo)
+
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("No se pudo iniciar la verificación 2FA")
+        flash("No se pudo enviar el código. Inténtalo más tarde.", "error")
+        return redirect(url_for("login"))
+
+    session.clear()
+    session["admin_2fa_pendiente"] = usuario.id
+
+    return redirect(url_for("verificar_admin"))
+
+# Los clientes normales siguen utilizando su inicio de sesión habitual.
+session.clear()
+login_user(usuario, remember=False)
+return redirect(url_for("index"))
+@app.route("/verificar_admin", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
+def verificar_admin():
+    usuario_id = session.get("admin_2fa_pendiente")
+
+    if not usuario_id:
+        return redirect(url_for("login"))
+
+    usuario = db.session.get(User, usuario_id)
+
+    if (
+        usuario is None
+        or getattr(usuario, "rol", None) != "admin"
+        or usuario.email.lower()
+        != os.environ["ADMIN_EMAIL"].strip().lower()
+    ):
+        session.clear()
+        return redirect(url_for("login"))
+
+    if request.method == "POST":
+        codigo = request.form.get("codigo", "").strip()
+
+        if not re.fullmatch(r"[0-9]{6}", codigo):
+            flash("Introduce un código de seis cifras.", "error")
+            return render_template("verificar_admin.html")
+
+        registro = db.session.scalar(
+            select(CodigoAdmin)
+            .where(
+                CodigoAdmin.usuario_id == usuario.id,
+                CodigoAdmin.usado.is_(False)
+            )
+            .order_by(CodigoAdmin.id.desc())
+        )
+
+        if registro is None:
+            flash("Solicita un nuevo código.", "error")
+            return redirect(url_for("login"))
+
+        if (
+            registro.expira <= time.time()
+            or registro.intentos >= 5
+        ):
+            registro.usado = True
+            db.session.commit()
+
+            session.clear()
+            flash("El código ha caducado. Inicia sesión de nuevo.", "error")
+            return redirect(url_for("login"))
+
+        if not hmac.compare_digest(
+            registro.codigo_hash,
+            hash_codigo(codigo)
+        ):
+            registro.intentos += 1
+
+            if registro.intentos >= 5:
+                registro.usado = True
+
+            db.session.commit()
+            flash("Código incorrecto.", "error")
+            return render_template("verificar_admin.html")
+
+        # El código queda consumido antes de conceder acceso.
+        registro.usado = True
+        db.session.commit()
+
+        session.clear()
+        login_user(usuario, remember=False)
+        session["admin_2fa"] = str(usuario.id)
+
+        return redirect(url_for("admin"))
+
+    return render_template("verificar_admin.html")
 @app.after_request
 def agregar_cabeceras_seguridad(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -143,7 +350,11 @@ def agregar_cabeceras_seguridad(response):
         response.headers["Cache-Control"] = "no-store"
 
     return response
-
+@app.route("/admin")
+@administrador_requerido
+def admin():
+    # Aquí consultas los productos y las ventas.
+    return render_template("admin.html")
 # ============================================================
 # BASE DE DATOS
 # ============================================================		
