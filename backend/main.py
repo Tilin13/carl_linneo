@@ -199,51 +199,6 @@ def load_user(user_id):
 # CREACIÓN DE TABLAS Y MIGRACIÓN BÁSICA
 # ============================================================
 
-with app.app_context():
-    db.create_all()
-
-    # Compatibilidad con bases de datos antiguas que no tengan
-    # todavía la columna rol.
-    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
-
-    try:
-        conexion.execute("PRAGMA foreign_keys = ON")
-
-        columnas = {
-            fila[1]
-            for fila in conexion.execute(
-                "PRAGMA table_info(usuarios)"
-            ).fetchall()
-        }
-
-        if "rol" not in columnas:
-            conexion.execute(
-                """
-                ALTER TABLE usuarios
-                ADD COLUMN rol TEXT NOT NULL DEFAULT 'user'
-                """
-            )
-
-        conexion.execute(
-            """
-            CREATE TABLE IF NOT EXISTS productos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                codigo TEXT NOT NULL UNIQUE,
-                nombre TEXT NOT NULL,
-                categoria TEXT NOT NULL,
-                precio_compra REAL NOT NULL DEFAULT 0,
-                precio_manofactura REAL NOT NULL DEFAULT 0,
-                precio_venta REAL NOT NULL DEFAULT 0,
-                stock INTEGER NOT NULL DEFAULT 0
-            )
-            """
-        )
-
-        conexion.commit()
-
-    finally:
-        conexion.close()
-
 
 # ============================================================
 # SEGURIDAD Y UTILIDADES
