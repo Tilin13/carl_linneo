@@ -1174,23 +1174,25 @@ def admin_anadir_stock():
 
     finally:
         conexion.close()
-@app.route("/api/admin/usuarios", methods=["GET"])
+@app.route("/api/admin/productos", methods=["GET"])
 @administrador_requerido
-def admin_listar_usuarios():
-    usuarios = db.session.scalars(
-        select(User).order_by(User.id.desc())
-    ).all()
+def admin_listar_productos():
+    conexion = sqlite3.connect(BASE_DATOS)
+    conexion.row_factory = sqlite3.Row
 
-    return jsonify([
-        {
-            "id": usuario.id,
-            "username": usuario.username,
-            "email": usuario.email,
-            "phone": usuario.phone,
-            "rol": usuario.rol
-        }
-        for usuario in usuarios
-    ])
+    try:
+        filas = conexion.execute("""
+            SELECT codigo, nombre, categoria,
+                   precio_compra, precio_manofactura,
+                   precio_venta, stock
+            FROM productos
+            ORDER BY nombre
+        """).fetchall()
+
+        return jsonify([dict(fila) for fila in filas])
+
+    finally:
+        conexion.close()
 @app.route("/imagenes/<path:nombre_archivo>")
 def imagenes(nombre_archivo):
     return send_from_directory(
