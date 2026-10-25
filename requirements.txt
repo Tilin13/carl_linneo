@@ -1,8 +1,10 @@
-Gunicorn
+
 Flask
-Flask-SQLAlchemy
 Flask-Login
+Flask-SQLAlchemy
 Flask-WTF
+Flask-Limiter
 python-dotenv
-SQLAlchemy
-openAI
+openai
+gunicorn
+
