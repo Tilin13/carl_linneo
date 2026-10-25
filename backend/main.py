@@ -255,11 +255,11 @@ def administrador_requerido(func):
         usuario_email = (getattr(current_user, "email", "") or "").lower()
 
         autorizado = (
-            getattr(current_user, "rol", None) == "admin"
-            and bool(correo_configurado)
-            and usuario_email == correo_configurado
-            and session.get("admin_2fa") == str(current_user.id)
-        )
+    bool(correo_configurado)
+    and usuario_email == correo_configurado
+    and getattr(current_user, "rol", None) == "admin"
+    and session.get("admin_2fa") == str(current_user.id)
+        )	
 
         if not autorizado:
             if es_api:
@@ -820,7 +820,12 @@ def login():
         # y completa el TOTP. Un usuario normal no puede elevar sus permisos.
         correo_configurado = os.getenv("ADMIN_EMAIL", "").strip().lower()
         secreto = os.getenv("ADMIN_TOTP_SECRET", "").strip()
+        correo_configurado = os.getenv("ADMIN_EMAIL", "").strip().lower()
 
+        if correo_configurado and usuario.email.lower() == correo_configurado:
+            if usuario.rol != "admin":
+                usuario.rol = "admin"
+                db.session.commit()
         if usuario.rol == "admin":
             if (
                 not correo_configurado
