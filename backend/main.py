@@ -225,7 +225,18 @@ def destino_local_seguro(destino):
         and "\\" not in destino
     )
 
+import sqlite3
+from pathlib import Path
 
+db_path = Path("pos.db").resolve()
+con = sqlite3.connect(db_path)
+
+print(con.execute(
+    "SELECT id, username, email, rol FROM usuarios WHERE lower(email) = lower(?)",
+    ("TU_CORREO_ADMIN",)
+).fetchall())
+
+con.close()
 def administrador_requerido(func):
     """
     Protege páginas y API de administración.
