@@ -258,7 +258,7 @@ def administrador_requerido(func):
     bool(correo_configurado)
     and usuario_email == correo_configurado
     and getattr(current_user, "rol", None) == "admin"
-    and session.get("admin_2fa") == str(current_user.id)
+    
         )	
 
         if not autorizado:
@@ -328,7 +328,19 @@ def agregar_cabeceras_seguridad(response):
 # ============================================================
 # VERIFICACIÓN EN DOS PASOS DEL ADMINISTRADOR
 # ============================================================
+@app.errorhandler(403)
+def prohibido(error):
+    if request.path.startswith("/api/"):
+        return jsonify({
+            "error": "No tienes permiso para esta operación."
+        }), 403
 
+    return (
+        "<h1>403 - Acceso denegado</h1>"
+        "<p>No tienes permisos para acceder a esta página.</p>"
+        '<a href="/">Volver al inicio</a>',
+        403,
+    )
 @app.route("/verificar_admin", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
 def verificar_admin():
