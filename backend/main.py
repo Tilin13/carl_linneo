@@ -237,33 +237,37 @@ print(con.execute(
 ).fetchall())
 
 con.close()
+querido(func):
+   
 def administrador_requerido(func):
-    """
-    Protege páginas y API de administración.
-    Las peticiones API reciben JSON en vez de una redirección HTML.
-    """
     @wraps(func)
     def decorada(*args, **kwargs):
         es_api = request.path.startswith("/api/")
 
+        # Comprobar que el usuario inició sesión
         if not current_user.is_authenticated:
             if es_api:
                 return jsonify({"error": "Debes iniciar sesión."}), 401
             return redirect(url_for("login", next=request.url))
 
+        # Comprobar correo y rol de administrador
         correo_configurado = os.getenv("ADMIN_EMAIL", "").strip().lower()
-        usuario_email = (getattr(current_user, "email", "") or "").lower()
+        usuario_email = (
+            getattr(current_user, "email", "") or ""
+        ).strip().lower()
+        rol = getattr(current_user, "rol", None)
 
         autorizado = (
-    bool(correo_configurado)
-    and usuario_email == correo_configurado
-    and getattr(current_user, "rol", None) == "admin"
-    
-        )	
+            bool(correo_configurado)
+            and usuario_email == correo_configurado
+            and rol == "admin"
+        )
 
         if not autorizado:
             if es_api:
-                return jsonify({"error": "No tienes permiso para esta operación."}), 403
+                return jsonify({
+                    "error": "No tienes permiso para esta operación."
+                }), 403
             abort(403)
 
         return func(*args, **kwargs)
