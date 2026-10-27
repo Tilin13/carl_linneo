@@ -1,67 +1,51 @@
-
 import sqlite3
 from pathlib import Path
 
-# Ruta fija: la carpeta donde está este archivo.
+# Ruta de la base de datos
 BASE_DIR = Path(__file__).resolve().parent
 BASE_DATOS = BASE_DIR / "pos.db"
 
 
-def inicializar_base_datos():
-    BASE_DATOS.parent.mkdir(parents=True, exist_ok=True)
-
+def crear_pedidos():
     conexion = sqlite3.connect(BASE_DATOS, timeout=10)
 
     try:
         conexion.execute("PRAGMA foreign_keys = ON")
 
-        # Tabla de usuarios
-        conexion.execute("""
-            CREATE TABLE IF NOT EXISTS usuarios (
+        conexion.executescript("""
+            CREATE TABLE IF NOT EXISTS pedidos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL UNIQUE,
-                email TEXT NOT NULL UNIQUE,
-                phone TEXT UNIQUE,
-                password_hash TEXT NOT NULL,
-                rol TEXT NOT NULL DEFAULT 'user'
-            )
-        """)
+                comprador TEXT NOT NULL,
+                subtotal DECIMAL(10,2) NOT NULL,
+                cantidad_productos INTEGER NOT NULL,
+                descuentos REAL NOT NULL DEFAULT 0
+            );
 
-        # Tabla de códigos antiguos de administrador
-        conexion.execute("""
-            CREATE TABLE IF NOT EXISTS codigos_admin (
+            CREATE TABLE IF NOT EXISTS detalle_pedidos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                usuario_id INTEGER NOT NULL,
-                codigo_hash TEXT NOT NULL,
-                expira REAL NOT NULL,
-                intentos INTEGER NOT NULL DEFAULT 0,
-                usado BOOLEAN NOT NULL DEFAULT 0,
-                FOREIGN KEY (usuario_id)
-                    REFERENCES usuarios(id)
-            )
-        """)
+                id_pedido INTEGER NOT NULL,
+                id_producto INTEGER NOT NULL,
+                precio_unitario REAL NOT NULL,
+                cantidad INTEGER NOT NULL,
+                FOREIGN KEY (id_pedido)
+                    REFERENCES pedidos(id)
+            );
 
-        # Tabla de productos
-        conexion.execute("""
-            CREATE TABLE IF NOT EXISTS productos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                codigo TEXT NOT NULL UNIQUE,
-                nombre TEXT NOT NULL,
-                categoria TEXT NOT NULL,
-                precio_compra REAL NOT NULL DEFAULT 0,
-                precio_manofactura REAL NOT NULL DEFAULT 0,
-                precio_venta REAL NOT NULL DEFAULT 0,
-                stock INTEGER NOT NULL DEFAULT 0
-            )
+            CREATE TABLE IF NOT EXISTS cupones (
+                codigo VARCHAR(32) PRIMARY KEY,
+                categoria VARCHAR(1) NOT NULL,
+                descuento REAL NOT NULL,
+                cobrado BOOLEAN NOT NULL DEFAULT 0
+            );
         """)
 
         conexion.commit()
+        print("Tablas de pedidos creadas correctamente.")
+        print(f"Base de datos: {BASE_DATOS.resolve()}")
 
-        print("Base de datos lista.")
-        print(f"Ubicación: {BASE_DATOS.resolve()}")
-
-    except sqlite3.Error:
+    except sqlite3.Error as error:
         conexion.rollback()
+        print(f"Error al crear las tablas: {error}")
         raise
 
     finally:
@@ -69,4 +53,4 @@ def inicializar_base_datos():
 
 
 if __name__ == "__main__":
-    inicializar_base_datos()
+    crear_pedidos()

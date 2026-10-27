@@ -1,4 +1,5 @@
-
+import secrets
+import qrcode
 import hashlib
 import hmac
 import logging
@@ -187,12 +188,77 @@ class CodigoAdmin(db.Model):
     usado = db.Column(db.Boolean, nullable=False, default=False)
 
 
+def inicializar_base_datos():
+    """Crea las tablas definidas en los modelos si no existen."""
+    BASE_DATOS.parent.mkdir(parents=True, exist_ok=True)
+
+    with app.app_context():
+        db.create_all()
+
+        app.logger.info(
+            "Base de datos inicializada en: %s",
+            BASE_DATOS
+        )
+def comprobar_tablas():
+    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
+
+    try:
+        tablas = conexion.execute("""
+            SELECT name
+            FROM sqlite_master
+            WHERE type = 'table'
+            ORDER BY name
+        """).fetchall()
+
+        print("Tablas encontradas:")
+        for tabla in tablas:
+            print("-", tabla[0])
+
+        if conexion.execute("""
+            SELECT 1
+            FROM sqlite_master
+            WHERE type = 'table' AND name = 'productos'
+        """).fetchone() is None:
+            print("ERROR: No existe la tabla productos.")
+        else:
+            columnas = conexion.execute(
+                "PRAGMA table_info(productos)"
+            ).fetchall()
+
+            print("Columnas de productos:")
+            for columna in columnas:
+                print(columna[1], columna[2])
+
+    finally:
+        conexion.close()
+
 @login_manager.user_loader
 def load_user(user_id):
     try:
         return db.session.get(User, int(user_id))
     except (ValueError, TypeError):
         return None
+
+def crear_tabla_productos():
+    BASE_DATOS.parent.mkdir(parents=True, exist_ok=True)
+
+    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
+
+    try:
+        conexion.execute("""
+            CREATE TABLE IF NOT EXISTS productos (
+                codigo TEXT PRIMARY KEY,
+                nombre TEXT NOT NULL,
+                categoria TEXT NOT NULL,
+                precio_compra REAL NOT NULL DEFAULT 0,
+                precio_manofactura REAL NOT NULL DEFAULT 0,
+                precio_venta REAL NOT NULL DEFAULT 0,
+                stock INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+        conexion.commit()
+    finally:
+        conexion.close()
 
 
 # ============================================================
@@ -395,7 +461,48 @@ def solicitud_demasiado_grande(error):
 # ============================================================
 # RUTA ANTIGUA DE VERIFICACIÓN: SIN SEGUNDO FACTOR
 # ============================================================
-
+def crrear_cupones():
+	primer_digito = secrets.choice("123456789")
+	resto = "".join(secrets.choice("0123456789") for _ in range(31))
+	codigo_cupon = primer_digito + resto
+	numero_categoria = random.randint(1,7)
+	descuento = random.choice([5,10.15,20])
+	cobrado = False
+	cursor.execute("""
+	INSERT INTO cupones (codigo_cupon,numero_categoria, descuento, cobrado), values=(?,?,?,?)
+	""")
+	
+	
+	
+def conocer_categoria(numero_categoria):
+	if numero_categoria == 1:
+		categoria = "Mariposas"
+	elif numero_categoria == 2:
+		categoria = "Escarabajos"
+	elif numero_categoria == 3:
+		categoria = "Odonatos"
+	elif numero_categoria == 4:
+		categoria = "Cuarzos"
+	elif numero_categoria == 5:
+		categoria = "Minerales"
+	elif numero_categoria == 6:
+		categoria = "Fosiles"
+	else:
+		categoria = "todos"
+	
+	
+		
+def imprimir_codigoqr(codigo_cupon):
+	qr = qrcode.QRCode(
+	version=None,
+	error_correction=qrcode.constans.ERROR_CORRECT_M,
+	box_size=10,
+	border=4
+	)
+	qr.add_data(codigo_cupon)
+	qr.make(fit=True)
+	imagen =qr.make_image(fill_color="black", back_color="white")
+	imagen.save("codigo_qr.png")
 @app.route("/verificar_admin", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
 def verificar_admin():
@@ -1230,6 +1337,8 @@ if __name__ == "__main__":
     modo_debug = os.getenv("FLASK_DEBUG", "false").lower() in {
         "1", "true", "yes", "on"
     }
+    inicializar_base_datos()
+    crear_tabla_productos()
 
     app.run(
         debug=modo_debug,

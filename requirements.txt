@@ -7,4 +7,5 @@ Flask-Limiter
 python-dotenv
 openai
 gunicorn
-
+qrcode
+secrets
