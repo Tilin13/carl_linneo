@@ -1,194 +1,205 @@
-	<!DOCTYPE html>
-	<html lang="es">
 
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport"
-      content="width=device-width, initial-scale=1">
+<!DOCTYPE html>
+<html lang="es">
 
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1.0"
-		>
-		<meta name="csrf-token" content="{{ csrf_token() }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-		<title>Linneo</title>
+    <title>Mi cuenta | Linneo</title>
 
-		<link rel="stylesheet" href="/css/variables.css">
-	
-		<link
-			rel="icon"
-			type="image/png"
-			href="linneo_isotipo.png"
-		>
-	</head>
+    <link rel="stylesheet" href="/css/variables.css">
+</head>
+
+<body>
+
+    <header class="barra" id="barra_global">
+
+        <h2>Linneo</h2>
+
+        <a href="/">Inicio</a>
+        <a href="/catalogo">Catálogo</a>
+
+        <span>Hola, {{ usuario.username }}</span>
+
+        <form action="{{ url_for('cerrar_sesion') }}"
+              method="POST">
+
+            <input type="hidden"
+                   name="csrf_token"
+                   value="{{ csrf_token() }}">
+
+            <button type="submit">
+                Cerrar sesión
+            </button>
+
+        </form>
+
+    </header>
+
+    <main>
+
+        <section class="tarjeta">
+
+            <h1>Mi cuenta</h1>
+
+            <h2>Datos personales</h2>
+
+            <p>
+                <strong>Usuario:</strong>
+                {{ usuario.username }}
+            </p>
+
+            <p>
+                <strong>Correo:</strong>
+                {{ usuario.email }}
+            </p>
+
+            <p>
+                <strong>Teléfono:</strong>
+                {{ usuario.phone or "No registrado" }}
+            </p>
+
+            <hr>
+
+            <h2>Cambiar teléfono</h2>
+
+            <form action="{{ url_for('cambiar_telefono') }}"
+                  method="POST">
+
+                <input type="hidden"
+                       name="csrf_token"
+                       value="{{ csrf_token() }}">
+
+                <label for="phone">
+                    Nuevo teléfono:
+                </label>
+
+                <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    maxlength="20"
+                    required
+                >
+
+                <button type="submit">
+                    Actualizar teléfono
+                </button>
+
+            </form>
+
+            <hr>
+
+            <h2>Cambiar contraseña</h2>
+
+            <form action="{{ url_for('cambiar_contrasena') }}"
+                  method="POST">
+
+                <input type="hidden"
+                       name="csrf_token"
+                       value="{{ csrf_token() }}">
+
+                <label for="password_actual">
+                    Contraseña actual:
+                </label>
+
+                <input
+                    type="password"
+                    id="password_actual"
+                    name="password_actual"
+                    required
+                >
+
+                <label for="password_nueva">
+                    Nueva contraseña:
+                </label>
+
+                <input
+                    type="password"
+                    id="password_nueva"
+                    name="password_nueva"
+                    minlength="12"
+                    maxlength="128"
+                    required
+                >
+
+                <button type="submit">
+                    Cambiar contraseña
+                </button>
+
+            </form>
+
+        </section>
 
 
+        <section class="tarjeta">
 
-	<body>
+            <h1>Mis pedidos</h1>
 
-		<header class="barra" id="barra_global">
+            {% if pedidos %}
 
-			<h2>Linneo</h2>
+                {% for pedido in pedidos %}
 
+                    <article class="pedido">
 
-			<button
-				class="button"
-				id="buscarbtn"
-				type="button"
-			>
-				🔍︎
-			</button>
+                        <h2>
+                            Pedido #{{ pedido.id }}
+                        </h2>
 
-			<button
-				class="button"
-				id="carritobtn"
-				type="button"
-			>
-				🛒
-			</button>
-			<div id="carrito_productos" >
-				<h5 id="cantidad_productos"></h5>
-			</div>
-			<button 
-				class="button"
-				id="favoritos_btn"
-				type="button"
-			>♡
-			</button>
+                        <p>
+                            <strong>Fecha:</strong>
+                            {{ pedido.fecha.strftime('%d/%m/%Y %H:%M') }}
+                        </p>
 
-			<button
-				class="button"
-				id="menubtn"
-				type="button"
-			>
-				☰
-			</button>
-			{% if current_user.is_authenticated %}
-  <span>Hola, {{ current_user.username }}</span>
+                        <p>
+                            <strong>Subtotal:</strong>
+                            ${{ "%.2f"|format(pedido.subtotal|float) }}
+                        </p>
 
-  <form action="{{ url_for('cerrar_sesion') }}" method="POST">
-    <input type="hidden" name="csrf_token"
-           value="{{ csrf_token() }}">
-    <button type="submit">Cerrar sesión</button>
-  </form>
-{% else %}
-  <a href="{{ url_for('login') }}">Iniciar sesión</a>
-  <a href="{{ url_for('registrarse') }}">Registrarse</a>
-{% endif %}
-			<div id="busqueda_div">
-				<form action="/buscar" method="GET">
+                        <p>
+                            <strong>Estado:</strong>
 
-				<input
-					type="search"
-					id="barra_busqueda"
-					name="busqueda"
-					placeholder="Buscar productos..."
-					autocomplete="off"
-				>
+                            {% if pedido.estado == "Entregado" %}
+                                <span class="estado_entregado">
+                                    Entregado
+                                </span>
 
-				<button
-					class="button"
-					type="submit"
-				>
-					Buscar
-				</button>
-			</form>
-			
+                            {% elif pedido.estado == "En camino" %}
+                                <span class="estado_camino">
+                                    En camino
+                                </span>
 
-			</div>
-			
+                            {% else %}
+                                <span class="estado_pendiente">
+                                    {{ pedido.estado }}
+                                </span>
+                            {% endif %}
 
-		</header>
+                        </p>
 
-		<main>
+                        <hr>
 
-			<div id="tarjeta_logo">
-				<img
-				src="tarjeta2.png"
-				alt="tarjeta"
-				>
-			
-			</div>
+                    </article>
 
-		</main>
-		<nav id="novedades_bar">
-			<h1>NOVEDADES</h1>
-			
-			<div>
-				<img
-				 id="imagen" src="novedades/1.jpg" alt="novedad actual" height="100" width="120"
-				>
-				<button class="button" id="atras_novedades">➡⬅️</button>
-				<button class="button" id="adelante_novedades">⬅️</button>
-				<p id="contador">1</p>
-			</div>
-			<div>
-			</div>
-		</nav>
-		<button id="chat_btn" class="button">💬</button>
+                {% endfor %}
 
-		<nav class="barra" id="carrito_bar">
-			<h1>CARRITO</h1>
-			<div id="mostrar_productos">
-			<h3>Producto</h3>
-			<h3 id="contenido_carrito"></h3>
-			<h3>Precio</h3>
-			<h3 id="productos_carrito_precio"></h3>	
-			</div>
-			<div>
-				<h2>Descuentos</h2>
-				<h2>Subtotal</h2>
-			</div>
-			<button class="button" type="button" id="comprar_carrito_btn">
-				Comprar
-			</button>
-	<section>
-		<>
-	</section>
-			
-	
+            {% else %}
 
-		<nav class="barra" id="menu_bar">
+                <p>
+                    Todavía no tienes pedidos registrados.
+                </p>
 
-			<button
-				id="atras_menu"
-				type="button"
-				class="button"
-			>
-				↚
-			</button>
-			<div>
-				<a
-					class="text_menu"
-					href="/catalogo"
-				>
-					Catálogo
-				</a>
-			</div>
-			<div>
-				<a
-					class="text_menu"
-					href="/contacto"
-				>
-					Contáctanos
-				</a>
-			</div>
-			<div>
-				<a
-				
-				
-					class="text_menu"
-					href="/informacion"
-				>
-					¿Quiénes somos?
-				</a>
-			</div>
+                <a href="/catalogo">
+                    Explorar productos
+                </a>
 
-		</nav>
+            {% endif %}
 
-		<script src="/js/main.js"></script>
+        </section>
 
-	</body>
+    </main>
 
-	</html>
+</body>
+</html>

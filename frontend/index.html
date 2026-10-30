@@ -64,17 +64,39 @@
 			>
 				☰
 			</button>
-			{% if current_user.is_authenticated %}
-  <span>Hola, {{ current_user.username }}</span>
+		{% if current_user.is_authenticated %}
 
-  <form action="{{ url_for('cerrar_sesion') }}" method="POST">
-    <input type="hidden" name="csrf_token"
-           value="{{ csrf_token() }}">
-    <button type="submit">Cerrar sesión</button>
-  </form>
+    <span>
+        Hola, {{ current_user.username }}
+    </span>
+
+    <a href="{{ url_for('mi_cuenta') }}">
+        Mi cuenta
+    </a>
+
+    <form action="{{ url_for('cerrar_sesion') }}"
+          method="POST">
+
+        <input type="hidden"
+               name="csrf_token"
+               value="{{ csrf_token() }}">
+
+        <button type="submit">
+            Cerrar sesión
+        </button>
+
+    </form>
+
 {% else %}
-  <a href="{{ url_for('login') }}">Iniciar sesión</a>
-  <a href="{{ url_for('registrarse') }}">Registrarse</a>
+
+    <a href="{{ url_for('login') }}">
+        Iniciar sesión
+    </a>
+
+    <a href="{{ url_for('registrarse') }}">
+        Registrarse
+    </a>
+
 {% endif %}
 			<div id="busqueda_div">
 				<form action="/buscar" method="GET">

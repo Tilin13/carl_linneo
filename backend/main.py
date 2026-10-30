@@ -7,6 +7,15 @@ import math
 import os
 import re
 import secrets
+from datetime import datetime
+from flask_login import (
+    LoginManager,
+    UserMixin,
+    current_user,
+    login_user,
+    logout_user,
+    login_required,
+)
 import smtplib
 import sqlite3
 import time
@@ -139,6 +148,12 @@ class User(UserMixin, db.Model):
     )
     phone = db.Column(db.String(20), unique=True, nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
+    pedidos = db.relationship(
+    "Pedido",
+    back_populates="usuario",
+    lazy="select",
+    cascade="all, delete-orphan"
+    )
     rol = db.Column(
         db.String(10),
         nullable=False,
@@ -170,6 +185,40 @@ class User(UserMixin, db.Model):
             and (self.email or "").strip().lower() == ADMIN_EMAIL
         )
 
+
+class Pedido(db.Model):
+    __tablename__ = "pedidos"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    usuario_id = db.Column(
+        db.Integer,
+        db.ForeignKey("usuarios.id"),
+        nullable=False,
+        index=True
+    )
+
+    fecha = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+
+    subtotal = db.Column(
+        db.Numeric(10, 2),
+        nullable=False
+    )
+
+    estado = db.Column(
+        db.String(30),
+        nullable=False,
+        default="Pendiente"
+    )
+
+    usuario = db.relationship(
+        "User",
+        back_populates="pedidos"
+    )
 
 class CodigoAdmin(db.Model):
     # Se conserva por compatibilidad con la base de datos existente.
@@ -447,6 +496,36 @@ def no_encontrado(error):
     except Exception:
         return "Página no encontrada", 404
 
+
+@app.route("/mi_cuenta")
+@login_required
+def mi_cuenta():
+
+    pedidos = (
+        Pedido.query
+        .filter_by(usuario_id=current_user.id)
+        .order_by(Pedido.fecha.desc())
+        .all()
+    )
+
+    return render_template(
+        "usuario.html",
+        usuario=current_user,
+        pedidos=pedidos
+    )
+
+def registrar_pedido(usuario_id, subtotal):
+
+    pedido = Pedido(
+        usuario_id=usuario_id,
+        subtotal=subtotal,
+        estado="Pendiente"
+    )
+
+    db.session.add(pedido)
+    db.session.commit()
+
+    return pedido
 
 @app.errorhandler(413)
 def solicitud_demasiado_grande(error):
