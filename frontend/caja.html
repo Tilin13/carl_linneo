@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Administración | Linneo</title>
+
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <!-- Estilos generales -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/variables.css') }}"
+    >
+
+    <!-- Estilos de administración -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/admin.css') }}"
+    >
+
+    <!-- JavaScript -->
+    <script
+        src="{{ url_for('static', filename='js/main.js') }}"
+        defer
+    ></script>
+</head>
+
+<body>
+    <main class="admin-pagina">
+
+        <!-- Encabezado -->
+        <header class="admin-encabezado">
+            <div>
+                <p class="admin-etiqueta">LINNEO · PANEL DE VENTAS</p>
+                <h1>Administración</h1>
+                <p class="admin-descripcion">
+                    Gestiona las ventas en vivo 
+                </p>
+            </div>
+        </header>
+        <div class="tarjeta">
+			<h1>Productos</h1>
+			<h1>Cantidad</h1>
+			<h1>Unitario</h1>
+			<h1>total</h1>
+		</div>
+		<div class="tarjeta">
+			<form method="POST">
+				<input type="text" id="nombre_comprador" placeholder="Nombre">
+				<input type="checkbox" id="registrado" placeholder="Registrado en pagina web">
+				<input type="number" id="descuento" placeholder="Descuento">
+				<input type="checkbox" id="cupones" placeholder="Cupones">
+				<button type="submint" id="enviar_btn" class="button">
+				<>
+			</form>
+		</div>
+		<section>
+			<h1>Metodo pago</h1>
+			<select id="metodo_pago" name="metodo_pago">
+				<option value="efectivo">Efectivo</option>
+				<option value="tarjeta_credito">Credito</option>
+				<option value="tarjeta_debito">Debito</option>
+				<option value="transferencia">Transferencia</option>
+			</select>
+		</section>
+
+    </main>
+</body>
+</html>

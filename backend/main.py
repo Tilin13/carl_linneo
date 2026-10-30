@@ -95,7 +95,6 @@ else:
     cookie_secure = cookie_secure_env.lower() in {
         "1", "true", "yes", "on"
     }
-
 app = Flask(
     __name__,
     template_folder=str(FRONTEND_DIR),
@@ -113,6 +112,8 @@ app.config.update(
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     MAX_CONTENT_LENGTH=2 * 1024 * 1024,
 )
+
+db = SQLAlchemy(app)
 
 db = SQLAlchemy(app)
 
