@@ -595,6 +595,66 @@ def cambiar_telefono():
 
     flash("Tu teléfono se actualizó correctamente.", "success")
     return redirect(url_for("mi_cuenta"))
+
+@app.route("/cambiar_contrasena", methods=["POST"])
+@login_required
+@limiter.limit("5 per minute")
+def cambiar_contrasena():
+
+    password_actual = request.form.get(
+        "password_actual", ""
+    )
+
+    password_nueva = request.form.get(
+        "password_nueva", ""
+    )
+
+    confirmar_password = request.form.get(
+        "confirmar_password", ""
+    )
+
+    # Comprobar la contraseña actual
+    if not current_user.check_password(password_actual):
+        flash("La contraseña actual es incorrecta.", "error")
+        return redirect(url_for("mi_cuenta"))
+
+    # Comprobar longitud
+    if not 12 <= len(password_nueva) <= 128:
+        flash(
+            "La nueva contraseña debe tener entre 12 y 128 caracteres.",
+            "error"
+        )
+        return redirect(url_for("mi_cuenta"))
+
+    # Comprobar coincidencia
+    if password_nueva != confirmar_password:
+        flash("Las contraseñas nuevas no coinciden.", "error")
+        return redirect(url_for("mi_cuenta"))
+
+    # Evitar reutilizar la contraseña actual
+    if password_actual == password_nueva:
+        flash(
+            "La nueva contraseña debe ser diferente.",
+            "error"
+        )
+        return redirect(url_for("mi_cuenta"))
+
+    # Guardar nueva contraseña
+    current_user.set_password(password_nueva)
+
+    db.session.commit()
+
+    # Cerrar la sesión para volver a autenticar
+    logout_user()
+    session.clear()
+
+    flash(
+        "Contraseña actualizada. Inicia sesión nuevamente.",
+        "success"
+    )
+
+    return redirect(url_for("login"))
+
 @app.route("/verificar_admin", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
 def verificar_admin():
