@@ -581,6 +581,20 @@ def imprimir_codigoqr(codigo_cupon):
 	qr.make(fit=True)
 	imagen =qr.make_image(fill_color="black", back_color="white")
 	imagen.save("codigo_qr.png")
+@app.route("/cambiar_telefono", methods=["POST"])
+@login_required
+def cambiar_telefono():
+    nuevo_telefono = request.form.get("telefono", "").strip()
+
+    if not nuevo_telefono:
+        flash("Ingresa un número de teléfono válido.", "error")
+        return redirect(url_for("mi_cuenta"))
+
+    current_user.telefono = nuevo_telefono
+    db.session.commit()
+
+    flash("Tu teléfono se actualizó correctamente.", "success")
+    return redirect(url_for("mi_cuenta"))
 @app.route("/verificar_admin", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
 def verificar_admin():
