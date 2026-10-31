@@ -2609,3 +2609,74 @@ body:has(.popup.visible) {
                 flex-direction: column;
             }
         }
+
+/* MENÚ DE FAVORITOS Y CARRITO */
+
+#favoritos_bar,
+#carrito_bar {
+    position: fixed;
+    top: 0;
+    right: -450px;
+
+    width: 350px;
+    max-width: 90%;
+
+    height: 100vh;
+    overflow-y: auto;
+
+    background-color: white;
+    z-index: 1000;
+
+    padding: 20px;
+    box-shadow: -3px 0 10px rgba(0,0,0,0.2);
+
+    transition: right 0.3s ease;
+}
+
+#favoritos_bar.visible,
+#carrito_bar.visible {
+    right: 0;
+}
+
+/* BOTONES DE FAVORITOS */
+
+.favorito_producto {
+    border: none;
+    background: transparent;
+    font-size: 25px;
+    cursor: pointer;
+}
+
+.favorito_producto.es-favorito {
+    color: red;
+}
+
+/* PRODUCTOS FAVORITOS */
+
+.producto-favorito {
+    padding: 12px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* BOTÓN ELIMINAR */
+
+.eliminar-carrito {
+    color: red;
+    border: none;
+    background: transparent;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+#tabla_carrito {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#tabla_carrito th,
+#tabla_carrito td {
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+}
