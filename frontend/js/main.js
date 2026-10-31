@@ -1188,9 +1188,10 @@ if (listaCarrito) {
     // =====================================================
 
 // =====================================================
-// FAVORITOS
+// SISTEMA DE FAVORITOS
 // =====================================================
 
+// Recuperar favoritos guardados
 let favoritos = [];
 
 try {
@@ -1199,26 +1200,23 @@ try {
     );
 
     if (Array.isArray(guardados)) {
-        favoritos = guardados;
+        favoritos = guardados.filter(function(producto) {
+            return producto &&
+                producto.id !== undefined &&
+                producto.nombre;
+        });
     }
 } catch (error) {
     favoritos = [];
 }
 
-const favoritosBtn =
-    document.getElementById("favoritos_btn");
-
-const favoritosBar =
-    document.getElementById("favoritos_bar");
-
-const contenidoFavoritos =
-    document.getElementById("contenido_favoritos");
-
-const cerrarFavoritos =
-    document.getElementById("cerrar_favoritos");
+// Elementos HTML
+const favoritosBtn = document.getElementById("favoritos_btn");
+const favoritosBar = document.getElementById("favoritos_bar");
+const contenidoFavoritos = document.getElementById("contenido_favoritos");
+const cerrarFavoritos = document.getElementById("cerrar_favoritos");
 
 // Guardar favoritos
-
 function guardarFavoritos() {
     localStorage.setItem(
         "linneoFavoritos",
@@ -1226,8 +1224,79 @@ function guardarFavoritos() {
     );
 }
 
-// Mostrar favoritos
+// Comprobar si un producto es favorito
+function esFavorito(id) {
+    return favoritos.some(function(producto) {
+        return String(producto.id) === String(id);
+    });
+}
 
+// Agregar o quitar un producto
+function alternarFavorito(boton) {
+
+    const id = boton.dataset.productoId;
+    const nombre = boton.dataset.productoNombre;
+    const precio = Number(boton.dataset.productoPrecio);
+
+    if (!id || !nombre || !Number.isFinite(precio)) {
+        console.error("Datos incorrectos del producto:", {
+            id,
+            nombre,
+            precio
+        });
+        return;
+    }
+
+    if (esFavorito(id)) {
+
+        // Quitar solamente este producto
+        favoritos = favoritos.filter(function(producto) {
+            return String(producto.id) !== String(id);
+        });
+
+    } else {
+
+        // Agregar solamente este producto
+        favoritos.push({
+            id: id,
+            nombre: nombre,
+            precio: precio
+        });
+
+    }
+
+    guardarFavoritos();
+    actualizarBotonesFavoritos();
+    actualizarFavoritos();
+}
+
+// Actualizar los corazones
+function actualizarBotonesFavoritos() {
+
+    document.querySelectorAll(".favorito_producto").forEach(function(boton) {
+
+        const id = boton.dataset.productoId;
+        const guardado = esFavorito(id);
+
+        boton.textContent = guardado ? "♥" : "♡";
+
+        boton.classList.toggle("es-favorito", guardado);
+
+        boton.setAttribute(
+            "aria-label",
+            guardado ? "Quitar de favoritos" : "Agregar a favoritos"
+        );
+
+        boton.setAttribute(
+            "aria-pressed",
+            String(guardado)
+        );
+
+    });
+
+}
+
+// Mostrar productos favoritos
 function actualizarFavoritos() {
 
     if (!contenidoFavoritos) return;
@@ -1235,28 +1304,29 @@ function actualizarFavoritos() {
     contenidoFavoritos.replaceChildren();
 
     if (favoritos.length === 0) {
+
         contenidoFavoritos.textContent =
             "No tienes productos favoritos.";
+
         return;
     }
 
     favoritos.forEach(function(producto) {
 
         const div = document.createElement("div");
-
         div.classList.add("producto-favorito");
 
         const nombre = document.createElement("p");
         nombre.textContent = producto.nombre;
 
         const precio = document.createElement("p");
-        precio.textContent = "$" +
-            Number(producto.precio).toFixed(2);
+        precio.textContent =
+            "$" + Number(producto.precio).toFixed(2);
 
         const quitar = document.createElement("button");
 
         quitar.type = "button";
-        quitar.textContent = "Quitar de favoritos";
+        quitar.textContent = "♥ Quitar de favoritos";
 
         quitar.addEventListener("click", function() {
 
@@ -1275,74 +1345,24 @@ function actualizarFavoritos() {
         contenidoFavoritos.appendChild(div);
 
     });
+
 }
 
-// Actualizar corazones de los productos
+// EVENTOS DE LOS BOTONES DE FAVORITOS
+// Delegación de eventos para admitir productos dinámicos
+document.addEventListener("click", function(evento) {
 
-function actualizarBotonesFavoritos() {
+    const boton = evento.target.closest(".favorito_producto");
 
-    document.querySelectorAll(".favorito_producto")
-        .forEach(function(boton) {
+    if (!boton) return;
 
-            const id = boton.dataset.productoId;
+    evento.preventDefault();
 
-            const guardado = favoritos.some(function(p) {
-                return String(p.id) === String(id);
-            });
+    alternarFavorito(boton);
 
-            boton.textContent = guardado ? "♥" : "♡";
+});
 
-            boton.classList.toggle("es-favorito", guardado);
-
-            boton.setAttribute(
-                "aria-label",
-                guardado
-                    ? "Quitar de favoritos"
-                    : "Agregar a favoritos"
-            );
-
-        });
-}
-
-// Agregar y quitar favoritos
-
-document.querySelectorAll(".favorito_producto")
-    .forEach(function(boton) {
-
-        boton.addEventListener("click", function() {
-
-            const producto = {
-                id: boton.dataset.productoId,
-                nombre: boton.dataset.productoNombre,
-                precio: Number(boton.dataset.productoPrecio)
-            };
-
-            const existe = favoritos.some(function(p) {
-                return String(p.id) === String(producto.id);
-            });
-
-            if (existe) {
-
-                favoritos = favoritos.filter(function(p) {
-                    return String(p.id) !== String(producto.id);
-                });
-
-            } else {
-
-                favoritos.push(producto);
-
-            }
-
-            guardarFavoritos();
-            actualizarFavoritos();
-            actualizarBotonesFavoritos();
-
-        });
-
-    });
-
-// Abrir menú
-
+// Abrir panel
 if (favoritosBtn && favoritosBar) {
 
     favoritosBtn.addEventListener("click", function() {
@@ -1360,20 +1380,22 @@ if (favoritosBtn && favoritosBar) {
 
 }
 
-// Cerrar menú
-
+// Cerrar panel
 if (cerrarFavoritos && favoritosBar) {
 
     cerrarFavoritos.addEventListener("click", function() {
 
         favoritosBar.classList.remove("visible");
 
-        favoritosBtn.setAttribute("aria-expanded", "false");
+        if (favoritosBtn) {
+            favoritosBtn.setAttribute("aria-expanded", "false");
+        }
 
     });
 
 }
 
+// Inicializar
 actualizarBotonesFavoritos();
 actualizarFavoritos();
 
