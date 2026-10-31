@@ -267,6 +267,16 @@
 >
     Agregar al carrito
 </button>
+<button
+    class="favorito_producto"
+    type="button"
+    data-producto-id="{{ producto.id }}"
+    data-producto-nombre="{{ producto.nombre }}"
+    data-producto-precio="{{ producto.precio_venta }}"
+    aria-label="Agregar a favoritos"
+>
+    ♡
+</button>
 
             </div>
 
@@ -337,6 +347,23 @@
 			
 				
 		</nav>
+		<nav id="favoritos_bar" class="barra">
+
+    <h1>MIS FAVORITOS</h1>
+
+    <div id="contenido_favoritos">
+        <p>No tienes productos favoritos.</p>
+    </div>
+
+    <button
+        type="button"
+        id="cerrar_favoritos"
+        class="button"
+    >
+        Cerrar
+    </button>
+
+</nav>
 		<nav class="barra" id="menu_bar">
 
 			<button
