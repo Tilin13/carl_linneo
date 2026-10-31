@@ -10,21 +10,30 @@
     <title>Mi cuenta | Linneo</title>
 
     <link rel="stylesheet" href="/css/variables.css">
+
 </head>
 
 <body>
+
+    <!-- =================================
+         BARRA DE NAVEGACIÓN
+    ================================== -->
 
     <header class="barra" id="barra_global">
 
         <h2>Linneo</h2>
 
         <a href="/">Inicio</a>
+
         <a href="/catalogo">Catálogo</a>
 
-        <span>Hola, {{ usuario.username }}</span>
+        <span class="cuenta-saludo">
+            Hola, <strong>{{ usuario.username }}</strong>
+        </span>
 
         <form action="{{ url_for('cerrar_sesion') }}"
-              method="POST">
+              method="POST"
+              class="cuenta-cerrar">
 
             <input type="hidden"
                    name="csrf_token"
@@ -38,166 +47,276 @@
 
     </header>
 
-    <main>
 
-        <section class="tarjeta">
+    <main class="cuenta-contenido">
+
+        <!-- =================================
+             ENCABEZADO
+        ================================== -->
+
+        <div class="cuenta-introduccion">
 
             <h1>Mi cuenta</h1>
 
+            <p>
+                Administra tus datos personales y consulta
+                el historial de tus pedidos.
+            </p>
+
+        </div>
+
+
+        <!-- =================================
+             DATOS Y CONFIGURACIÓN
+        ================================== -->
+
+        <div class="cuenta-panel">
+
             <h2>Datos personales</h2>
 
-            <p>
-                <strong>Usuario:</strong>
-                {{ usuario.username }}
-            </p>
+            <div class="datos-personales">
 
-            <p>
-                <strong>Correo:</strong>
-                {{ usuario.email }}
-            </p>
+                <div class="dato">
 
-            <p>
-                <strong>Teléfono:</strong>
-                {{ usuario.phone or "No registrado" }}
-            </p>
+                    <span class="dato-etiqueta">
+                        Usuario
+                    </span>
 
-            <hr>
+                    <span class="dato-valor">
+                        {{ usuario.username }}
+                    </span>
 
-            <h2>Cambiar teléfono</h2>
+                </div>
+
+                <div class="dato">
+
+                    <span class="dato-etiqueta">
+                        Correo electrónico
+                    </span>
+
+                    <span class="dato-valor">
+                        {{ usuario.email }}
+                    </span>
+
+                </div>
+
+                <div class="dato">
+
+                    <span class="dato-etiqueta">
+                        Teléfono
+                    </span>
+
+                    <span class="dato-valor">
+                        {{ usuario.phone or "No registrado" }}
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <hr class="cuenta-separador">
+
+
+            <!-- CAMBIAR TELÉFONO -->
+
+            <h2 class="cuenta-subtitulo">
+                Cambiar teléfono
+            </h2>
 
             <form action="{{ url_for('cambiar_telefono') }}"
-                  method="POST">
+                  method="POST"
+                  class="cuenta-formulario">
 
                 <input type="hidden"
                        name="csrf_token"
                        value="{{ csrf_token() }}">
 
-                <label for="phone">
-                    Nuevo teléfono:
-                </label>
+                <div class="cuenta-campo">
 
-                <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    maxlength="20"
-                    required
-                >
+                    <label for="phone">
+                        Nuevo número de teléfono
+                    </label>
 
-                <button type="submit">
+                    <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        maxlength="20"
+                        autocomplete="tel"
+                        placeholder="Introduce tu teléfono"
+                        required
+                    >
+
+                </div>
+
+                <button type="submit" class="button">
                     Actualizar teléfono
                 </button>
 
             </form>
 
-            <hr>
 
-            <h2>Cambiar contraseña</h2>
+            <hr class="cuenta-separador">
+
+
+            <!-- CAMBIAR CONTRASEÑA -->
+
+            <h2 class="cuenta-subtitulo">
+                Cambiar contraseña
+            </h2>
 
             <form action="{{ url_for('cambiar_contrasena') }}"
-                  method="POST">
+                  method="POST"
+                  class="cuenta-formulario">
 
                 <input type="hidden"
                        name="csrf_token"
                        value="{{ csrf_token() }}">
 
-                <label for="password_actual">
-                    Contraseña actual:
-                </label>
+                <div class="cuenta-campo">
 
-                <input
-                    type="password"
-                    id="password_actual"
-                    name="password_actual"
-                    required
-                >
+                    <label for="password_actual">
+                        Contraseña actual
+                    </label>
 
-                <label for="password_nueva">
-                    Nueva contraseña:
-                </label>
+                    <input
+                        type="password"
+                        id="password_actual"
+                        name="password_actual"
+                        autocomplete="current-password"
+                        placeholder="Introduce tu contraseña actual"
+                        required
+                    >
 
-                <input
-                    type="password"
-                    id="password_nueva"
-                    name="password_nueva"
-                    minlength="12"
-                    maxlength="128"
-                    required
-                >
+                </div>
 
-                <button type="submit">
+
+                <div class="cuenta-campo">
+
+                    <label for="password_nueva">
+                        Nueva contraseña
+                    </label>
+
+                    <input
+                        type="password"
+                        id="password_nueva"
+                        name="password_nueva"
+                        minlength="12"
+                        maxlength="128"
+                        autocomplete="new-password"
+                        placeholder="Introduce tu nueva contraseña"
+                        required
+                    >
+
+                    <p class="cuenta-ayuda">
+                        La contraseña debe tener al menos 12 caracteres.
+                    </p>
+
+                </div>
+
+                <button type="submit" class="button">
                     Cambiar contraseña
                 </button>
 
             </form>
 
-        </section>
+        </div>
 
 
-        <section class="tarjeta">
+        <!-- =================================
+             HISTORIAL DE PEDIDOS
+        ================================== -->
 
-            <h1>Mis pedidos</h1>
+        <div class="cuenta-panel">
+
+            <h2>Mis pedidos</h2>
 
             {% if pedidos %}
 
-                {% for pedido in pedidos %}
+                <div class="lista-pedidos">
 
-                    <article class="pedido">
+                    {% for pedido in pedidos %}
 
-                        <h2>
-                            Pedido #{{ pedido.id }}
-                        </h2>
+                        <article class="pedido">
 
-                        <p>
-                            <strong>Fecha:</strong>
-                            {{ pedido.fecha.strftime('%d/%m/%Y %H:%M') }}
-                        </p>
+                            <div class="pedido-encabezado">
 
-                        <p>
-                            <strong>Subtotal:</strong>
-                            ${{ "%.2f"|format(pedido.subtotal|float) }}
-                        </p>
+                                <h3>
+                                    Pedido #{{ pedido.id }}
+                                </h3>
 
-                        <p>
-                            <strong>Estado:</strong>
+                                {% if pedido.estado == "Entregado" %}
 
-                            {% if pedido.estado == "Entregado" %}
-                                <span class="estado_entregado">
-                                    Entregado
-                                </span>
+                                    <span class="pedido-estado estado_entregado">
+                                        Entregado
+                                    </span>
 
-                            {% elif pedido.estado == "En camino" %}
-                                <span class="estado_camino">
-                                    En camino
-                                </span>
+                                {% elif pedido.estado == "En camino" %}
 
-                            {% else %}
-                                <span class="estado_pendiente">
-                                    {{ pedido.estado }}
-                                </span>
-                            {% endif %}
+                                    <span class="pedido-estado estado_camino">
+                                        En camino
+                                    </span>
 
-                        </p>
+                                {% else %}
 
-                        <hr>
+                                    <span class="pedido-estado estado_pendiente">
+                                        {{ pedido.estado }}
+                                    </span>
 
-                    </article>
+                                {% endif %}
 
-                {% endfor %}
+                            </div>
+
+
+                            <div class="pedido-datos">
+
+                                <p class="pedido-dato">
+
+                                    <strong>Fecha:</strong>
+
+                                    {{ pedido.fecha.strftime('%d/%m/%Y %H:%M') }}
+
+                                </p>
+
+                                <p class="pedido-dato">
+
+                                    <strong>Subtotal:</strong>
+
+                                    ${{ "%.2f"|format(pedido.subtotal|float) }}
+
+                                </p>
+
+                            </div>
+
+                        </article>
+
+                    {% endfor %}
+
+                </div>
 
             {% else %}
 
-                <p>
-                    Todavía no tienes pedidos registrados.
-                </p>
+                <div class="pedidos-vacios">
 
-                <a href="/catalogo">
-                    Explorar productos
-                </a>
+                    <h3>
+                        Todavía no tienes pedidos
+                    </h3>
+
+                    <p>
+                        Cuando realices una compra,
+                        podrás consultar aquí su información.
+                    </p>
+
+                    <a href="/catalogo">
+                        Explorar productos
+                    </a>
+
+                </div>
 
             {% endif %}
 
-        </section>
+        </div>
 
     </main>
 
