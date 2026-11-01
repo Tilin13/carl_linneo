@@ -1498,3 +1498,4 @@ if (cerrarFavoritos && favoritosBar) {
 // Inicializar favoritos
 actualizarBotonesFavoritos();
 actualizarFavoritos();
+});
