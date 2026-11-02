@@ -1484,7 +1484,9 @@ def herramienta_ia_buscarproductos(texto):
 # ============================================================
 # EJECUCIÓN
 # ============================================================
-
+# Inicializar las bases de datos al cargar Flask en Render
+inicializar_base_datos()
+crear_tabla_productos()
 if __name__ == "__main__":
     modo_debug = os.getenv("FLASK_DEBUG", "false").lower() in {
         "1", "true", "yes", "on"
