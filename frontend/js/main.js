@@ -31,6 +31,18 @@ document.addEventListener("DOMContentLoaded", function () {
     const contadorNovedades = $("contador");
     const atrasNovedades = $("atras_novedades");
     const adelanteNovedades = $("adelante_novedades");
+    const carritobtn = document.getElementById("carritobtn");
+const carrito_bar = document.getElementById("carrito_bar");
+
+console.log("Botón carrito:", carritobtn);
+console.log("Panel carrito:", carrito_bar);
+
+if (carritobtn && carrito_bar) {
+    carritobtn.addEventListener("click", function () {
+        console.log("¡Se hizo clic en el carrito!");
+        carrito_bar.classList.toggle("visible");
+    });
+}
 
     const popup = $("popup");
     const cerrarPopup = $("quitar_popup");
