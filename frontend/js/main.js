@@ -729,491 +729,501 @@ document.addEventListener("DOMContentLoaded", function () {
     // CARRITO Y FAVORITOS
     // =====================================================
 
-    let carrito = [];
-    let favoritos = [];
+// =====================================================
+// CARRITO Y FAVORITOS
+// =====================================================
 
-    function recuperarDatos(clave) {
-        try {
-            const datos = JSON.parse(
-                localStorage.getItem(clave) || "[]"
-            );
+let carrito = [];
+let favoritos = [];
 
-            return Array.isArray(datos) ? datos : [];
+// =====================================================
+// RECUPERAR DATOS
+// =====================================================
 
-        } catch (error) {
-            console.error(`Error al recuperar ${clave}:`, error);
-            return [];
-        }
-    }
-
-    carrito = recuperarDatos("linneoCarrito")
-        .filter(function (producto) {
-            return (
-                producto &&
-                producto.id != null &&
-                String(producto.id).trim() !== "" &&
-                typeof producto.nombre === "string" &&
-                Number.isFinite(Number(producto.precio)) &&
-                Number(producto.precio) >= 0 &&
-                Number.isSafeInteger(Number(producto.cantidad)) &&
-                Number(producto.cantidad) > 0
-            );
-        })
-        .map(function (producto) {
-            return {
-                id: String(producto.id),
-                nombre: producto.nombre,
-                precio: Number(producto.precio),
-                cantidad: Number(producto.cantidad)
-            };
-        });
-
-    favoritos = recuperarDatos("linneoFavoritos")
-        .filter(function (producto) {
-            return (
-                producto &&
-                producto.id != null &&
-                String(producto.id).trim() !== "" &&
-                typeof producto.nombre === "string" &&
-                Number.isFinite(Number(producto.precio)) &&
-                Number(producto.precio) >= 0
-            );
-        })
-        .map(function (producto) {
-            return {
-                id: String(producto.id),
-                nombre: producto.nombre,
-                precio: Number(producto.precio)
-            };
-        });
-
-    function guardarDatos(clave, datos) {
-        try {
-            localStorage.setItem(
-                clave,
-                JSON.stringify(datos)
-            );
-        } catch (error) {
-            console.error(`Error al guardar ${clave}:`, error);
-        }
-    }
-
-    function guardarCarrito() {
-        guardarDatos("linneoCarrito", carrito);
-    }
-
-    function guardarFavoritos() {
-        guardarDatos("linneoFavoritos", favoritos);
-    }
-
-    // =====================================================
-    // CARRITO: AGREGAR
-    // =====================================================
-
-    function agregarAlCarrito(id, nombre, precio) {
-        id = String(id ?? "").trim();
-        nombre = String(nombre ?? "").trim();
-        precio = Number(precio);
-
-        if (
-            !id ||
-            !nombre ||
-            !Number.isFinite(precio) ||
-            precio < 0
-        ) {
-            console.error("Datos incorrectos del producto.");
-            return;
-        }
-
-        const existente = carrito.find(
-            producto => producto.id === id
+function recuperarDatos(clave) {
+    try {
+        const datos = JSON.parse(
+            localStorage.getItem(clave) || "[]"
         );
 
-        if (existente) {
-            if (existente.cantidad >= Number.MAX_SAFE_INTEGER) {
-                console.error("Cantidad máxima alcanzada.");
-                return;
-            }
+        return Array.isArray(datos) ? datos : [];
 
-            existente.cantidad++;
-        } else {
-            carrito.push({
-                id,
-                nombre,
-                precio,
-                cantidad: 1
-            });
-        }
+    } catch (error) {
+        console.error("Error al recuperar datos:", error);
+        return [];
+    }
+}
 
-        actualizarCarrito();
+carrito = recuperarDatos("linneoCarrito");
+
+favoritos = recuperarDatos("linneoFavoritos");
+
+// Normalizar carrito
+carrito = carrito.filter(producto =>
+    producto &&
+    producto.id != null &&
+    producto.nombre &&
+    Number.isFinite(Number(producto.precio)) &&
+    Number(producto.precio) >= 0 &&
+    Number.isSafeInteger(Number(producto.cantidad)) &&
+    Number(producto.cantidad) > 0
+).map(producto => ({
+    id: String(producto.id),
+    nombre: String(producto.nombre),
+    precio: Number(producto.precio),
+    cantidad: Number(producto.cantidad)
+}));
+
+// Normalizar favoritos
+favoritos = favoritos.filter(producto =>
+    producto &&
+    producto.id != null &&
+    producto.nombre &&
+    Number.isFinite(Number(producto.precio)) &&
+    Number(producto.precio) >= 0
+).map(producto => ({
+    id: String(producto.id),
+    nombre: String(producto.nombre),
+    precio: Number(producto.precio)
+}));
+
+// =====================================================
+// GUARDAR DATOS
+// =====================================================
+
+function guardarCarrito() {
+    localStorage.setItem(
+        "linneoCarrito",
+        JSON.stringify(carrito)
+    );
+}
+
+function guardarFavoritos() {
+    localStorage.setItem(
+        "linneoFavoritos",
+        JSON.stringify(favoritos)
+    );
+}
+
+// =====================================================
+// CARRITO: AGREGAR PRODUCTOS
+// =====================================================
+
+function agregarAlCarrito(id, nombre, precio) {
+
+    id = String(id ?? "").trim();
+    nombre = String(nombre ?? "").trim();
+    precio = Number(precio);
+
+    if (
+        !id ||
+        !nombre ||
+        !Number.isFinite(precio) ||
+        precio < 0
+    ) {
+        console.error("Datos incorrectos del producto.");
+        return;
     }
 
-    // =====================================================
-    // CARRITO: ELIMINAR
-    // =====================================================
+    const existente = carrito.find(
+        producto => producto.id === id
+    );
 
-    function eliminarDelCarrito(id) {
-        carrito = carrito.filter(
-            producto => producto.id !== String(id)
+    if (existente) {
+        existente.cantidad++;
+    } else {
+        carrito.push({
+            id,
+            nombre,
+            precio,
+            cantidad: 1
+        });
+    }
+
+    actualizarCarrito();
+}
+
+// =====================================================
+// CARRITO: ELIMINAR PRODUCTOS
+// =====================================================
+
+function eliminarDelCarrito(id) {
+
+    carrito = carrito.filter(
+        producto => producto.id !== String(id)
+    );
+
+    actualizarCarrito();
+}
+
+// =====================================================
+// CARRITO: ACTUALIZAR VISTA
+// =====================================================
+
+function actualizarCarrito() {
+
+    let subtotal = 0;
+    let cantidadTotal = 0;
+
+    if (listaCarrito) {
+        listaCarrito.replaceChildren();
+    }
+
+    carrito.forEach(producto => {
+
+        subtotal += producto.precio * producto.cantidad;
+        cantidadTotal += producto.cantidad;
+
+        if (!listaCarrito) return;
+
+        const fila = document.createElement("tr");
+
+        const nombre = document.createElement("td");
+        nombre.textContent = producto.nombre;
+
+        const cantidad = document.createElement("td");
+        cantidad.textContent = producto.cantidad;
+
+        const precio = document.createElement("td");
+        precio.textContent =
+            "$" + producto.precio.toFixed(2);
+
+        const acciones = document.createElement("td");
+
+        acciones.appendChild(
+            crearBoton("✖", () => {
+                eliminarDelCarrito(producto.id);
+            }, "eliminar-carrito")
         );
 
-        actualizarCarrito();
-    }
+        fila.append(
+            nombre,
+            cantidad,
+            precio,
+            acciones
+        );
 
-    // =====================================================
-    // CARRITO: DIBUJAR
-    // =====================================================
-
-    function actualizarCarrito() {
-        let subtotal = 0;
-        let cantidadTotal = 0;
-
-        if (listaCarrito) {
-            listaCarrito.replaceChildren();
-        }
-
-        carrito.forEach(function (producto) {
-            subtotal += producto.precio * producto.cantidad;
-            cantidadTotal += producto.cantidad;
-
-            if (!listaCarrito) return;
-
-            const fila = document.createElement("tr");
-
-            const nombre = document.createElement("td");
-            nombre.textContent = producto.nombre;
-
-            const cantidad = document.createElement("td");
-            cantidad.textContent = producto.cantidad;
-
-            const precio = document.createElement("td");
-            precio.textContent =
-                "$" + producto.precio.toFixed(2);
-
-            const acciones = document.createElement("td");
-
-            acciones.appendChild(
-                crearBoton("✖", function () {
-                    eliminarDelCarrito(producto.id);
-                }, "eliminar-carrito")
-            );
-
-            fila.append(
-                nombre,
-                cantidad,
-                precio,
-                acciones
-            );
-
-            listaCarrito.appendChild(fila);
-        });
-
-        if (listaCarrito && carrito.length === 0) {
-            const fila = document.createElement("tr");
-            const celda = document.createElement("td");
-
-            celda.colSpan = 4;
-            celda.textContent = "El carrito está vacío.";
-
-            fila.appendChild(celda);
-            listaCarrito.appendChild(fila);
-        }
-
-        if (subtotalLabel) {
-            subtotalLabel.textContent =
-                "$" + subtotal.toFixed(2);
-        }
-
-        if (cantidad_productos) {
-            cantidad_productos.textContent =
-                String(cantidadTotal);
-        }
-
-        guardarCarrito();
-    }
-
-    // =====================================================
-    // CARRITO: BOTONES DE PRODUCTOS
-    // =====================================================
-
-    document.querySelectorAll(".agregar-carrito").forEach(function (boton) {
-        boton.addEventListener("click", function (evento) {
-            evento.preventDefault();
-
-            agregarAlCarrito(
-                boton.dataset.productoId,
-                boton.dataset.productoNombre,
-                boton.dataset.productoPrecio
-            );
-        });
+        listaCarrito.appendChild(fila);
     });
 
-    // =====================================================
-    // CARRITO: ABRIR Y CERRAR
-    // =====================================================
+    if (listaCarrito && carrito.length === 0) {
 
-    if (carritobtn && carrito_bar) {
-        carritobtn.addEventListener("click", function () {
-            alternarPanel(carritobtn, carrito_bar);
-        });
+        const fila = document.createElement("tr");
+        const celda = document.createElement("td");
+
+        celda.colSpan = 4;
+        celda.textContent = "El carrito está vacío.";
+
+        fila.appendChild(celda);
+        listaCarrito.appendChild(fila);
     }
 
-    if (cerrarCarrito && carrito_bar) {
-        cerrarCarrito.addEventListener("click", function () {
-            carrito_bar.classList.remove("visible");
-
-            if (carritobtn) {
-                carritobtn.setAttribute("aria-expanded", "false");
-            }
-        });
+    if (subtotalLabel) {
+        subtotalLabel.textContent =
+            "$" + subtotal.toFixed(2);
     }
 
-    // =====================================================
-    // FAVORITOS: COMPROBAR
-    // =====================================================
-
-    function esFavorito(id) {
-        return favoritos.some(
-            producto => producto.id === String(id)
-        );
+    if (cantidad_productos) {
+        cantidad_productos.textContent =
+            String(cantidadTotal);
     }
 
-    // =====================================================
-    // FAVORITOS: ACTUALIZAR BOTONES
-    // =====================================================
+    guardarCarrito();
+}
 
-    function actualizarBotonesFavoritos() {
-        document.querySelectorAll(".favorito_producto").forEach(
-            function (boton) {
-                const activo = esFavorito(
-                    boton.dataset.productoId
-                );
+// =====================================================
+// CARRITO: BOTONES DE PRODUCTOS
+// =====================================================
 
-                boton.textContent = activo ? "♥" : "♡";
+document.querySelectorAll(".agregar-carrito").forEach(boton => {
 
-                boton.classList.toggle(
-                    "es-favorito",
-                    activo
-                );
+    boton.addEventListener("click", evento => {
 
-                boton.setAttribute(
-                    "aria-label",
-                    activo
-                        ? "Quitar de favoritos"
-                        : "Agregar a favoritos"
-                );
+        evento.preventDefault();
 
-                boton.setAttribute(
-                    "aria-pressed",
-                    String(activo)
-                );
-            }
-        );
-    }
+        if (boton.disabled) return;
 
-    // =====================================================
-    // FAVORITOS: ALTERNAR
-    // =====================================================
-
-    function alternarFavorito(boton) {
-        const id = String(
-            boton.dataset.productoId ?? ""
-        ).trim();
-
-        const nombre = String(
-            boton.dataset.productoNombre ?? ""
-        ).trim();
-
-        const precio = Number(
+        agregarAlCarrito(
+            boton.dataset.productoId,
+            boton.dataset.productoNombre,
             boton.dataset.productoPrecio
         );
 
-        if (
-            !id ||
-            !nombre ||
-            !Number.isFinite(precio) ||
-            precio < 0
-        ) {
-            console.error("Datos incorrectos del favorito.");
-            return;
-        }
-
-        if (esFavorito(id)) {
-            favoritos = favoritos.filter(
-                producto => producto.id !== id
-            );
-        } else {
-            favoritos.push({
-                id,
-                nombre,
-                precio
-            });
-        }
-
-        guardarFavoritos();
-        actualizarBotonesFavoritos();
-        actualizarFavoritos();
-    }
-
-    // =====================================================
-    // FAVORITOS: DIBUJAR
-    // =====================================================
-
-    function actualizarFavoritos() {
-        if (!contenidoFavoritos) return;
-
-        contenidoFavoritos.replaceChildren();
-
-        if (favoritos.length === 0) {
-            const mensaje = document.createElement("p");
-
-            mensaje.textContent =
-                "No tienes productos favoritos.";
-
-            contenidoFavoritos.appendChild(mensaje);
-            return;
-        }
-
-        favoritos.forEach(function (producto) {
-            const div = document.createElement("div");
-            div.classList.add("producto-favorito");
-
-            const nombre = document.createElement("p");
-            nombre.textContent = producto.nombre;
-
-            const precio = document.createElement("p");
-            precio.textContent =
-                "$" + producto.precio.toFixed(2);
-
-            const quitarBtn = crearBoton(
-                "♥ Quitar de favoritos",
-                function () {
-                    favoritos = favoritos.filter(
-                        p => p.id !== producto.id
-                    );
-
-                    guardarFavoritos();
-                    actualizarFavoritos();
-                    actualizarBotonesFavoritos();
-                }
-            );
-
-            const carritoBtn = crearBoton(
-                "🛒 Agregar al carrito",
-                function () {
-                    agregarAlCarrito(
-                        producto.id,
-                        producto.nombre,
-                        producto.precio
-                    );
-                }
-            );
-
-            div.append(
-                nombre,
-                precio,
-                quitarBtn,
-                carritoBtn
-            );
-
-            contenidoFavoritos.appendChild(div);
-        });
-    }
-
-    // =====================================================
-    // FAVORITOS: DETECTAR CLICS
-    // =====================================================
-
-    document.addEventListener("click", function (evento) {
-        const boton = evento.target.closest(".favorito_producto");
-
-        if (!boton) return;
-
-        evento.preventDefault();
-        alternarFavorito(boton);
     });
 
-    // =====================================================
-    // FAVORITOS: ABRIR Y CERRAR
-    // =====================================================
+});
 
-    if (favoritosBtn && favoritosBar) {
-        favoritosBtn.addEventListener("click", function () {
-            alternarPanel(favoritosBtn, favoritosBar);
-            actualizarFavoritos();
-        });
-    }
+// =====================================================
+// CARRITO: ABRIR Y CERRAR
+// =====================================================
 
-    if (cerrarFavoritos && favoritosBar) {
-        cerrarFavoritos.addEventListener("click", function () {
-            favoritosBar.classList.remove("visible");
+if (carritobtn && carrito_bar) {
 
-            if (favoritosBtn) {
-                favoritosBtn.setAttribute("aria-expanded", "false");
-            }
-        });
-    }
+    carritobtn.addEventListener("click", () => {
 
-    // =====================================================
-    // INICIALIZAR CARRITO Y FAVORITOS
-    // =====================================================
+        alternarPanel(carritobtn, carrito_bar);
 
-    actualizarCarrito();
-    actualizarBotonesFavoritos();
-    actualizarFavoritos();
+    });
 
-    // =====================================================
-    // CONTROL DE STOCK
-    // =====================================================
+}
 
-    function actualizarIndicadoresStock() {
-        const productosStock = document.querySelectorAll(
-            ".tarjeta_producto, #producto"
+if (cerrarCarrito && carrito_bar) {
+
+    cerrarCarrito.addEventListener("click", () => {
+
+        carrito_bar.classList.remove("visible");
+
+        if (carritobtn) {
+            carritobtn.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+        }
+
+    });
+
+}
+
+// =====================================================
+// FAVORITOS: COMPROBAR SI EXISTE
+// =====================================================
+
+function esFavorito(id) {
+
+    return favoritos.some(
+        producto => producto.id === String(id)
+    );
+
+}
+
+// =====================================================
+// FAVORITOS: ACTUALIZAR BOTONES
+// =====================================================
+
+function actualizarBotonesFavoritos() {
+
+    document.querySelectorAll(".favorito_producto").forEach(boton => {
+
+        const activo = esFavorito(
+            boton.dataset.productoId
         );
 
-        productosStock.forEach(function (producto) {
-            const stockElemento =
-                producto.querySelector(".producto_stock");
+        boton.textContent = activo ? "♥" : "♡";
 
-            const disponibilidad =
-                producto.querySelector(".disponibilidad_favicon");
+        boton.classList.toggle(
+            "es-favorito",
+            activo
+        );
 
-            const botonCarrito =
-                producto.querySelector(".agregar-carrito");
+        boton.setAttribute(
+            "aria-pressed",
+            String(activo)
+        );
 
-            if (!stockElemento) return;
+        boton.setAttribute(
+            "aria-label",
+            activo
+                ? "Quitar de favoritos"
+                : "Agregar a favoritos"
+        );
 
-            const stockTexto = stockElemento.textContent
-                .replace(/Stock:/i, "")
-                .trim();
+    });
 
-            const stock = Number(stockTexto);
+}
 
-            if (!Number.isFinite(stock)) return;
+// =====================================================
+// FAVORITOS: AGREGAR Y QUITAR
+// =====================================================
 
-            const agotado = stock <= 0;
+function alternarFavorito(boton) {
 
-            if (disponibilidad) {
-                disponibilidad.style.backgroundColor =
-                    agotado ? "red" : "var(--verde-musgo)";
-            }
+    const id = String(
+        boton.dataset.productoId ?? ""
+    ).trim();
 
-            if (botonCarrito) {
-                botonCarrito.disabled = agotado;
-                botonCarrito.style.display =
-                    agotado ? "none" : "";
+    const nombre = String(
+        boton.dataset.productoNombre ?? ""
+    ).trim();
 
-                botonCarrito.setAttribute(
-                    "aria-label",
-                    agotado
-                        ? "Producto sin stock"
-                        : "Agregar al carrito"
-                );
-            }
-        });
+    const precio = Number(
+        boton.dataset.productoPrecio
+    );
+
+    if (
+        !id ||
+        !nombre ||
+        !Number.isFinite(precio) ||
+        precio < 0
+    ) {
+        console.error("Datos incorrectos del favorito.");
+        return;
     }
 
-    actualizarIndicadoresStock();
+    if (esFavorito(id)) {
+
+        favoritos = favoritos.filter(
+            producto => producto.id !== id
+        );
+
+    } else {
+
+        favoritos.push({
+            id,
+            nombre,
+            precio
+        });
+
+    }
+
+    guardarFavoritos();
+
+    actualizarBotonesFavoritos();
+
+    actualizarFavoritos();
+}
+
+// =====================================================
+// FAVORITOS: MOSTRAR PRODUCTOS
+// =====================================================
+
+function actualizarFavoritos() {
+
+    if (!contenidoFavoritos) return;
+
+    contenidoFavoritos.replaceChildren();
+
+    if (favoritos.length === 0) {
+
+        const mensaje = document.createElement("p");
+
+        mensaje.textContent =
+            "No tienes productos favoritos.";
+
+        contenidoFavoritos.appendChild(mensaje);
+
+        return;
+    }
+
+    favoritos.forEach(producto => {
+
+        const div = document.createElement("div");
+
+        div.classList.add("producto-favorito");
+
+        const nombre = document.createElement("p");
+        nombre.textContent = producto.nombre;
+
+        const precio = document.createElement("p");
+
+        precio.textContent =
+            "$" + producto.precio.toFixed(2);
+
+        const quitarBtn = crearBoton(
+            "♥ Quitar de favoritos",
+            () => {
+
+                favoritos = favoritos.filter(
+                    p => p.id !== producto.id
+                );
+
+                guardarFavoritos();
+
+                actualizarFavoritos();
+
+                actualizarBotonesFavoritos();
+
+            }
+        );
+
+        const carritoBtn = crearBoton(
+            "🛒 Agregar al carrito",
+            () => {
+
+                agregarAlCarrito(
+                    producto.id,
+                    producto.nombre,
+                    producto.precio
+                );
+
+            }
+        );
+
+        div.append(
+            nombre,
+            precio,
+            quitarBtn,
+            carritoBtn
+        );
+
+        contenidoFavoritos.appendChild(div);
+
+    });
+
+}
+
+// =====================================================
+// FAVORITOS: DETECTAR CLICS
+// =====================================================
+
+document.addEventListener("click", evento => {
+
+    const boton = evento.target.closest(
+        ".favorito_producto"
+    );
+
+    if (!boton) return;
+
+    evento.preventDefault();
+
+    alternarFavorito(boton);
+
+});
+
+// =====================================================
+// FAVORITOS: ABRIR Y CERRAR
+// =====================================================
+
+if (favoritosBtn && favoritosBar) {
+
+    favoritosBtn.addEventListener("click", () => {
+
+        alternarPanel(favoritosBtn, favoritosBar);
+
+        actualizarFavoritos();
+
+    });
+
+}
+
+if (cerrarFavoritos && favoritosBar) {
+
+    cerrarFavoritos.addEventListener("click", () => {
+
+        favoritosBar.classList.remove("visible");
+
+        if (favoritosBtn) {
+
+            favoritosBtn.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+
+        }
+
+    });
+
+}
+
+// =====================================================
+// INICIALIZAR CARRITO Y FAVORITOS
+// =====================================================
+
+actualizarCarrito();
+
+actualizarBotonesFavoritos();
+
+actualizarFavoritos();
+
 
     // =====================================================
     // FILTROS Y ORDEN DEL CATÁLOGO
