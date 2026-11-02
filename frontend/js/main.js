@@ -647,19 +647,34 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-  
+
 // =====================================================
-// CARRITO DE COMPRAS
+// CARRITO DE COMPRAS Y FAVORITOS - LINNEO
 // =====================================================
 
-const contenidoCarrito = document.getElementById("contenido_carrito");
-const precioCarrito = document.getElementById("productos_carrito_precio");
+// Elementos del carrito
+// carritobtn, carrito_bar y cantidad_productos
+// ya están declarados anteriormente en este archivo.
+
 const listaCarrito = document.getElementById("lista_carrito");
 const subtotalLabel = document.getElementById("subtotal_carrito");
+const cerrarCarrito = document.getElementById("cerrar_carrito");
 
+// Elementos de favoritos
+const favoritosBtn = document.getElementById("favoritos_btn");
+const favoritosBar = document.getElementById("favoritos_bar");
+const contenidoFavoritos = document.getElementById("contenido_favoritos");
+const cerrarFavoritos = document.getElementById("cerrar_favoritos");
+
+// Variables
 let carrito = [];
+let favoritos = [];
 
-// Recuperar carrito
+
+// =====================================================
+// RECUPERAR DATOS GUARDADOS
+// =====================================================
+
 try {
     const guardado = JSON.parse(
         localStorage.getItem("linneoCarrito") || "[]"
@@ -686,12 +701,45 @@ try {
                 )
             }));
     }
+
 } catch (error) {
     console.error("Error al recuperar el carrito:", error);
     carrito = [];
 }
 
-// Guardar carrito
+
+try {
+    const guardados = JSON.parse(
+        localStorage.getItem("linneoFavoritos") || "[]"
+    );
+
+    if (Array.isArray(guardados)) {
+        favoritos = guardados
+            .filter(p =>
+                p &&
+                p.id !== undefined &&
+                p.id !== null &&
+                String(p.id).trim() !== "" &&
+                typeof p.nombre === "string" &&
+                Number.isFinite(Number(p.precio))
+            )
+            .map(p => ({
+                id: String(p.id),
+                nombre: p.nombre,
+                precio: Number(p.precio)
+            }));
+    }
+
+} catch (error) {
+    console.error("Error al recuperar favoritos:", error);
+    favoritos = [];
+}
+
+
+// =====================================================
+// GUARDAR DATOS
+// =====================================================
+
 function guardarCarrito() {
     try {
         localStorage.setItem(
@@ -703,13 +751,31 @@ function guardarCarrito() {
     }
 }
 
-// Agregar producto
+
+function guardarFavoritos() {
+    try {
+        localStorage.setItem(
+            "linneoFavoritos",
+            JSON.stringify(favoritos)
+        );
+    } catch (error) {
+        console.error("No se pudieron guardar los favoritos:", error);
+    }
+}
+
+
+// =====================================================
+// CARRITO: AGREGAR PRODUCTOS
+// =====================================================
+
 function agregarAlCarrito(id, nombre, precio) {
 
+    id = String(id ?? "").trim();
+    nombre = String(nombre ?? "").trim();
+    precio = Number(precio);
+
     if (
-        id === undefined ||
-        id === null ||
-        String(id).trim() === "" ||
+        !id ||
         !nombre ||
         !Number.isFinite(precio) ||
         precio < 0
@@ -719,14 +785,14 @@ function agregarAlCarrito(id, nombre, precio) {
     }
 
     const existente = carrito.find(
-        p => String(p.id) === String(id)
+        p => String(p.id) === id
     );
 
     if (existente) {
         existente.cantidad++;
     } else {
         carrito.push({
-            id: String(id),
+            id: id,
             nombre: nombre,
             precio: precio,
             cantidad: 1
@@ -736,7 +802,11 @@ function agregarAlCarrito(id, nombre, precio) {
     actualizarCarrito();
 }
 
-// Eliminar producto
+
+// =====================================================
+// CARRITO: ELIMINAR PRODUCTOS
+// =====================================================
+
 function eliminarDelCarrito(id) {
 
     carrito = carrito.filter(
@@ -746,7 +816,11 @@ function eliminarDelCarrito(id) {
     actualizarCarrito();
 }
 
-// Actualizar carrito
+
+// =====================================================
+// CARRITO: ACTUALIZAR CONTENIDO
+// =====================================================
+
 function actualizarCarrito() {
 
     let subtotal = 0;
@@ -754,10 +828,6 @@ function actualizarCarrito() {
 
     if (listaCarrito) {
         listaCarrito.replaceChildren();
-    }
-
-    if (contenidoCarrito) {
-        contenidoCarrito.replaceChildren();
     }
 
     carrito.forEach(producto => {
@@ -769,7 +839,6 @@ function actualizarCarrito() {
         subtotal += totalProducto;
         cantidadTotal += cantidad;
 
-        // Mostrar en tabla
         if (listaCarrito) {
 
             const fila = document.createElement("tr");
@@ -789,10 +858,6 @@ function actualizarCarrito() {
             eliminarBtn.type = "button";
             eliminarBtn.textContent = "✖";
             eliminarBtn.classList.add("eliminar-carrito");
-            eliminarBtn.setAttribute(
-                "aria-label",
-                "Eliminar " + producto.nombre
-            );
 
             eliminarBtn.addEventListener("click", function() {
                 eliminarDelCarrito(producto.id);
@@ -809,54 +874,29 @@ function actualizarCarrito() {
 
             listaCarrito.appendChild(fila);
         }
-
-        // Mostrar en lista alternativa
-        if (contenidoCarrito) {
-
-            const div = document.createElement("div");
-            div.classList.add("producto-carrito");
-
-            div.textContent =
-                producto.nombre +
-                " x " + cantidad +
-                " — $" + totalProducto.toFixed(2);
-
-            contenidoCarrito.appendChild(div);
-        }
     });
 
-    // Carrito vacío
-    if (carrito.length === 0) {
+    // Mostrar mensaje cuando está vacío
+    if (carrito.length === 0 && listaCarrito) {
 
-        if (listaCarrito) {
-            const fila = document.createElement("tr");
-            const celda = document.createElement("td");
+        const fila = document.createElement("tr");
+        const celda = document.createElement("td");
 
-            celda.colSpan = 4;
-            celda.textContent = "El carrito está vacío.";
+        celda.colSpan = 4;
+        celda.textContent = "El carrito está vacío.";
 
-            fila.appendChild(celda);
-            listaCarrito.appendChild(fila);
-        }
-
-        if (contenidoCarrito) {
-            contenidoCarrito.textContent =
-                "El carrito está vacío.";
-        }
+        fila.appendChild(celda);
+        listaCarrito.appendChild(fila);
     }
 
-    // Actualizar precios
+    // Actualizar subtotal
     const total = "$" + subtotal.toFixed(2);
-
-    if (precioCarrito) {
-        precioCarrito.textContent = total;
-    }
 
     if (subtotalLabel) {
         subtotalLabel.textContent = total;
     }
 
-    // Actualizar contador
+    // Actualizar contador de productos
     if (cantidad_productos) {
         cantidad_productos.textContent = cantidadTotal;
     }
@@ -864,10 +904,16 @@ function actualizarCarrito() {
     guardarCarrito();
 }
 
-// Botones para agregar productos
+
+// =====================================================
+// CARRITO: BOTONES PARA AGREGAR PRODUCTOS
+// =====================================================
+
 document.querySelectorAll(".agregar-carrito").forEach(boton => {
 
-    boton.addEventListener("click", function() {
+    boton.addEventListener("click", function(evento) {
+
+        evento.preventDefault();
 
         const id = this.dataset.productoId;
         const nombre = this.dataset.productoNombre;
@@ -878,8 +924,275 @@ document.querySelectorAll(".agregar-carrito").forEach(boton => {
 
 });
 
-// Inicializar
+
+// =====================================================
+// CARRITO: ABRIR Y CERRAR
+// =====================================================
+
+if (carritobtn && carrito_bar) {
+
+    carritobtn.addEventListener("click", function() {
+
+        carrito_bar.classList.toggle("visible");
+
+        carritobtn.setAttribute(
+            "aria-expanded",
+            String(carrito_bar.classList.contains("visible"))
+        );
+
+    });
+
+}
+
+
+if (cerrarCarrito && carrito_bar) {
+
+    cerrarCarrito.addEventListener("click", function() {
+
+        carrito_bar.classList.remove("visible");
+
+        if (carritobtn) {
+            carritobtn.setAttribute("aria-expanded", "false");
+        }
+
+    });
+
+}
+
+
+// =====================================================
+// FAVORITOS: COMPROBAR SI UN PRODUCTO ES FAVORITO
+// =====================================================
+
+function esFavorito(id) {
+
+    return favoritos.some(
+        p => String(p.id) === String(id)
+    );
+
+}
+
+
+// =====================================================
+// FAVORITOS: ACTUALIZAR CORAZONES
+// =====================================================
+
+function actualizarBotonesFavoritos() {
+
+    document.querySelectorAll(".favorito_producto").forEach(boton => {
+
+        const id = boton.dataset.productoId;
+        const activo = esFavorito(id);
+
+        boton.textContent = activo ? "♥" : "♡";
+
+        boton.classList.toggle("es-favorito", activo);
+
+        boton.setAttribute(
+            "aria-label",
+            activo
+                ? "Quitar de favoritos"
+                : "Agregar a favoritos"
+        );
+
+        boton.setAttribute(
+            "aria-pressed",
+            String(activo)
+        );
+
+    });
+
+}
+
+
+// =====================================================
+// FAVORITOS: AGREGAR O QUITAR
+// =====================================================
+
+function alternarFavorito(boton) {
+
+    const id = String(boton.dataset.productoId ?? "").trim();
+    const nombre = String(boton.dataset.productoNombre ?? "").trim();
+    const precio = Number(boton.dataset.productoPrecio);
+
+    if (
+        !id ||
+        !nombre ||
+        !Number.isFinite(precio) ||
+        precio < 0
+    ) {
+        console.error("Datos incorrectos del favorito.");
+        return;
+    }
+
+    if (esFavorito(id)) {
+
+        favoritos = favoritos.filter(
+            p => String(p.id) !== id
+        );
+
+    } else {
+
+        favoritos.push({
+            id: id,
+            nombre: nombre,
+            precio: precio
+        });
+
+    }
+
+    guardarFavoritos();
+
+    actualizarBotonesFavoritos();
+    actualizarFavoritos();
+}
+
+
+// =====================================================
+// FAVORITOS: DIBUJAR PRODUCTOS
+// =====================================================
+
+function actualizarFavoritos() {
+
+    if (!contenidoFavoritos) {
+        return;
+    }
+
+    contenidoFavoritos.replaceChildren();
+
+    if (favoritos.length === 0) {
+
+        const mensaje = document.createElement("p");
+        mensaje.textContent = "No tienes productos favoritos.";
+
+        contenidoFavoritos.appendChild(mensaje);
+
+        return;
+    }
+
+    favoritos.forEach(producto => {
+
+        const div = document.createElement("div");
+        div.classList.add("producto-favorito");
+
+        const nombre = document.createElement("p");
+        nombre.textContent = producto.nombre;
+
+        const precio = document.createElement("p");
+        precio.textContent = "$" + producto.precio.toFixed(2);
+
+        // Botón para quitar de favoritos
+        const quitarBtn = document.createElement("button");
+
+        quitarBtn.type = "button";
+        quitarBtn.textContent = "♥ Quitar de favoritos";
+
+        quitarBtn.addEventListener("click", function() {
+
+            favoritos = favoritos.filter(
+                p => String(p.id) !== String(producto.id)
+            );
+
+            guardarFavoritos();
+
+            actualizarFavoritos();
+            actualizarBotonesFavoritos();
+
+        });
+
+        // Botón para agregar al carrito
+        const carritoBtn = document.createElement("button");
+
+        carritoBtn.type = "button";
+        carritoBtn.textContent = "🛒 Agregar al carrito";
+
+        carritoBtn.addEventListener("click", function() {
+
+            agregarAlCarrito(
+                producto.id,
+                producto.nombre,
+                producto.precio
+            );
+
+        });
+
+        div.append(
+            nombre,
+            precio,
+            quitarBtn,
+            carritoBtn
+        );
+
+        contenidoFavoritos.appendChild(div);
+
+    });
+
+}
+
+
+// =====================================================
+// FAVORITOS: DETECTAR CLICS EN LOS CORAZONES
+// =====================================================
+
+document.addEventListener("click", function(evento) {
+
+    const boton = evento.target.closest(".favorito_producto");
+
+    if (!boton) {
+        return;
+    }
+
+    evento.preventDefault();
+
+    alternarFavorito(boton);
+
+});
+
+
+// =====================================================
+// FAVORITOS: ABRIR Y CERRAR
+// =====================================================
+
+if (favoritosBtn && favoritosBar) {
+
+    favoritosBtn.addEventListener("click", function() {
+
+        favoritosBar.classList.toggle("visible");
+
+        favoritosBtn.setAttribute(
+            "aria-expanded",
+            String(favoritosBar.classList.contains("visible"))
+        );
+
+        actualizarFavoritos();
+
+    });
+
+}
+
+
+if (cerrarFavoritos && favoritosBar) {
+
+    cerrarFavoritos.addEventListener("click", function() {
+
+        favoritosBar.classList.remove("visible");
+
+        if (favoritosBtn) {
+            favoritosBtn.setAttribute("aria-expanded", "false");
+        }
+
+    });
+
+}
+
+
+// =====================================================
+// INICIALIZAR CARRITO Y FAVORITOS
+// =====================================================
+
 actualizarCarrito();
+actualizarBotonesFavoritos();
+actualizarFavoritos();
 
     // =====================================================
     // CONTROL DE STOCK EN LAS TARJETAS
@@ -1058,61 +1371,7 @@ actualizarCarrito();
         });
     }
 
-    // =====================================================
-    // MENÚ PRINCIPAL
-    // =====================================================
-
-    function desplegar_menu() {
-        if (!menu_bar) {
-            return;
-        }
-
-        menu_bar.classList.toggle("visible");
-
-        if (menubtn) {
-            menubtn.setAttribute(
-                "aria-expanded",
-                String(menu_bar.classList.contains("visible"))
-            );
-        }
-    }
-
-    if (menubtn && menu_bar) {
-        menubtn.addEventListener("click", desplegar_menu);
-    }
-
-    if (atras_menu && menu_bar) {
-        atras_menu.addEventListener("click", function () {
-            menu_bar.classList.remove("visible");
-
-            if (menubtn) {
-                menubtn.setAttribute("aria-expanded", "false");
-            }
-        });
-    }
-
-    // =====================================================
-    // PANEL DEL CARRITO
-    // =====================================================
-
-    function desplegar_carrito() {
-        if (!carrito_bar) {
-            return;
-        }
-
-        carrito_bar.classList.toggle("visible");
-
-        if (carritobtn) {
-            carritobtn.setAttribute(
-                "aria-expanded",
-                String(carrito_bar.classList.contains("visible"))
-            );
-        }
-    }
-
-    if (carritobtn && carrito_bar) {
-        carritobtn.addEventListener("click", desplegar_carrito);
-    }
+    
 
     // =====================================================
     // CATEGORÍAS DE LA PORTADA
@@ -1215,287 +1474,3 @@ actualizarCarrito();
         });
     }
 
-    // =====================================================
-    // FAVORITOS
-    // =====================================================
-
-// =====================================================
-// SISTEMA DE FAVORITOS
-// =====================================================
-
-const favoritosBtn = document.getElementById("favoritos_btn");
-const favoritosBar = document.getElementById("favoritos_bar");
-const contenidoFavoritos = document.getElementById("contenido_favoritos");
-const cerrarFavoritos = document.getElementById("cerrar_favoritos");
-
-let favoritos = [];
-
-// Recuperar favoritos
-try {
-
-    const guardados = JSON.parse(
-        localStorage.getItem("linneoFavoritos") || "[]"
-    );
-
-    if (Array.isArray(guardados)) {
-
-        favoritos = guardados
-            .filter(p =>
-                p &&
-                p.id !== undefined &&
-                p.id !== null &&
-                String(p.id).trim() !== "" &&
-                typeof p.nombre === "string" &&
-                Number.isFinite(Number(p.precio))
-            )
-            .map(p => ({
-                id: String(p.id),
-                nombre: p.nombre,
-                precio: Number(p.precio)
-            }));
-    }
-
-} catch (error) {
-
-    console.error("Error al recuperar favoritos:", error);
-    favoritos = [];
-
-}
-
-// Guardar favoritos
-function guardarFavoritos() {
-
-    try {
-
-        localStorage.setItem(
-            "linneoFavoritos",
-            JSON.stringify(favoritos)
-        );
-
-    } catch (error) {
-
-        console.error("No se pudieron guardar los favoritos:", error);
-
-    }
-
-}
-
-// Comprobar si es favorito
-function esFavorito(id) {
-
-    return favoritos.some(
-        p => String(p.id) === String(id)
-    );
-
-}
-
-// Actualizar corazones
-function actualizarBotonesFavoritos() {
-
-    document.querySelectorAll(".favorito_producto").forEach(boton => {
-
-        const id = boton.dataset.productoId;
-        const activo = esFavorito(id);
-
-        boton.textContent = activo ? "♥" : "♡";
-
-        boton.classList.toggle("es-favorito", activo);
-
-        boton.setAttribute(
-            "aria-label",
-            activo
-                ? "Quitar de favoritos"
-                : "Agregar a favoritos"
-        );
-
-        boton.setAttribute(
-            "aria-pressed",
-            String(activo)
-        );
-
-    });
-
-}
-
-// Agregar o quitar favorito
-function alternarFavorito(boton) {
-
-    const id = boton.dataset.productoId;
-    const nombre = boton.dataset.productoNombre;
-    const precio = Number(boton.dataset.productoPrecio);
-
-    if (
-        id === undefined ||
-        id === null ||
-        String(id).trim() === "" ||
-        !nombre ||
-        !Number.isFinite(precio)
-    ) {
-
-        console.error("Datos incorrectos del favorito.");
-        return;
-
-    }
-
-    if (esFavorito(id)) {
-
-        // Quitar favorito
-        favoritos = favoritos.filter(
-            p => String(p.id) !== String(id)
-        );
-
-    } else {
-
-        // Agregar favorito
-        favoritos.push({
-            id: String(id),
-            nombre: nombre,
-            precio: precio
-        });
-
-    }
-
-    guardarFavoritos();
-
-    actualizarBotonesFavoritos();
-    actualizarFavoritos();
-
-}
-
-// Dibujar favoritos
-function actualizarFavoritos() {
-
-    if (!contenidoFavoritos) {
-        return;
-    }
-
-    contenidoFavoritos.replaceChildren();
-
-    if (favoritos.length === 0) {
-
-        const mensaje = document.createElement("p");
-
-        mensaje.textContent =
-            "No tienes productos favoritos.";
-
-        contenidoFavoritos.appendChild(mensaje);
-
-        return;
-    }
-
-    favoritos.forEach(producto => {
-
-        const div = document.createElement("div");
-        div.classList.add("producto-favorito");
-
-        const nombre = document.createElement("p");
-        nombre.textContent = producto.nombre;
-
-        const precio = document.createElement("p");
-
-        precio.textContent =
-            "$" + producto.precio.toFixed(2);
-
-        // Botón quitar
-        const quitarBtn = document.createElement("button");
-
-        quitarBtn.type = "button";
-        quitarBtn.textContent = "♥ Quitar de favoritos";
-
-        quitarBtn.addEventListener("click", function() {
-
-            favoritos = favoritos.filter(
-                p => String(p.id) !== String(producto.id)
-            );
-
-            guardarFavoritos();
-
-            actualizarFavoritos();
-            actualizarBotonesFavoritos();
-
-        });
-
-        // Botón agregar al carrito
-        const carritoBtn = document.createElement("button");
-
-        carritoBtn.type = "button";
-        carritoBtn.textContent = "🛒 Agregar al carrito";
-
-        carritoBtn.addEventListener("click", function() {
-
-            agregarAlCarrito(
-                producto.id,
-                producto.nombre,
-                producto.precio
-            );
-
-        });
-
-        div.append(
-            nombre,
-            precio,
-            quitarBtn,
-            carritoBtn
-        );
-
-        contenidoFavoritos.appendChild(div);
-
-    });
-
-}
-
-// Detectar clic en corazones
-document.addEventListener("click", function(evento) {
-
-    const boton = evento.target.closest(".favorito_producto");
-
-    if (!boton) {
-        return;
-    }
-
-    evento.preventDefault();
-
-    alternarFavorito(boton);
-
-});
-
-// Abrir favoritos
-if (favoritosBtn && favoritosBar) {
-
-    favoritosBtn.addEventListener("click", function() {
-
-        favoritosBar.classList.toggle("visible");
-
-        favoritosBtn.setAttribute(
-            "aria-expanded",
-            String(favoritosBar.classList.contains("visible"))
-        );
-
-        actualizarFavoritos();
-
-    });
-
-}
-
-// Cerrar favoritos
-if (cerrarFavoritos && favoritosBar) {
-
-    cerrarFavoritos.addEventListener("click", function() {
-
-        favoritosBar.classList.remove("visible");
-
-        if (favoritosBtn) {
-            favoritosBtn.setAttribute(
-                "aria-expanded",
-                "false"
-            );
-        }
-
-    });
-
-}
-
-// Inicializar favoritos
-actualizarBotonesFavoritos();
-actualizarFavoritos();
-});
