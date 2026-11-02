@@ -1,58 +1,87 @@
 
 document.addEventListener("DOMContentLoaded", function () {
+    "use strict";
+
     // =====================================================
     // ELEMENTOS GENERALES
     // =====================================================
 
-    const menubtn = document.getElementById("menubtn");
-    const menu_bar = document.getElementById("menu_bar");
-    const atras_menu = document.getElementById("atras_menu");
+    const $ = (id) => document.getElementById(id);
 
-    const carritobtn = document.getElementById("carritobtn");
-    const carrito_bar = document.getElementById("carrito_bar");
+    const menubtn = $("menubtn");
+    const menu_bar = $("menu_bar");
+    const atras_menu = $("atras_menu");
 
-    const buscar_btn = document.getElementById("buscarbtn");
-    const busqueda_div = document.getElementById("busqueda_div");
+    const carritobtn = $("carritobtn");
+    const carrito_bar = $("carrito_bar");
 
-    const filtrosbtn = document.getElementById("filtrosbtn");
-    const filtro_menu = document.getElementById("filtro_menu");
+    const buscar_btn = $("buscarbtn");
+    const busqueda_div = $("busqueda_div");
 
-    // Carrusel de novedades
-    const atras_novedades = document.getElementById("atras_novedades");
-    const adelante_novedades = document.getElementById("adelante_novedades");
-    const imagenNovedades = document.getElementById("imagen");
-    const contadorNovedades = document.getElementById("contador");
+    const filtrosbtn = $("filtrosbtn");
+    const filtro_menu = $("filtro_menu");
+
+    const cantidad_productos = $("cantidad_productos");
+
+    // Carrusel
+    const atras_novedades = $("atras_novedades");
+    const adelante_novedades = $("adelante_novedades");
+    const imagenNovedades = $("imagen");
+    const contadorNovedades = $("contador");
 
     // Administración
-    const inventario = document.getElementById("inventario_section");
-    const clientes = document.getElementById("clientes_section");
-    const formulario = document.getElementById("modificar_inv");
-    const formularioStock = document.getElementById("form_stock");
-    const mensajeAdmin = document.getElementById("mensaje_admin");
+    const inventario = $("inventario_section");
+    const clientes = $("clientes_section");
+    const formulario = $("modificar_inv");
+    const formularioStock = $("form_stock");
+    const mensajeAdmin = $("mensaje_admin");
+    const cancelarEdicion = $("cancelar_edicion");
 
-    const cancelarEdicion = document.getElementById("cancelar_edicion");
+    // Carrito
+    const listaCarrito = $("lista_carrito");
+    const subtotalLabel = $("subtotal_carrito");
+    const cerrarCarrito = $("cerrar_carrito");
 
-    // Token CSRF. La etiqueta meta debe existir en el HTML
-    // de las páginas que envían peticiones al servidor.
-    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-    const csrfToken = csrfMeta ? csrfMeta.content : "";
+    // Favoritos
+    const favoritosBtn = $("favoritos_btn");
+    const favoritosBar = $("favoritos_bar");
+    const contenidoFavoritos = $("contenido_favoritos");
+    const cerrarFavoritos = $("cerrar_favoritos");
+
+    // Chatbot
+    const barraMensajes = $("bar_mensajes");
+    const historialMensajes = $("historial_mensajes");
+    const enviarMensajeBtn = $("enviar_mensaje_btn");
+
+    // Token CSRF
+    const csrfMeta = document.querySelector(
+        'meta[name="csrf-token"]'
+    );
+
+    const csrfToken = csrfMeta
+        ? csrfMeta.content
+        : "";
 
     // =====================================================
     // PETICIONES HTTP
     // =====================================================
 
     async function peticion(url, opciones = {}) {
+        const metodo = (opciones.method || "GET").toUpperCase();
+
         const cabeceras = {
-            "Content-Type": "application/json",
+            Accept: "application/json",
             ...opciones.headers
         };
 
-        const metodo = (opciones.method || "GET").toUpperCase();
+        if (opciones.body !== undefined && opciones.body !== null) {
+            cabeceras["Content-Type"] = "application/json";
+        }
 
         if (!["GET", "HEAD", "OPTIONS"].includes(metodo)) {
             if (!csrfToken) {
                 throw new Error(
-                    "Falta el token CSRF. Añade la etiqueta meta csrf-token al HTML."
+                    "Falta el token CSRF. Comprueba la configuración del servidor."
                 );
             }
 
@@ -66,7 +95,27 @@ document.addEventListener("DOMContentLoaded", function () {
             credentials: "same-origin"
         });
 
-        const datos = await respuesta.json().catch(() => ({}));
+        if (respuesta.status === 204 || metodo === "HEAD") {
+            if (!respuesta.ok) {
+                throw new Error(`Error HTTP ${respuesta.status}`);
+            }
+
+            return {};
+        }
+
+        const contenido = await respuesta.text();
+
+        let datos = {};
+
+        if (contenido) {
+            try {
+                datos = JSON.parse(contenido);
+            } catch {
+                throw new Error(
+                    "El servidor devolvió una respuesta que no es JSON válido."
+                );
+            }
+        }
 
         if (!respuesta.ok) {
             throw new Error(
@@ -79,64 +128,79 @@ document.addEventListener("DOMContentLoaded", function () {
         return datos;
     }
 
+    // =====================================================
+    // UTILIDADES GENERALES
+    // =====================================================
+
     function mostrarMensaje(texto, error = false) {
         if (mensajeAdmin) {
             mensajeAdmin.textContent = texto;
             mensajeAdmin.style.color = error ? "red" : "inherit";
-        } else if (error) {
+        }
+
+        if (error) {
             console.error(texto);
-        } else {
-            console.info(texto);
         }
     }
 
-    // =====================================================
-    // UTILIDADES PARA TABLAS Y BOTONES
-    // =====================================================
+    function normalizarTexto(texto) {
+        return String(texto ?? "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .trim()
+            .toLocaleLowerCase("es");
+    }
+
+    function obtenerValor(id) {
+        const elemento = $(id);
+        return elemento ? elemento.value : "";
+    }
+
+    function establecerValor(id, valor) {
+        const elemento = $(id);
+
+        if (elemento) {
+            elemento.value = valor ?? "";
+        }
+    }
+
+    function crearBoton(texto, accion, clase = "") {
+        const elemento = document.createElement("button");
+
+        elemento.type = "button";
+        elemento.textContent = texto;
+
+        if (clase) {
+            elemento.className = clase;
+        }
+
+        elemento.addEventListener("click", accion);
+
+        return elemento;
+    }
 
     function crearTabla(columnas, filas) {
         const tabla = document.createElement("table");
         const cabecera = tabla.createTHead().insertRow();
 
-        for (const columna of columnas) {
+        columnas.forEach(function (columna) {
             const th = document.createElement("th");
             th.textContent = columna;
             cabecera.appendChild(th);
-        }
+        });
 
         const cuerpo = tabla.createTBody();
 
-        for (const valores of filas) {
+        filas.forEach(function (valores) {
             const fila = cuerpo.insertRow();
 
-            for (const valor of valores) {
+            valores.forEach(function (valor) {
                 const celda = fila.insertCell();
-                celda.textContent = valor == null ? "" : String(valor);
-            }
-        }
+                celda.textContent = valor ?? "";
+            });
+        });
 
         return tabla;
-    }
-
-    function boton(texto, accion) {
-        const elemento = document.createElement("button");
-        elemento.type = "button";
-        elemento.textContent = texto;
-        elemento.addEventListener("click", accion);
-        return elemento;
-    }
-
-    function obtenerValor(id) {
-        const elemento = document.getElementById(id);
-        return elemento ? elemento.value : "";
-    }
-
-    function establecerValor(id, valor) {
-        const elemento = document.getElementById(id);
-
-        if (elemento) {
-            elemento.value = valor ?? "";
-        }
     }
 
     // =====================================================
@@ -144,16 +208,16 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================================
 
     async function cargarInventario() {
-        if (!inventario) {
-            return;
-        }
+        if (!inventario) return;
 
         try {
-            const productos = await peticion("/api/admin/productos");
+            const productos = await peticion(
+                "/api/admin/productos"
+            );
 
             if (!Array.isArray(productos)) {
                 throw new Error(
-                    "La respuesta del inventario no tiene el formato esperado."
+                    "Formato de inventario incorrecto."
                 );
             }
 
@@ -175,61 +239,60 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const cuerpo = tabla.tBodies[0];
 
-            for (const p of productos) {
+            productos.forEach(function (producto) {
                 const fila = cuerpo.insertRow();
 
                 const valores = [
-                    p.codigo,
-                    p.nombre,
-                    p.categoria,
-                    p.precio_compra,
-                    p.precio_manofactura,
-                    p.precio_venta,
-                    p.stock
+                    producto.codigo,
+                    producto.nombre,
+                    producto.categoria,
+                    producto.precio_compra,
+                    producto.precio_manofactura,
+                    producto.precio_venta,
+                    producto.stock
                 ];
 
-                for (const valor of valores) {
+                valores.forEach(function (valor) {
                     const celda = fila.insertCell();
-                    celda.textContent = String(valor ?? "");
-                }
+                    celda.textContent = valor ?? "";
+                });
 
                 const acciones = fila.insertCell();
 
                 acciones.appendChild(
-                    boton("Editar", function () {
-                        editarProducto(p);
+                    crearBoton("Editar", function () {
+                        editarProducto(producto);
                     })
                 );
 
                 acciones.appendChild(
-                    boton("Eliminar", function () {
-                        eliminarProducto(p.codigo);
+                    crearBoton("Eliminar", function () {
+                        eliminarProducto(producto.codigo);
                     })
                 );
-            }
+            });
 
             inventario.appendChild(tabla);
+
         } catch (error) {
             mostrarMensaje(error.message, true);
         }
     }
 
-    function editarProducto(p) {
-        if (!formulario) {
-            return;
-        }
+    function editarProducto(producto) {
+        if (!formulario) return;
 
-        establecerValor("codigo_original", p.codigo);
-        establecerValor("codigo", p.codigo);
-        establecerValor("nombre", p.nombre);
-        establecerValor("categoria", p.categoria);
+        establecerValor("codigo_original", producto.codigo);
+        establecerValor("codigo", producto.codigo);
+        establecerValor("nombre", producto.nombre);
+        establecerValor("categoria", producto.categoria);
 
-        establecerValor("precio_compra", p.precio_compra);
-        establecerValor("precio_manofactura", p.precio_manofactura);
-        establecerValor("precio_venta", p.precio_venta);
-        establecerValor("stock", p.stock);
+        establecerValor("precio_compra", producto.precio_compra);
+        establecerValor("precio_manofactura", producto.precio_manofactura);
+        establecerValor("precio_venta", producto.precio_venta);
+        establecerValor("stock", producto.stock);
 
-        const titulo = document.getElementById("titulo_formulario");
+        const titulo = $("titulo_formulario");
 
         if (titulo) {
             titulo.textContent = "Editar producto";
@@ -241,12 +304,25 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    function reiniciarFormulario() {
+        if (!formulario) return;
+
+        formulario.reset();
+        establecerValor("codigo_original", "");
+
+        const titulo = $("titulo_formulario");
+
+        if (titulo) {
+            titulo.textContent = "Añadir producto";
+        }
+    }
+
     if (formulario) {
         formulario.addEventListener("submit", async function (evento) {
             evento.preventDefault();
 
             const datos = {
-                codigo_original: obtenerValor("codigo_original"),
+                codigo_original: obtenerValor("codigo_original").trim(),
                 codigo: obtenerValor("codigo").trim(),
                 nombre: obtenerValor("nombre").trim(),
                 categoria: obtenerValor("categoria").trim(),
@@ -258,7 +334,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (!datos.codigo || !datos.nombre || !datos.categoria) {
                 mostrarMensaje(
-                    "Completa el código, el nombre y la categoría.",
+                    "Completa el código, nombre y categoría.",
                     true
                 );
                 return;
@@ -277,25 +353,25 @@ document.addEventListener("DOMContentLoaded", function () {
                     resultado.mensaje || "Producto guardado correctamente."
                 );
 
-                formulario.reset();
-                establecerValor("codigo_original", "");
-
-                const titulo = document.getElementById("titulo_formulario");
-
-                if (titulo) {
-                    titulo.textContent = "Añadir producto";
-                }
-
+                reiniciarFormulario();
                 await cargarInventario();
+
             } catch (error) {
                 mostrarMensaje(error.message, true);
             }
         });
     }
 
+    if (cancelarEdicion) {
+        cancelarEdicion.addEventListener(
+            "click",
+            reiniciarFormulario
+        );
+    }
+
     async function eliminarProducto(codigo) {
         if (!codigo) {
-            mostrarMensaje("El código del producto no es válido.", true);
+            mostrarMensaje("Código de producto no válido.", true);
             return;
         }
 
@@ -306,9 +382,7 @@ document.addEventListener("DOMContentLoaded", function () {
         try {
             const resultado = await peticion(
                 `/api/admin/productos/${encodeURIComponent(codigo)}`,
-                {
-                    method: "DELETE"
-                }
+                { method: "DELETE" }
             );
 
             mostrarMensaje(
@@ -316,26 +390,14 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
             await cargarInventario();
+
         } catch (error) {
             mostrarMensaje(error.message, true);
         }
     }
 
-    if (cancelarEdicion && formulario) {
-        cancelarEdicion.addEventListener("click", function () {
-            formulario.reset();
-            establecerValor("codigo_original", "");
-
-            const titulo = document.getElementById("titulo_formulario");
-
-            if (titulo) {
-                titulo.textContent = "Añadir producto";
-            }
-        });
-    }
-
     // =====================================================
-    // ADMINISTRACIÓN: AÑADIR STOCK
+    // ADMINISTRACIÓN: STOCK
     // =====================================================
 
     if (formularioStock) {
@@ -348,7 +410,7 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
             if (!codigo) {
-                mostrarMensaje("Selecciona o escribe un código de producto.", true);
+                mostrarMensaje("Selecciona un producto.", true);
                 return;
             }
 
@@ -361,13 +423,16 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             try {
-                const resultado = await peticion("/api/admin/stock", {
-                    method: "POST",
-                    body: JSON.stringify({
-                        codigo: codigo,
-                        cantidad: cantidad
-                    })
-                });
+                const resultado = await peticion(
+                    "/api/admin/stock",
+                    {
+                        method: "POST",
+                        body: JSON.stringify({
+                            codigo,
+                            cantidad
+                        })
+                    }
+                );
 
                 mostrarMensaje(
                     resultado.mensaje || "Stock actualizado correctamente."
@@ -375,6 +440,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 formularioStock.reset();
                 await cargarInventario();
+
             } catch (error) {
                 mostrarMensaje(error.message, true);
             }
@@ -386,16 +452,16 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================================
 
     async function cargarUsuarios() {
-        if (!clientes) {
-            return;
-        }
+        if (!clientes) return;
 
         try {
-            const usuarios = await peticion("/api/admin/usuarios");
+            const usuarios = await peticion(
+                "/api/admin/usuarios"
+            );
 
             if (!Array.isArray(usuarios)) {
                 throw new Error(
-                    "La respuesta de usuarios no tiene el formato esperado."
+                    "Formato de usuarios incorrecto."
                 );
             }
 
@@ -403,25 +469,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const tabla = crearTabla(
                 ["ID", "Usuario", "Correo", "Teléfono", "Rol"],
-                usuarios.map(function (u) {
+                usuarios.map(function (usuario) {
                     return [
-                        u.id,
-                        u.username,
-                        u.email,
-                        u.phone,
-                        u.rol
+                        usuario.id,
+                        usuario.username,
+                        usuario.email,
+                        usuario.phone,
+                        usuario.rol
                     ];
                 })
             );
 
             clientes.appendChild(tabla);
+
         } catch (error) {
             mostrarMensaje(error.message, true);
         }
     }
 
-    // Solo intenta cargar datos administrativos si la página
-    // contiene las secciones correspondientes.
     if (inventario) {
         cargarInventario();
     }
@@ -440,87 +505,108 @@ document.addEventListener("DOMContentLoaded", function () {
         "novedades/3.jpg"
     ];
 
-    let indice = 0;
+    let indiceImagen = 0;
 
     function mostrarImagen() {
-        if (!imagenNovedades || !contadorNovedades) {
-            return;
+        if (!imagenNovedades) return;
+
+        imagenNovedades.src = imagenes[indiceImagen];
+        imagenNovedades.alt = `Novedad ${indiceImagen + 1}`;
+
+        if (contadorNovedades) {
+            contadorNovedades.textContent =
+                `Imagen ${indiceImagen + 1} de ${imagenes.length}`;
         }
-
-        imagenNovedades.src = imagenes[indice];
-        imagenNovedades.alt = "Novedad " + (indice + 1);
-
-        contadorNovedades.textContent =
-            `Imagen ${indice + 1} de ${imagenes.length}`;
     }
 
-    function siguiente() {
-        indice = (indice + 1) % imagenes.length;
+    function siguienteImagen() {
+        indiceImagen = (indiceImagen + 1) % imagenes.length;
         mostrarImagen();
     }
 
-    function anterior() {
-        indice = (indice - 1 + imagenes.length) % imagenes.length;
+    function anteriorImagen() {
+        indiceImagen =
+            (indiceImagen - 1 + imagenes.length) % imagenes.length;
+
         mostrarImagen();
     }
 
     if (adelante_novedades) {
-        adelante_novedades.addEventListener("click", siguiente);
+        adelante_novedades.addEventListener(
+            "click",
+            siguienteImagen
+        );
     }
 
     if (atras_novedades) {
-        atras_novedades.addEventListener("click", anterior);
+        atras_novedades.addEventListener(
+            "click",
+            anteriorImagen
+        );
     }
 
-    mostrarImagen();
+    if (imagenes.length) {
+        mostrarImagen();
+    }
 
     // =====================================================
-    // NAVEGACIÓN Y CUENTA
+    // NAVEGACIÓN
     // =====================================================
 
-    const chatbtn = document.getElementById("chat_btn");
+    const navegacion = [
+        ["chat_btn", "/chatbox"],
+        ["iniciar_secion_btn", "/iniciar_sesion"],
+        ["registrarse_btn", "/registrarse"],
+        ["catalogo_completo_btn", "/catalogo"]
+    ];
 
-    if (chatbtn) {
-        chatbtn.addEventListener("click", function () {
-            window.location.href = "/chatbox";
+    navegacion.forEach(function ([id, ruta]) {
+        const elemento = $(id);
+
+        if (elemento) {
+            elemento.addEventListener("click", function () {
+                window.location.href = ruta;
+            });
+        }
+    });
+
+    // =====================================================
+    // MENÚ PRINCIPAL
+    // =====================================================
+
+    function alternarPanel(boton, panel) {
+        if (!boton || !panel) return;
+
+        const visible = panel.classList.toggle("visible");
+
+        boton.setAttribute(
+            "aria-expanded",
+            String(visible)
+        );
+    }
+
+    if (menubtn && menu_bar) {
+        menubtn.addEventListener("click", function () {
+            alternarPanel(menubtn, menu_bar);
         });
     }
 
-    const cantidad_productos =
-        document.getElementById("cantidad_productos");
+    if (atras_menu && menu_bar) {
+        atras_menu.addEventListener("click", function () {
+            menu_bar.classList.remove("visible");
 
-    const iniciar_secion_btn =
-        document.getElementById("iniciar_secion_btn");
-
-    const registrarse_btn =
-        document.getElementById("registrarse_btn");
-
-    if (iniciar_secion_btn) {
-        iniciar_secion_btn.addEventListener("click", function () {
-            window.location.href = "/iniciar_sesion";
+            if (menubtn) {
+                menubtn.setAttribute("aria-expanded", "false");
+            }
         });
-    }
-
-    if (registrarse_btn) {
-        registrarse_btn.addEventListener("click", function () {
-            window.location.href = "/registrarse";
-        });
-    }
-
-    function llevar_pag(pagina) {
-        window.location.href = pagina;
     }
 
     // =====================================================
     // POPUP DE DESCUENTO
     // =====================================================
 
-    const popup =
-        document.getElementById("popup") ||
-        document.querySelector(".popup");
-
-    const cerrarPopupBtn =
-        document.getElementById("quitar_popup");
+    const popup = $("popup") || document.querySelector(".popup");
+    const cerrarPopupBtn = $("quitar_popup");
 
     if (popup) {
         popup.hidden = false;
@@ -537,105 +623,97 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // =====================================================
-    // CHATBOT
+    // CHATBOT LINNEO
     // =====================================================
 
-    const barraMensajes =
-        document.getElementById("bar_mensajes");
+    function agregarMensajeChat(clase, texto) {
+        if (!historialMensajes) return null;
 
-    const historialMensajes =
-        document.getElementById("historial_mensajes");
+        const elemento = document.createElement("div");
+        elemento.classList.add(clase);
+        elemento.textContent = texto;
 
-    const enviarMensajeBtn =
-        document.getElementById("enviar_mensaje_btn");
+        historialMensajes.appendChild(elemento);
+        historialMensajes.scrollTop =
+            historialMensajes.scrollHeight;
+
+        return elemento;
+    }
+
+    let enviandoMensaje = false;
 
     async function enviarMensaje() {
-        if (!barraMensajes || !historialMensajes) {
+        if (!barraMensajes || !historialMensajes || enviandoMensaje) {
             return;
         }
 
-        const textoMensaje = barraMensajes.value.trim();
+        const texto = barraMensajes.value.trim();
 
-        if (!textoMensaje) {
-            return;
+        if (!texto) return;
+
+        enviandoMensaje = true;
+
+        if (enviarMensajeBtn) {
+            enviarMensajeBtn.disabled = true;
         }
 
-        const mensajeUsuario = document.createElement("div");
-        mensajeUsuario.classList.add("mensaje_usuario");
-        mensajeUsuario.textContent = "Tú: " + textoMensaje;
+        agregarMensajeChat(
+            "mensaje_usuario",
+            "Tú: " + texto
+        );
 
-        historialMensajes.appendChild(mensajeUsuario);
         barraMensajes.value = "";
 
-        const mensajeCargando = document.createElement("div");
-        mensajeCargando.classList.add("mensaje_asistente");
-        mensajeCargando.textContent = "Linneo: Escribiendo...";
-
-        historialMensajes.appendChild(mensajeCargando);
-        historialMensajes.scrollTop = historialMensajes.scrollHeight;
+        const cargando = agregarMensajeChat(
+            "mensaje_asistente",
+            "Linneo: Escribiendo..."
+        );
 
         try {
-            const cabeceras = {
-                "Content-Type": "application/json"
-            };
+            const datos = await peticion(
+                "/api/chat",
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        mensaje: texto
+                    })
+                }
+            );
 
-            if (csrfToken) {
-                cabeceras["X-CSRFToken"] = csrfToken;
-            }
+            if (cargando) cargando.remove();
 
-            const respuesta = await fetch("/api/chat", {
-                method: "POST",
-                headers: cabeceras,
-                credentials: "same-origin",
-                body: JSON.stringify({
-                    mensaje: textoMensaje
-                })
-            });
+            agregarMensajeChat(
+                "mensaje_asistente",
+                "Linneo: " +
+                (datos.respuesta || "No se recibió una respuesta.")
+            );
 
-            const data = await respuesta.json().catch(() => ({}));
-
-            mensajeCargando.remove();
-
-            if (!respuesta.ok) {
-                const error = document.createElement("div");
-                error.classList.add("mensaje_error");
-                error.textContent =
-                    "Error: " +
-                    (
-                        data.error ||
-                        data.mensaje ||
-                        "No se pudo procesar el mensaje."
-                    );
-
-                historialMensajes.appendChild(error);
-                historialMensajes.scrollTop =
-                    historialMensajes.scrollHeight;
-                return;
-            }
-
-            const mensajeAsistente = document.createElement("div");
-            mensajeAsistente.classList.add("mensaje_asistente");
-            mensajeAsistente.textContent =
-                "Linneo: " + (data.respuesta || "No se recibió una respuesta.");
-
-            historialMensajes.appendChild(mensajeAsistente);
-            historialMensajes.scrollTop = historialMensajes.scrollHeight;
         } catch (error) {
+            if (cargando) cargando.remove();
+
+            agregarMensajeChat(
+                "mensaje_error",
+                "No se pudo conectar con Linneo: " + error.message
+            );
+
             console.error("Error del chatbot:", error);
-            mensajeCargando.remove();
 
-            const mensajeError = document.createElement("div");
-            mensajeError.classList.add("mensaje_error");
-            mensajeError.textContent =
-                "No se pudo conectar con Linneo.";
+        } finally {
+            enviandoMensaje = false;
 
-            historialMensajes.appendChild(mensajeError);
-            historialMensajes.scrollTop = historialMensajes.scrollHeight;
+            if (enviarMensajeBtn) {
+                enviarMensajeBtn.disabled = false;
+            }
+
+            barraMensajes.focus();
         }
     }
 
     if (enviarMensajeBtn) {
-        enviarMensajeBtn.addEventListener("click", enviarMensaje);
+        enviarMensajeBtn.addEventListener(
+            "click",
+            enviarMensaje
+        );
     }
 
     if (barraMensajes) {
@@ -647,567 +725,453 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    // =====================================================
+    // CARRITO Y FAVORITOS
+    // =====================================================
 
-// =====================================================
-// CARRITO DE COMPRAS Y FAVORITOS - LINNEO
-// =====================================================
+    let carrito = [];
+    let favoritos = [];
 
-// Elementos del carrito
-// carritobtn, carrito_bar y cantidad_productos
-// ya están declarados anteriormente en este archivo.
+    function recuperarDatos(clave) {
+        try {
+            const datos = JSON.parse(
+                localStorage.getItem(clave) || "[]"
+            );
 
-const listaCarrito = document.getElementById("lista_carrito");
-const subtotalLabel = document.getElementById("subtotal_carrito");
-const cerrarCarrito = document.getElementById("cerrar_carrito");
+            return Array.isArray(datos) ? datos : [];
 
-// Elementos de favoritos
-const favoritosBtn = document.getElementById("favoritos_btn");
-const favoritosBar = document.getElementById("favoritos_bar");
-const contenidoFavoritos = document.getElementById("contenido_favoritos");
-const cerrarFavoritos = document.getElementById("cerrar_favoritos");
-
-// Variables
-let carrito = [];
-let favoritos = [];
-
-
-// =====================================================
-// RECUPERAR DATOS GUARDADOS
-// =====================================================
-
-try {
-    const guardado = JSON.parse(
-        localStorage.getItem("linneoCarrito") || "[]"
-    );
-
-    if (Array.isArray(guardado)) {
-        carrito = guardado
-            .filter(p =>
-                p &&
-                p.id !== undefined &&
-                p.id !== null &&
-                String(p.id).trim() !== "" &&
-                typeof p.nombre === "string" &&
-                Number.isFinite(Number(p.precio)) &&
-                Number(p.precio) >= 0
-            )
-            .map(p => ({
-                id: String(p.id),
-                nombre: p.nombre,
-                precio: Number(p.precio),
-                cantidad: Math.max(
-                    1,
-                    Number.parseInt(p.cantidad, 10) || 1
-                )
-            }));
+        } catch (error) {
+            console.error(`Error al recuperar ${clave}:`, error);
+            return [];
+        }
     }
 
-} catch (error) {
-    console.error("Error al recuperar el carrito:", error);
-    carrito = [];
-}
-
-
-try {
-    const guardados = JSON.parse(
-        localStorage.getItem("linneoFavoritos") || "[]"
-    );
-
-    if (Array.isArray(guardados)) {
-        favoritos = guardados
-            .filter(p =>
-                p &&
-                p.id !== undefined &&
-                p.id !== null &&
-                String(p.id).trim() !== "" &&
-                typeof p.nombre === "string" &&
-                Number.isFinite(Number(p.precio))
-            )
-            .map(p => ({
-                id: String(p.id),
-                nombre: p.nombre,
-                precio: Number(p.precio)
-            }));
-    }
-
-} catch (error) {
-    console.error("Error al recuperar favoritos:", error);
-    favoritos = [];
-}
-
-
-// =====================================================
-// GUARDAR DATOS
-// =====================================================
-
-function guardarCarrito() {
-    try {
-        localStorage.setItem(
-            "linneoCarrito",
-            JSON.stringify(carrito)
-        );
-    } catch (error) {
-        console.error("No se pudo guardar el carrito:", error);
-    }
-}
-
-
-function guardarFavoritos() {
-    try {
-        localStorage.setItem(
-            "linneoFavoritos",
-            JSON.stringify(favoritos)
-        );
-    } catch (error) {
-        console.error("No se pudieron guardar los favoritos:", error);
-    }
-}
-
-
-// =====================================================
-// CARRITO: AGREGAR PRODUCTOS
-// =====================================================
-
-function agregarAlCarrito(id, nombre, precio) {
-
-    id = String(id ?? "").trim();
-    nombre = String(nombre ?? "").trim();
-    precio = Number(precio);
-
-    if (
-        !id ||
-        !nombre ||
-        !Number.isFinite(precio) ||
-        precio < 0
-    ) {
-        console.error("Datos incorrectos del producto.");
-        return;
-    }
-
-    const existente = carrito.find(
-        p => String(p.id) === id
-    );
-
-    if (existente) {
-        existente.cantidad++;
-    } else {
-        carrito.push({
-            id: id,
-            nombre: nombre,
-            precio: precio,
-            cantidad: 1
+    carrito = recuperarDatos("linneoCarrito")
+        .filter(function (producto) {
+            return (
+                producto &&
+                producto.id != null &&
+                String(producto.id).trim() !== "" &&
+                typeof producto.nombre === "string" &&
+                Number.isFinite(Number(producto.precio)) &&
+                Number(producto.precio) >= 0 &&
+                Number.isSafeInteger(Number(producto.cantidad)) &&
+                Number(producto.cantidad) > 0
+            );
+        })
+        .map(function (producto) {
+            return {
+                id: String(producto.id),
+                nombre: producto.nombre,
+                precio: Number(producto.precio),
+                cantidad: Number(producto.cantidad)
+            };
         });
+
+    favoritos = recuperarDatos("linneoFavoritos")
+        .filter(function (producto) {
+            return (
+                producto &&
+                producto.id != null &&
+                String(producto.id).trim() !== "" &&
+                typeof producto.nombre === "string" &&
+                Number.isFinite(Number(producto.precio)) &&
+                Number(producto.precio) >= 0
+            );
+        })
+        .map(function (producto) {
+            return {
+                id: String(producto.id),
+                nombre: producto.nombre,
+                precio: Number(producto.precio)
+            };
+        });
+
+    function guardarDatos(clave, datos) {
+        try {
+            localStorage.setItem(
+                clave,
+                JSON.stringify(datos)
+            );
+        } catch (error) {
+            console.error(`Error al guardar ${clave}:`, error);
+        }
     }
 
-    actualizarCarrito();
-}
-
-
-// =====================================================
-// CARRITO: ELIMINAR PRODUCTOS
-// =====================================================
-
-function eliminarDelCarrito(id) {
-
-    carrito = carrito.filter(
-        p => String(p.id) !== String(id)
-    );
-
-    actualizarCarrito();
-}
-
-
-// =====================================================
-// CARRITO: ACTUALIZAR CONTENIDO
-// =====================================================
-
-function actualizarCarrito() {
-
-    let subtotal = 0;
-    let cantidadTotal = 0;
-
-    if (listaCarrito) {
-        listaCarrito.replaceChildren();
+    function guardarCarrito() {
+        guardarDatos("linneoCarrito", carrito);
     }
 
-    carrito.forEach(producto => {
+    function guardarFavoritos() {
+        guardarDatos("linneoFavoritos", favoritos);
+    }
 
-        const cantidad = producto.cantidad;
-        const precio = producto.precio;
-        const totalProducto = precio * cantidad;
+    // =====================================================
+    // CARRITO: AGREGAR
+    // =====================================================
 
-        subtotal += totalProducto;
-        cantidadTotal += cantidad;
+    function agregarAlCarrito(id, nombre, precio) {
+        id = String(id ?? "").trim();
+        nombre = String(nombre ?? "").trim();
+        precio = Number(precio);
+
+        if (
+            !id ||
+            !nombre ||
+            !Number.isFinite(precio) ||
+            precio < 0
+        ) {
+            console.error("Datos incorrectos del producto.");
+            return;
+        }
+
+        const existente = carrito.find(
+            producto => producto.id === id
+        );
+
+        if (existente) {
+            if (existente.cantidad >= Number.MAX_SAFE_INTEGER) {
+                console.error("Cantidad máxima alcanzada.");
+                return;
+            }
+
+            existente.cantidad++;
+        } else {
+            carrito.push({
+                id,
+                nombre,
+                precio,
+                cantidad: 1
+            });
+        }
+
+        actualizarCarrito();
+    }
+
+    // =====================================================
+    // CARRITO: ELIMINAR
+    // =====================================================
+
+    function eliminarDelCarrito(id) {
+        carrito = carrito.filter(
+            producto => producto.id !== String(id)
+        );
+
+        actualizarCarrito();
+    }
+
+    // =====================================================
+    // CARRITO: DIBUJAR
+    // =====================================================
+
+    function actualizarCarrito() {
+        let subtotal = 0;
+        let cantidadTotal = 0;
 
         if (listaCarrito) {
+            listaCarrito.replaceChildren();
+        }
+
+        carrito.forEach(function (producto) {
+            subtotal += producto.precio * producto.cantidad;
+            cantidadTotal += producto.cantidad;
+
+            if (!listaCarrito) return;
 
             const fila = document.createElement("tr");
 
             const nombre = document.createElement("td");
             nombre.textContent = producto.nombre;
 
-            const cantidadCelda = document.createElement("td");
-            cantidadCelda.textContent = cantidad;
+            const cantidad = document.createElement("td");
+            cantidad.textContent = producto.cantidad;
 
-            const precioCelda = document.createElement("td");
-            precioCelda.textContent = "$" + precio.toFixed(2);
+            const precio = document.createElement("td");
+            precio.textContent =
+                "$" + producto.precio.toFixed(2);
 
-            const eliminarCelda = document.createElement("td");
+            const acciones = document.createElement("td");
 
-            const eliminarBtn = document.createElement("button");
-            eliminarBtn.type = "button";
-            eliminarBtn.textContent = "✖";
-            eliminarBtn.classList.add("eliminar-carrito");
-
-            eliminarBtn.addEventListener("click", function() {
-                eliminarDelCarrito(producto.id);
-            });
-
-            eliminarCelda.appendChild(eliminarBtn);
+            acciones.appendChild(
+                crearBoton("✖", function () {
+                    eliminarDelCarrito(producto.id);
+                }, "eliminar-carrito")
+            );
 
             fila.append(
                 nombre,
-                cantidadCelda,
-                precioCelda,
-                eliminarCelda
+                cantidad,
+                precio,
+                acciones
             );
 
             listaCarrito.appendChild(fila);
-        }
-    });
-
-    // Mostrar mensaje cuando está vacío
-    if (carrito.length === 0 && listaCarrito) {
-
-        const fila = document.createElement("tr");
-        const celda = document.createElement("td");
-
-        celda.colSpan = 4;
-        celda.textContent = "El carrito está vacío.";
-
-        fila.appendChild(celda);
-        listaCarrito.appendChild(fila);
-    }
-
-    // Actualizar subtotal
-    const total = "$" + subtotal.toFixed(2);
-
-    if (subtotalLabel) {
-        subtotalLabel.textContent = total;
-    }
-
-    // Actualizar contador de productos
-    if (cantidad_productos) {
-        cantidad_productos.textContent = cantidadTotal;
-    }
-
-    guardarCarrito();
-}
-
-
-// =====================================================
-// CARRITO: BOTONES PARA AGREGAR PRODUCTOS
-// =====================================================
-
-document.querySelectorAll(".agregar-carrito").forEach(boton => {
-
-    boton.addEventListener("click", function(evento) {
-
-        evento.preventDefault();
-
-        const id = this.dataset.productoId;
-        const nombre = this.dataset.productoNombre;
-        const precio = Number(this.dataset.productoPrecio);
-
-        agregarAlCarrito(id, nombre, precio);
-    });
-
-});
-
-
-// =====================================================
-// CARRITO: ABRIR Y CERRAR
-// =====================================================
-
-if (carritobtn && carrito_bar) {
-
-    carritobtn.addEventListener("click", function() {
-
-        carrito_bar.classList.toggle("visible");
-
-        carritobtn.setAttribute(
-            "aria-expanded",
-            String(carrito_bar.classList.contains("visible"))
-        );
-
-    });
-
-}
-
-
-if (cerrarCarrito && carrito_bar) {
-
-    cerrarCarrito.addEventListener("click", function() {
-
-        carrito_bar.classList.remove("visible");
-
-        if (carritobtn) {
-            carritobtn.setAttribute("aria-expanded", "false");
-        }
-
-    });
-
-}
-
-
-// =====================================================
-// FAVORITOS: COMPROBAR SI UN PRODUCTO ES FAVORITO
-// =====================================================
-
-function esFavorito(id) {
-
-    return favoritos.some(
-        p => String(p.id) === String(id)
-    );
-
-}
-
-
-// =====================================================
-// FAVORITOS: ACTUALIZAR CORAZONES
-// =====================================================
-
-function actualizarBotonesFavoritos() {
-
-    document.querySelectorAll(".favorito_producto").forEach(boton => {
-
-        const id = boton.dataset.productoId;
-        const activo = esFavorito(id);
-
-        boton.textContent = activo ? "♥" : "♡";
-
-        boton.classList.toggle("es-favorito", activo);
-
-        boton.setAttribute(
-            "aria-label",
-            activo
-                ? "Quitar de favoritos"
-                : "Agregar a favoritos"
-        );
-
-        boton.setAttribute(
-            "aria-pressed",
-            String(activo)
-        );
-
-    });
-
-}
-
-
-// =====================================================
-// FAVORITOS: AGREGAR O QUITAR
-// =====================================================
-
-function alternarFavorito(boton) {
-
-    const id = String(boton.dataset.productoId ?? "").trim();
-    const nombre = String(boton.dataset.productoNombre ?? "").trim();
-    const precio = Number(boton.dataset.productoPrecio);
-
-    if (
-        !id ||
-        !nombre ||
-        !Number.isFinite(precio) ||
-        precio < 0
-    ) {
-        console.error("Datos incorrectos del favorito.");
-        return;
-    }
-
-    if (esFavorito(id)) {
-
-        favoritos = favoritos.filter(
-            p => String(p.id) !== id
-        );
-
-    } else {
-
-        favoritos.push({
-            id: id,
-            nombre: nombre,
-            precio: precio
         });
 
+        if (listaCarrito && carrito.length === 0) {
+            const fila = document.createElement("tr");
+            const celda = document.createElement("td");
+
+            celda.colSpan = 4;
+            celda.textContent = "El carrito está vacío.";
+
+            fila.appendChild(celda);
+            listaCarrito.appendChild(fila);
+        }
+
+        if (subtotalLabel) {
+            subtotalLabel.textContent =
+                "$" + subtotal.toFixed(2);
+        }
+
+        if (cantidad_productos) {
+            cantidad_productos.textContent =
+                String(cantidadTotal);
+        }
+
+        guardarCarrito();
     }
 
-    guardarFavoritos();
+    // =====================================================
+    // CARRITO: BOTONES DE PRODUCTOS
+    // =====================================================
 
-    actualizarBotonesFavoritos();
-    actualizarFavoritos();
-}
-
-
-// =====================================================
-// FAVORITOS: DIBUJAR PRODUCTOS
-// =====================================================
-
-function actualizarFavoritos() {
-
-    if (!contenidoFavoritos) {
-        return;
-    }
-
-    contenidoFavoritos.replaceChildren();
-
-    if (favoritos.length === 0) {
-
-        const mensaje = document.createElement("p");
-        mensaje.textContent = "No tienes productos favoritos.";
-
-        contenidoFavoritos.appendChild(mensaje);
-
-        return;
-    }
-
-    favoritos.forEach(producto => {
-
-        const div = document.createElement("div");
-        div.classList.add("producto-favorito");
-
-        const nombre = document.createElement("p");
-        nombre.textContent = producto.nombre;
-
-        const precio = document.createElement("p");
-        precio.textContent = "$" + producto.precio.toFixed(2);
-
-        // Botón para quitar de favoritos
-        const quitarBtn = document.createElement("button");
-
-        quitarBtn.type = "button";
-        quitarBtn.textContent = "♥ Quitar de favoritos";
-
-        quitarBtn.addEventListener("click", function() {
-
-            favoritos = favoritos.filter(
-                p => String(p.id) !== String(producto.id)
-            );
-
-            guardarFavoritos();
-
-            actualizarFavoritos();
-            actualizarBotonesFavoritos();
-
-        });
-
-        // Botón para agregar al carrito
-        const carritoBtn = document.createElement("button");
-
-        carritoBtn.type = "button";
-        carritoBtn.textContent = "🛒 Agregar al carrito";
-
-        carritoBtn.addEventListener("click", function() {
+    document.querySelectorAll(".agregar-carrito").forEach(function (boton) {
+        boton.addEventListener("click", function (evento) {
+            evento.preventDefault();
 
             agregarAlCarrito(
-                producto.id,
-                producto.nombre,
-                producto.precio
+                boton.dataset.productoId,
+                boton.dataset.productoNombre,
+                boton.dataset.productoPrecio
             );
-
         });
-
-        div.append(
-            nombre,
-            precio,
-            quitarBtn,
-            carritoBtn
-        );
-
-        contenidoFavoritos.appendChild(div);
-
     });
 
-}
+    // =====================================================
+    // CARRITO: ABRIR Y CERRAR
+    // =====================================================
 
-
-// =====================================================
-// FAVORITOS: DETECTAR CLICS EN LOS CORAZONES
-// =====================================================
-
-document.addEventListener("click", function(evento) {
-
-    const boton = evento.target.closest(".favorito_producto");
-
-    if (!boton) {
-        return;
+    if (carritobtn && carrito_bar) {
+        carritobtn.addEventListener("click", function () {
+            alternarPanel(carritobtn, carrito_bar);
+        });
     }
 
-    evento.preventDefault();
+    if (cerrarCarrito && carrito_bar) {
+        cerrarCarrito.addEventListener("click", function () {
+            carrito_bar.classList.remove("visible");
 
-    alternarFavorito(boton);
+            if (carritobtn) {
+                carritobtn.setAttribute("aria-expanded", "false");
+            }
+        });
+    }
 
-});
+    // =====================================================
+    // FAVORITOS: COMPROBAR
+    // =====================================================
 
+    function esFavorito(id) {
+        return favoritos.some(
+            producto => producto.id === String(id)
+        );
+    }
 
-// =====================================================
-// FAVORITOS: ABRIR Y CERRAR
-// =====================================================
+    // =====================================================
+    // FAVORITOS: ACTUALIZAR BOTONES
+    // =====================================================
 
-if (favoritosBtn && favoritosBar) {
+    function actualizarBotonesFavoritos() {
+        document.querySelectorAll(".favorito_producto").forEach(
+            function (boton) {
+                const activo = esFavorito(
+                    boton.dataset.productoId
+                );
 
-    favoritosBtn.addEventListener("click", function() {
+                boton.textContent = activo ? "♥" : "♡";
 
-        favoritosBar.classList.toggle("visible");
+                boton.classList.toggle(
+                    "es-favorito",
+                    activo
+                );
 
-        favoritosBtn.setAttribute(
-            "aria-expanded",
-            String(favoritosBar.classList.contains("visible"))
+                boton.setAttribute(
+                    "aria-label",
+                    activo
+                        ? "Quitar de favoritos"
+                        : "Agregar a favoritos"
+                );
+
+                boton.setAttribute(
+                    "aria-pressed",
+                    String(activo)
+                );
+            }
+        );
+    }
+
+    // =====================================================
+    // FAVORITOS: ALTERNAR
+    // =====================================================
+
+    function alternarFavorito(boton) {
+        const id = String(
+            boton.dataset.productoId ?? ""
+        ).trim();
+
+        const nombre = String(
+            boton.dataset.productoNombre ?? ""
+        ).trim();
+
+        const precio = Number(
+            boton.dataset.productoPrecio
         );
 
-        actualizarFavoritos();
-
-    });
-
-}
-
-
-if (cerrarFavoritos && favoritosBar) {
-
-    cerrarFavoritos.addEventListener("click", function() {
-
-        favoritosBar.classList.remove("visible");
-
-        if (favoritosBtn) {
-            favoritosBtn.setAttribute("aria-expanded", "false");
+        if (
+            !id ||
+            !nombre ||
+            !Number.isFinite(precio) ||
+            precio < 0
+        ) {
+            console.error("Datos incorrectos del favorito.");
+            return;
         }
 
+        if (esFavorito(id)) {
+            favoritos = favoritos.filter(
+                producto => producto.id !== id
+            );
+        } else {
+            favoritos.push({
+                id,
+                nombre,
+                precio
+            });
+        }
+
+        guardarFavoritos();
+        actualizarBotonesFavoritos();
+        actualizarFavoritos();
+    }
+
+    // =====================================================
+    // FAVORITOS: DIBUJAR
+    // =====================================================
+
+    function actualizarFavoritos() {
+        if (!contenidoFavoritos) return;
+
+        contenidoFavoritos.replaceChildren();
+
+        if (favoritos.length === 0) {
+            const mensaje = document.createElement("p");
+
+            mensaje.textContent =
+                "No tienes productos favoritos.";
+
+            contenidoFavoritos.appendChild(mensaje);
+            return;
+        }
+
+        favoritos.forEach(function (producto) {
+            const div = document.createElement("div");
+            div.classList.add("producto-favorito");
+
+            const nombre = document.createElement("p");
+            nombre.textContent = producto.nombre;
+
+            const precio = document.createElement("p");
+            precio.textContent =
+                "$" + producto.precio.toFixed(2);
+
+            const quitarBtn = crearBoton(
+                "♥ Quitar de favoritos",
+                function () {
+                    favoritos = favoritos.filter(
+                        p => p.id !== producto.id
+                    );
+
+                    guardarFavoritos();
+                    actualizarFavoritos();
+                    actualizarBotonesFavoritos();
+                }
+            );
+
+            const carritoBtn = crearBoton(
+                "🛒 Agregar al carrito",
+                function () {
+                    agregarAlCarrito(
+                        producto.id,
+                        producto.nombre,
+                        producto.precio
+                    );
+                }
+            );
+
+            div.append(
+                nombre,
+                precio,
+                quitarBtn,
+                carritoBtn
+            );
+
+            contenidoFavoritos.appendChild(div);
+        });
+    }
+
+    // =====================================================
+    // FAVORITOS: DETECTAR CLICS
+    // =====================================================
+
+    document.addEventListener("click", function (evento) {
+        const boton = evento.target.closest(".favorito_producto");
+
+        if (!boton) return;
+
+        evento.preventDefault();
+        alternarFavorito(boton);
     });
 
-}
-
-
-// =====================================================
-// INICIALIZAR CARRITO Y FAVORITOS
-// =====================================================
-
-actualizarCarrito();
-actualizarBotonesFavoritos();
-actualizarFavoritos();
-
     // =====================================================
-    // CONTROL DE STOCK EN LAS TARJETAS
+    // FAVORITOS: ABRIR Y CERRAR
     // =====================================================
 
-    const botonesCategoria = document.querySelectorAll(
-        ".sec_btn[data-categoria]"
-    );
+    if (favoritosBtn && favoritosBar) {
+        favoritosBtn.addEventListener("click", function () {
+            alternarPanel(favoritosBtn, favoritosBar);
+            actualizarFavoritos();
+        });
+    }
 
-    const productos = document.querySelectorAll(
-        ".tarjeta_producto, #producto"
-    );
+    if (cerrarFavoritos && favoritosBar) {
+        cerrarFavoritos.addEventListener("click", function () {
+            favoritosBar.classList.remove("visible");
+
+            if (favoritosBtn) {
+                favoritosBtn.setAttribute("aria-expanded", "false");
+            }
+        });
+    }
+
+    // =====================================================
+    // INICIALIZAR CARRITO Y FAVORITOS
+    // =====================================================
+
+    actualizarCarrito();
+    actualizarBotonesFavoritos();
+    actualizarFavoritos();
+
+    // =====================================================
+    // CONTROL DE STOCK
+    // =====================================================
 
     function actualizarIndicadoresStock() {
-        productos.forEach(function (producto) {
+        const productosStock = document.querySelectorAll(
+            ".tarjeta_producto, #producto"
+        );
+
+        productosStock.forEach(function (producto) {
             const stockElemento =
                 producto.querySelector(".producto_stock");
 
@@ -1217,9 +1181,7 @@ actualizarFavoritos();
             const botonCarrito =
                 producto.querySelector(".agregar-carrito");
 
-            if (!stockElemento) {
-                return;
-            }
+            if (!stockElemento) return;
 
             const stockTexto = stockElemento.textContent
                 .replace(/Stock:/i, "")
@@ -1227,28 +1189,26 @@ actualizarFavoritos();
 
             const stock = Number(stockTexto);
 
-            if (!Number.isFinite(stock)) {
-                return;
-            }
+            if (!Number.isFinite(stock)) return;
+
+            const agotado = stock <= 0;
 
             if (disponibilidad) {
                 disponibilidad.style.backgroundColor =
-                    stock <= 0 ? "red" : "var(--verde-musgo)";
+                    agotado ? "red" : "var(--verde-musgo)";
             }
 
             if (botonCarrito) {
-                if (stock <= 0) {
-                    botonCarrito.disabled = true;
-                    botonCarrito.style.display = "none";
-                    botonCarrito.setAttribute(
-                        "aria-label",
-                        "Producto sin stock"
-                    );
-                } else {
-                    botonCarrito.disabled = false;
-                    botonCarrito.style.display = "";
-                    botonCarrito.removeAttribute("aria-label");
-                }
+                botonCarrito.disabled = agotado;
+                botonCarrito.style.display =
+                    agotado ? "none" : "";
+
+                botonCarrito.setAttribute(
+                    "aria-label",
+                    agotado
+                        ? "Producto sin stock"
+                        : "Agregar al carrito"
+                );
             }
         });
     }
@@ -1259,69 +1219,71 @@ actualizarFavoritos();
     // FILTROS Y ORDEN DEL CATÁLOGO
     // =====================================================
 
-    const contenedorCatalogo =
-        document.getElementById("catalogo");
+    const botonesCategoria = document.querySelectorAll(
+        ".sec_btn[data-categoria]"
+    );
 
-    const opcionesOrden =
-        document.querySelectorAll('input[name="orden"]');
+    const contenedorCatalogo = $("catalogo");
+
+    const opcionesOrden = document.querySelectorAll(
+        'input[name="orden"]'
+    );
 
     let categoriaSeleccionada = "";
     let ordenSeleccionado = "";
 
-    function normalizarTexto(texto) {
-        return String(texto || "")
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .trim()
-            .toLocaleLowerCase("es");
-    }
-
     function aplicarFiltros() {
-        if (!contenedorCatalogo) {
-            return;
-        }
+        if (!contenedorCatalogo) return;
 
         const tarjetas = Array.from(
-            contenedorCatalogo.querySelectorAll(".tarjeta_producto")
+            contenedorCatalogo.querySelectorAll(
+                ".tarjeta_producto"
+            )
         );
 
         tarjetas.forEach(function (producto) {
-            const categoriaProducto = normalizarTexto(
+            const categoria = normalizarTexto(
                 producto.dataset.categoria
             );
 
-            const coincideCategoria =
+            const coincide =
                 !categoriaSeleccionada ||
-                categoriaProducto === normalizarTexto(categoriaSeleccionada);
+                categoria === normalizarTexto(
+                    categoriaSeleccionada
+                );
 
-            producto.hidden = !coincideCategoria;
+            producto.hidden = !coincide;
         });
 
-        const tarjetasOrdenadas = [...tarjetas];
-
-        tarjetasOrdenadas.sort(function (a, b) {
+        tarjetas.sort(function (a, b) {
             const nombreA = normalizarTexto(a.dataset.nombre);
             const nombreB = normalizarTexto(b.dataset.nombre);
 
-            const precioA = Number(a.dataset.precio) || 0;
-            const precioB = Number(b.dataset.precio) || 0;
+            const precioA = Number(a.dataset.precio);
+            const precioB = Number(b.dataset.precio);
 
             switch (ordenSeleccionado) {
                 case "alfabetico":
                     return nombreA.localeCompare(nombreB, "es");
 
                 case "mayorprecio":
-                    return precioB - precioA;
+                    return (
+                        (Number.isFinite(precioB) ? precioB : 0) -
+                        (Number.isFinite(precioA) ? precioA : 0)
+                    );
 
                 case "menorprecio":
-                    return precioA - precioB;
+                    return (
+                        (Number.isFinite(precioA) ? precioA : 0) -
+                        (Number.isFinite(precioB) ? precioB : 0)
+                    );
 
                 default:
                     return 0;
             }
         });
 
-        tarjetasOrdenadas.forEach(function (producto) {
+        tarjetas.forEach(function (producto) {
             contenedorCatalogo.appendChild(producto);
         });
     }
@@ -1352,7 +1314,7 @@ actualizarFavoritos();
 
     if (buscar_btn && busqueda_div) {
         buscar_btn.addEventListener("click", function () {
-            busqueda_div.classList.toggle("visible");
+            alternarPanel(buscar_btn, busqueda_div);
         });
     }
 
@@ -1362,26 +1324,26 @@ actualizarFavoritos();
 
     if (filtrosbtn && filtro_menu) {
         filtrosbtn.addEventListener("click", function () {
-            filtro_menu.hidden = !filtro_menu.hidden;
+            const visible = filtro_menu.hidden;
+
+            filtro_menu.hidden = !visible;
 
             filtrosbtn.setAttribute(
                 "aria-expanded",
-                String(!filtro_menu.hidden)
+                String(visible)
             );
         });
     }
-
-    
 
     // =====================================================
     // CATEGORÍAS DE LA PORTADA
     // =====================================================
 
-    const botonesPortada =
-        document.querySelectorAll(".botones_catalogo");
+    const botonesPortada = document.querySelectorAll(
+        ".botones_catalogo"
+    );
 
-    const seccionProductos =
-        document.getElementById("productos");
+    const seccionProductos = $("productos");
 
     const categoriasPortada = {
         mariposas_btn: ["mariposa", "mariposas"],
@@ -1399,7 +1361,8 @@ actualizarFavoritos();
 
     botonesPortada.forEach(function (botonPortada) {
         botonPortada.addEventListener("click", function () {
-            const terminos = categoriasPortada[botonPortada.id] || [];
+            const terminos =
+                categoriasPortada[botonPortada.id] || [];
 
             const tarjetas = Array.from(
                 document.querySelectorAll(
@@ -1421,7 +1384,9 @@ actualizarFavoritos();
                 );
 
                 const coincide = terminos.some(function (termino) {
-                    return texto.includes(normalizarTexto(termino));
+                    return texto.includes(
+                        normalizarTexto(termino)
+                    );
                 });
 
                 tarjeta.hidden = !coincide;
@@ -1438,11 +1403,13 @@ actualizarFavoritos();
                 });
             }
 
-            let aviso = document.getElementById(
-                "aviso_filtro_portada"
-            );
+            let aviso = $("aviso_filtro_portada");
 
-            if (!aviso && seccionProductos && seccionProductos.parentNode) {
+            if (
+                !aviso &&
+                seccionProductos &&
+                seccionProductos.parentNode
+            ) {
                 aviso = document.createElement("p");
                 aviso.id = "aviso_filtro_portada";
                 aviso.setAttribute("role", "status");
@@ -1461,16 +1428,5 @@ actualizarFavoritos();
         });
     });
 
-    // =====================================================
-    // BOTÓN PARA VER EL CATÁLOGO COMPLETO
-    // =====================================================
-
-    const catalogoBtn =
-        document.getElementById("catalogo_completo_btn");
-
-    if (catalogoBtn) {
-        catalogoBtn.addEventListener("click", function () {
-            window.location.href = "/catalogo";
-        });
-    }
-
+    console.info("LINNEO: JavaScript inicializado correctamente.");
+});
