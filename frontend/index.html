@@ -197,6 +197,48 @@
 
 	<nav id="favoritos_bar" class="barra">
 
+    <h1>MI CARRITO</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio</th>
+                <th>Eliminar</th>
+            </tr>
+        </thead>
+
+        <tbody id="lista_carrito">
+            <tr>
+                <td colspan="4">El carrito está vacío.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>
+        Subtotal:
+        <span id="subtotal_carrito">$0.00</span>
+    </h3>
+
+    <button
+        type="button"
+        id="comprar_carrito_btn"
+        class="button"
+    >
+        Comprar
+    </button>
+
+    <button
+        type="button"
+        id="cerrar_carrito"
+        class="button"
+    >
+        Cerrar carrito
+    </button>
+<!-- PANEL DE FAVORITOS -->
+<nav id="favoritos_bar" class="barra">
+
     <h1>MIS FAVORITOS</h1>
 
     <div id="contenido_favoritos">
@@ -208,7 +250,7 @@
         id="cerrar_favoritos"
         class="button"
     >
-        Cerrar
+        Cerrar favoritos
     </button>
 
 </nav>
