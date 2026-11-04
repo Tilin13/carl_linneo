@@ -746,8 +746,6 @@ if (favoritosBtn) {
 if (cerrarFavoritos) {
     cerrarFavoritos.addEventListener("click", cerrarPanelFavoritos);
 }
-
-
 // =====================================================
 // BOTÓN COMPRAR
 // =====================================================
@@ -756,17 +754,75 @@ const comprarBtn = $("comprar_carrito_btn");
 
 if (comprarBtn) {
 
-    comprarBtn.addEventListener("click", function () {
+    comprarBtn.addEventListener("click", async function () {
 
         if (carrito.length === 0) {
+
             alert("Tu carrito está vacío.");
+
             return;
         }
 
-        alert(
-            "El carrito funciona, pero la compra todavía no está conectada al servidor. " +
-            "Falta implementar la ruta de checkout en Flask para validar el inventario y registrar el pedido."
+        const confirmar = confirm(
+            "¿Deseas confirmar tu compra?"
         );
+
+        if (!confirmar) return;
+
+        comprarBtn.disabled = true;
+
+        comprarBtn.textContent = "Procesando...";
+
+        try {
+
+            const resultado = await peticion(
+                "/api/pedidos",
+                {
+                    method: "POST",
+
+                    body: JSON.stringify({
+
+                        productos: carrito.map(function (producto) {
+
+                            return {
+                                id: producto.id,
+                                cantidad: producto.cantidad
+                            };
+
+                        })
+
+                    })
+
+                }
+            );
+
+            if (!resultado.url) {
+
+                throw new Error(
+                    "No se recibió la dirección del pedido."
+                );
+
+            }
+
+            // Vaciar carrito únicamente después de confirmar
+            // que el servidor ha registrado la compra.
+
+            carrito = [];
+
+            actualizarCarrito();
+
+            // Abrir los detalles del pedido.
+            window.location.assign(resultado.url);
+
+        } catch (error) {
+
+            alert(error.message);
+
+            comprarBtn.disabled = false;
+
+            comprarBtn.textContent = "Comprar";
+
+        }
 
     });
 

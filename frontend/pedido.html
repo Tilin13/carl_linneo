@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <meta name="csrf-token"
+          content="{{ csrf_token() }}">
+
+    <title>Pedido #{{ pedido.id }} | Linneo</title>
+
+    <link rel="stylesheet" href="/css/variables.css">
+
+</head>
+
+<body>
+
+    <header class="barra">
+
+        <h1>Linneo</h1>
+
+        <a href="{{ url_for('mi_cuenta') }}">
+            Mi cuenta
+        </a>
+
+        <a href="{{ url_for('index') }}">
+            Inicio
+        </a>
+
+    </header>
+
+
+    <main class="detalle-pedido">
+
+        <section>
+
+            <h1>¡Gracias por tu compra!</h1>
+
+            <p>
+                Tu pedido ha sido registrado correctamente.
+            </p>
+
+            <h2>
+                Pedido #{{ pedido.id }}
+            </h2>
+
+            <p>
+                <strong>Comprador:</strong>
+                {{ pedido.usuario.username }}
+            </p>
+
+            <p>
+                <strong>Fecha:</strong>
+                {{ pedido.fecha.strftime('%d/%m/%Y %H:%M') }}
+            </p>
+
+            <p>
+                <strong>Estado del pedido:</strong>
+                <span class="estado-pedido">
+                    {{ pedido.estado }}
+                </span>
+            </p>
+
+        </section>
+
+
+        <section class="tarjeta">
+
+            <h2>Detalles de tu compra</h2>
+
+            <div style="overflow-x:auto;">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Producto</th>
+
+                            <th>Cantidad</th>
+
+                            <th>Precio unitario</th>
+
+                            <th>Total</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for item in pedido.productos %}
+
+                        <tr>
+
+                            <td>
+                                {{ item.nombre }}
+                            </td>
+
+                            <td>
+                                {{ item.cantidad }}
+                            </td>
+
+                            <td>
+                                ${{ "%.2f"|format(item.precio_unitario) }}
+                            </td>
+
+                            <td>
+                                ${{ "%.2f"|format(item.total) }}
+                            </td>
+
+                        </tr>
+
+                        {% else %}
+
+                        <tr>
+
+                            <td colspan="4">
+                                Este pedido no tiene detalles de productos.
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <div class="resumen-pedido">
+
+                <h2>Resumen de compra</h2>
+
+                <div>
+
+                    <strong>Subtotal:</strong>
+
+                    <span>
+                        ${{ "%.2f"|format(pedido.subtotal) }}
+                    </span>
+
+                </div>
+
+                <div>
+
+                    <strong>Estado:</strong>
+
+                    <span>
+                        {{ pedido.estado }}
+                    </span>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section>
+
+            <a href="{{ url_for('mi_cuenta') }}">
+                Volver a mis pedidos
+            </a>
+
+            <a href="{{ url_for('catalogo') }}">
+                Seguir comprando
+            </a>
+
+        </section>
+
+    </main>
+
+</body>
+
+</html>
+

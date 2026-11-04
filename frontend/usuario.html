@@ -224,99 +224,89 @@
         </div>
 
 
-        <!-- =================================
-             HISTORIAL DE PEDIDOS
-        ================================== -->
+```html
+<section id="mis_pedidos">
 
-        <div class="cuenta-panel">
+    <h2>Mis pedidos</h2>
 
-            <h2>Mis pedidos</h2>
+    {% if pedidos %}
 
-            {% if pedidos %}
+        <div class="lista-pedidos">
 
-                <div class="lista-pedidos">
+            {% for pedido in pedidos %}
 
-                    {% for pedido in pedidos %}
-
-                        <article class="pedido">
-
-                            <div class="pedido-encabezado">
-
-                                <h3>
-                                    Pedido #{{ pedido.id }}
-                                </h3>
-
-                                {% if pedido.estado == "Entregado" %}
-
-                                    <span class="pedido-estado estado_entregado">
-                                        Entregado
-                                    </span>
-
-                                {% elif pedido.estado == "En camino" %}
-
-                                    <span class="pedido-estado estado_camino">
-                                        En camino
-                                    </span>
-
-                                {% else %}
-
-                                    <span class="pedido-estado estado_pendiente">
-                                        {{ pedido.estado }}
-                                    </span>
-
-                                {% endif %}
-
-                            </div>
-
-
-                            <div class="pedido-datos">
-
-                                <p class="pedido-dato">
-
-                                    <strong>Fecha:</strong>
-
-                                    {{ pedido.fecha.strftime('%d/%m/%Y %H:%M') }}
-
-                                </p>
-
-                                <p class="pedido-dato">
-
-                                    <strong>Subtotal:</strong>
-
-                                    ${{ "%.2f"|format(pedido.subtotal|float) }}
-
-                                </p>
-
-                            </div>
-
-                        </article>
-
-                    {% endfor %}
-
-                </div>
-
-            {% else %}
-
-                <div class="pedidos-vacios">
+                <article class="pedido">
 
                     <h3>
-                        Todavía no tienes pedidos
+                        Pedido #{{ pedido.id }}
                     </h3>
 
                     <p>
-                        Cuando realices una compra,
-                        podrás consultar aquí su información.
+                        Fecha:
+                        {{ pedido.fecha.strftime('%d/%m/%Y %H:%M') }}
                     </p>
 
-                    <a href="/catalogo">
-                        Explorar productos
+                    <p>
+                        Estado:
+                        <strong>{{ pedido.estado }}</strong>
+                    </p>
+
+                    <p>
+                        Total:
+                        ${{ "%.2f"|format(pedido.subtotal) }}
+                    </p>
+
+                    <h4>Productos:</h4>
+
+                    <ul>
+
+                        {% for item in pedido.productos %}
+
+                            <li>
+
+                                {{ item.nombre }}
+
+                                — {{ item.cantidad }} unidades
+
+                                — ${{ "%.2f"|format(item.total) }}
+
+                            </li>
+
+                        {% endfor %}
+
+                    </ul>
+
+                    <a href="{{ url_for(
+                        'detalle_pedido',
+                        pedido_id=pedido.id
+                    ) }}">
+
+                        Ver detalles del pedido
+
                     </a>
 
-                </div>
+                </article>
 
-            {% endif %}
+                <hr>
+
+            {% endfor %}
 
         </div>
+
+    {% else %}
+
+        <p>
+            Todavía no has realizado ninguna compra.
+        </p>
+
+        <a href="{{ url_for('catalogo') }}">
+            Explorar catálogo
+        </a>
+
+    {% endif %}
+
+</section>
+```
 
     </main>
 
