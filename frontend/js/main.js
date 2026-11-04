@@ -975,17 +975,72 @@ actualizarFavoritos();
 
     }
 
+   
     // =====================================================
-    // CHAT
+    // CHATBOT LINNEO
     // =====================================================
 
     const barraMensajes = $("bar_mensajes");
     const historialMensajes = $("historial_mensajes");
     const enviarMensajeBtn = $("enviar_mensaje_btn");
+    const chatBtn = $("chat_btn");
+    const chatBox = $("chat_box");
+    const formChat = $("form_chat");
 
-    async function enviarMensaje() {
+    let esperandoRespuesta = false;
 
-        if (!barraMensajes || !historialMensajes) {
+    // Mostrar mensajes de manera segura
+    function agregarMensaje(texto, clase) {
+
+        const mensaje = document.createElement("div");
+
+        mensaje.className = clase;
+        mensaje.textContent = texto;
+
+        historialMensajes.appendChild(mensaje);
+
+        historialMensajes.scrollTop =
+            historialMensajes.scrollHeight;
+
+        return mensaje;
+    }
+
+    // Abrir y cerrar chatbot
+    function alternarChat() {
+
+        if (!chatBox) return;
+
+        const abierto = chatBox.hidden;
+
+        chatBox.hidden = !abierto;
+
+        chatBtn.setAttribute(
+            "aria-expanded",
+            String(abierto)
+        );
+
+        if (abierto && barraMensajes) {
+            barraMensajes.focus();
+        }
+    }
+
+    if (chatBtn) {
+        chatBtn.addEventListener(
+            "click",
+            alternarChat
+        );
+    }
+
+    // Enviar mensaje
+    async function enviarMensaje(evento) {
+
+        if (evento) evento.preventDefault();
+
+        if (
+            !barraMensajes ||
+            !historialMensajes ||
+            esperandoRespuesta
+        ) {
             return;
         }
 
@@ -993,22 +1048,33 @@ actualizarFavoritos();
 
         if (!texto) return;
 
-        const mensajeUsuario =
-            document.createElement("div");
+        if (texto.length > 4000) {
+            agregarMensaje(
+                "El mensaje supera el límite permitido.",
+                "mensaje_error"
+            );
+            return;
+        }
 
-        mensajeUsuario.className = "mensaje_usuario";
-        mensajeUsuario.textContent = "Tú: " + texto;
+        esperandoRespuesta = true;
 
-        historialMensajes.appendChild(mensajeUsuario);
+        enviarMensajeBtn.disabled = true;
+
+        enviarMensajeBtn.textContent = "Enviando...";
+
+        barraMensajes.disabled = true;
+
+        agregarMensaje(
+            "Tú: " + texto,
+            "mensaje_usuario"
+        );
 
         barraMensajes.value = "";
 
-        const cargando = document.createElement("div");
-
-        cargando.className = "mensaje_asistente";
-        cargando.textContent = "Linneo: Escribiendo...";
-
-        historialMensajes.appendChild(cargando);
+        const cargando = agregarMensaje(
+            "Linneo: Escribiendo...",
+            "mensaje_asistente"
+        );
 
         try {
 
@@ -1016,6 +1082,7 @@ actualizarFavoritos();
                 "/api/chat",
                 {
                     method: "POST",
+
                     body: JSON.stringify({
                         mensaje: texto
                     })
@@ -1024,64 +1091,56 @@ actualizarFavoritos();
 
             cargando.remove();
 
-            const respuesta =
-                document.createElement("div");
+            if (
+                typeof datos.respuesta !== "string" ||
+                !datos.respuesta.trim()
+            ) {
+                throw new Error(
+                    "Linneo no pudo generar una respuesta."
+                );
+            }
 
-            respuesta.className = "mensaje_asistente";
-
-            respuesta.textContent =
-                "Linneo: " +
-                (datos.respuesta || "Sin respuesta.");
-
-            historialMensajes.appendChild(respuesta);
+            agregarMensaje(
+                "Linneo: " + datos.respuesta,
+                "mensaje_asistente"
+            );
 
         } catch (error) {
 
             cargando.remove();
 
-            const errorMensaje =
-                document.createElement("div");
+            agregarMensaje(
+                "Linneo: " +
+                (error.message ||
+                    "No pude conectarme. Inténtalo nuevamente."),
+                "mensaje_error"
+            );
 
-            errorMensaje.className = "mensaje_error";
-            errorMensaje.textContent =
-                error.message;
+        } finally {
 
-            historialMensajes.appendChild(errorMensaje);
+            esperandoRespuesta = false;
+
+            enviarMensajeBtn.disabled = false;
+
+            enviarMensajeBtn.textContent = "Enviar";
+
+            barraMensajes.disabled = false;
+
+            barraMensajes.focus();
 
         }
-
-        historialMensajes.scrollTop =
-            historialMensajes.scrollHeight;
-
     }
 
-    if (enviarMensajeBtn) {
+    // El formulario controla el envío
+    if (formChat) {
 
-        enviarMensajeBtn.addEventListener(
-            "click",
+        formChat.addEventListener(
+            "submit",
             enviarMensaje
         );
 
     }
 
-    if (barraMensajes) {
-
-        barraMensajes.addEventListener(
-            "keydown",
-            function (evento) {
-
-                if (
-                    evento.key === "Enter" &&
-                    !evento.shiftKey
-                ) {
-                    evento.preventDefault();
-                    enviarMensaje();
-                }
-
-            }
-        );
-
-    }
 
     // =====================================================
     // CONTROL DE STOCK

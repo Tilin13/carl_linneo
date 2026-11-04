@@ -110,30 +110,63 @@
 
 		</main>
 		
-		<main>
-		<nav class="barra" id="configuraciones_bar_chatbox">
-			<button 
-			id="idioma_chatboxbtn"
-			class="button"
-			type="button"
-			>
-			🌐
-			</button>
-		</nav>
-		<nav id="chat_box">
-			<div id="historial_mensajes">
-			</div>
-			<div id="menu_mensajes_propios">
-				<input type="text" id="bar_mensajes">
-				<button 
-					onclick=enviarmensje()
-					 id="enviar_mensaje_btn"
-					 class="button"
-				>Enviar
-				</button>
-			</div>
-		</nav>	
+<!-- Dentro de HEAD, antes de cerrar -->
+<meta name="csrf-token" content="{{ csrf_token() }}">
 
+<!-- CHATBOT -->
+<nav class="barra" id="configuraciones_bar_chatbox">
+    <button
+        id="idioma_chatboxbtn"
+        class="button"
+        type="button"
+        aria-label="Cambiar idioma"
+    >
+        🌐
+    </button>
+</nav>
+
+<section
+    id="chat_box"
+    aria-label="Asistente virtual Linneo"
+    hidden
+>
+    <div id="historial_mensajes" aria-live="polite">
+        <div class="mensaje_asistente">
+            Linneo: ¡Hola! Soy el asistente virtual de Linneo.
+            ¿Qué producto estás buscando?
+        </div>
+    </div>
+
+    <form id="form_chat">
+        <input
+            type="text"
+            id="bar_mensajes"
+            placeholder="Escribe tu mensaje..."
+            maxlength="4000"
+            autocomplete="off"
+            aria-label="Escribe tu mensaje"
+            required
+        >
+
+        <button
+            type="submit"
+            id="enviar_mensaje_btn"
+            class="button"
+        >
+            Enviar
+        </button>
+    </form>
+</section>
+
+<button
+    id="chat_btn"
+    class="button"
+    type="button"
+    aria-label="Abrir o cerrar el chat"
+    aria-expanded="false"
+>
+    💬
+</button>
 		<button id="chat_btn" class="button">💬</button>
 
 		<nav class="barra" id="carrito_bar">
