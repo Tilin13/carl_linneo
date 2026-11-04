@@ -192,50 +192,6 @@
     >
         Cerrar carrito
     </button>
-
-</nav>
-
-	<nav id="favoritos_bar" class="barra">
-
-    <h1>MI CARRITO</h1>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Producto</th>
-                <th>Cantidad</th>
-                <th>Precio</th>
-                <th>Eliminar</th>
-            </tr>
-        </thead>
-
-        <tbody id="lista_carrito">
-            <tr>
-                <td colspan="4">El carrito está vacío.</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <h3>
-        Subtotal:
-        <span id="subtotal_carrito">$0.00</span>
-    </h3>
-
-    <button
-        type="button"
-        id="comprar_carrito_btn"
-        class="button"
-    >
-        Comprar
-    </button>
-
-    <button
-        type="button"
-        id="cerrar_carrito"
-        class="button"
-    >
-        Cerrar carrito
-    </button>
 <!-- PANEL DE FAVORITOS -->
 <nav id="favoritos_bar" class="barra">
 
@@ -304,20 +260,18 @@
                <button
     class="agregar-carrito button"
     type="button"
-    data-producto-id="{{ producto.codigo }}"
+    data-producto-id="{{ producto.id }}"
     data-producto-nombre="{{ producto.nombre }}"
     data-producto-precio="{{ producto.precio_venta }}"
-    data-producto-stock="{{ producto.stock }}"
 >
     Agregar al carrito
 </button>
 <button
     class="favoritos_ b"
     type="button"
-    data-producto-id="{{ producto.codigo }}"
+    data-producto-id="{{ producto.id }}"
     data-producto-nombre="{{ producto.nombre }}"
     data-producto-precio="{{ producto.precio_venta }}"
-    data-producto-stock="{{ producto.stock }}"
     aria-label="Agregar a favoritos"
 >
     ♡
