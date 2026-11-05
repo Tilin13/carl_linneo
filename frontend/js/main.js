@@ -1327,7 +1327,16 @@ actualizarFavoritos();
     // =====================================================
     // ADMINISTRACIÓN: INVENTARIO Y USUARIOS
     // =====================================================
-
+	const visiblidad_password_btn = document.getElementById("visiblidad_password_btn");
+	const passw = document.getElementById("passw");
+	function mostrar_contrasena(){
+		if(passw.type=="password"){
+			passw.type=="text";
+		}else{
+			passw.type=="password";
+		}
+		
+	}
     const inventario = $("inventario_section");
     const clientes = $("clientes_section");
     const formulario = $("modificar_inv");
