@@ -136,55 +136,47 @@ limiter = Limiter(
 # MODELOS SQLALCHEMY
 # ============================================================
 
-
 class User(UserMixin, db.Model):
     __tablename__ = "usuarios"
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(
-        db.String(80), unique=True, nullable=False, index=True
-    )
-    email = db.Column(
-        db.String(255), unique=True, nullable=False, index=True
-    )
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(255), unique=True, nullable=False)
     phone = db.Column(db.String(20), unique=True, nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    pedidos = db.relationship(
-    "Pedido",
-    back_populates="usuario",
-    lazy="select",
-    cascade="all, delete-orphan"
-    )
+
     rol = db.Column(
         db.String(10),
         nullable=False,
-        default="user",
-        server_default="user",
+        default="user"
     )
 
-    def set_password(self, password):
-        if not isinstance(password, str):
-            raise ValueError("Contraseña no válida.")
+    pedidos = db.relationship(
+        "Pedido",
+        back_populates="usuario",
+        cascade="all, delete-orphan"
+    )
 
-        if not 12 <= len(password) <= 128:
-            raise ValueError(
-                "La contraseña debe tener entre 12 y 128 caracteres."
-            )
 
-        self.password_hash = generate_password_hash(password)
+class Pedido(db.Model):
+    __tablename__ = "pedidos"
 
-    def check_password(self, password):
-        if not isinstance(password, str):
-            return False
+    id = db.Column(db.Integer, primary_key=True)
 
-        return check_password_hash(self.password_hash, password)
+    usuario_id = db.Column(
+        db.Integer,
+        db.ForeignKey("usuarios.id"),
+        nullable=False,
+        index=True
+    )
 
-    @property
-    def es_admin(self):
-        return (
-            self.rol == "admin"
-            and (self.email or "").strip().lower() == ADMIN_EMAIL
-        )
+    fecha = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+
+    subtotal = db.Column(db.Numeric(10, 2), nullable=False)
 
     descuento = db.Column(
         db.Numeric(10, 2),
@@ -204,15 +196,28 @@ class User(UserMixin, db.Model):
         default="efectivo"
     )
 
+    estado = db.Column(
+        db.String(30),
+        nullable=False,
+        default="Pendiente"
+    )
+
+    usuario = db.relationship(
+        "User",
+        back_populates="pedidos"
+    )
+
+    productos = db.relationship(
+        "PedidoItem",
+        back_populates="pedido",
+        cascade="all, delete-orphan"
+    )
+
 
 class PedidoItem(db.Model):
-
     __tablename__ = "pedido_items"
 
-    id = db.Column(
-        db.Integer,
-        primary_key=True
-    )
+    id = db.Column(db.Integer, primary_key=True)
 
     pedido_id = db.Column(
         db.Integer,
