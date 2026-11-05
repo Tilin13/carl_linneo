@@ -1697,7 +1697,6 @@ actualizarFavoritos();
     // CHATBOT Y NAVEGACIÓN
     // =====================================================
 
-    const chatBtn = $("chat_btn");
 
     if (chatBtn) {
 
