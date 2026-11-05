@@ -143,7 +143,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     phone = db.Column(db.String(20), unique=True, nullable=True)
-    password_hash = db.Column(db.String(255), nullable=False)
+    
 
     rol = db.Column(
         db.String(10),
@@ -889,7 +889,7 @@ def cambiar_telefono():
         flash("Ingresa un número de teléfono válido.", "error")
         return redirect(url_for("mi_cuenta"))
 
-    current_user.telefono = nuevo_telefono
+    current_user.phone = nuevo_telefono
     db.session.commit()
 
     flash("Tu teléfono se actualizó correctamente.", "success")
