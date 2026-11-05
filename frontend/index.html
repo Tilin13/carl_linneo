@@ -303,6 +303,89 @@
 			<button class="button">Catálogo</button>
 			<hr>
 		</section>
+		<hr>
+		<nav>
+			<h1 class="centrado">Descuentos</h1>
+			<section id="productos_descuentos">
+			{% for producto in productos %}
+
+				<article
+					class="tarjeta_producto"
+					data-categoria="{{ producto_descuentos.categoria }}"
+					data-nombre="{{ producto_descuentos.nombre }}"
+					data-precio="{{ producto_descuentos.precio_venta_anterior }}"
+					data-precio_nv="{{ producto_descuentos.precio_venta_nv }}"
+				>
+
+				<div class="producto_imagen">
+
+					<img
+						src="{{ url_for(
+							'imagenes',
+							nombre_archivo=producto.nombre.replace(' ', '_') + '.jpg'
+						) }}"
+						alt="{{ producto.nombre }}"
+					>
+					
+
+            </div>
+            <div class="letrero_descuentos"></div>
+
+            <div class="producto_info">
+
+                <h2>{{ producto.nombre }}</h2>
+
+                <a href="/producto/{{ producto.nombre.replace(' ', '%20') }}">
+                    Ver producto
+                </a>
+
+                <p class="producto_categoria">
+                    Categoría: {{ producto.categoria }}
+                </p>
+
+                <p class="producto_precio">
+                    Precio: ${{ producto.precio_venta }}
+                </p>
+
+                <p class="producto_stock">
+                    Stock: {{ producto.stock }}
+                </p>
+                <div class="disponibilidad_favicon">
+				</div>
+
+               <button
+    class="agregar-carrito button"
+    type="button"
+    data-producto-id="{{ producto.id }}"
+    data-producto-nombre="{{ producto.nombre }}"
+    data-producto-precio="{{ producto.precio_venta }}"
+>
+    Agregar al carrito
+</button>
+<button
+    class="favoritos_ b"
+    type="button"
+    data-producto-id="{{ producto.id }}"
+    data-producto-nombre="{{ producto.nombre }}"
+    data-producto-precio="{{ producto.precio_venta }}"
+    aria-label="Agregar a favoritos"
+>
+    ♡
+</button>
+
+       
+
+        </article>
+
+    {% else %}
+
+        <p class="sin-productos">
+            No hay productos disponibles.
+        </p>
+
+    {% endfor %}
+
+		</nav>
 
 <nav class="barra" id="compra_tarjeta">
     <h1>¿Cómo realizar una compra?</h1>
@@ -330,9 +413,6 @@
         </div>
 
     </div></nav>
-				
-				
-				
 				
 			
 			</div>

@@ -7,6 +7,8 @@ import math
 import os
 import re
 import secrets
+from decimal import Decimal, InvalidOperation
+from sqlalchemy import text
 from datetime import datetime
 from flask_login import (
     LoginManager,
@@ -184,39 +186,69 @@ class User(UserMixin, db.Model):
             and (self.email or "").strip().lower() == ADMIN_EMAIL
         )
 
+    descuento = db.Column(
+        db.Numeric(10, 2),
+        nullable=False,
+        default=0
+    )
 
-class Pedido(db.Model):
-    __tablename__ = "pedidos"
+    total = db.Column(
+        db.Numeric(10, 2),
+        nullable=False,
+        default=0
+    )
 
-    id = db.Column(db.Integer, primary_key=True)
+    metodo_pago = db.Column(
+        db.String(30),
+        nullable=False,
+        default="efectivo"
+    )
 
-    usuario_id = db.Column(
+
+class PedidoItem(db.Model):
+
+    __tablename__ = "pedido_items"
+
+    id = db.Column(
         db.Integer,
-        db.ForeignKey("usuarios.id"),
+        primary_key=True
+    )
+
+    pedido_id = db.Column(
+        db.Integer,
+        db.ForeignKey("pedidos.id"),
         nullable=False,
         index=True
     )
 
-    fecha = db.Column(
-        db.DateTime,
-        nullable=False,
-        default=datetime.utcnow
+    producto_codigo = db.Column(
+        db.String(80),
+        nullable=False
     )
 
-    subtotal = db.Column(
+    nombre = db.Column(
+        db.String(200),
+        nullable=False
+    )
+
+    cantidad = db.Column(
+        db.Integer,
+        nullable=False
+    )
+
+    precio_unitario = db.Column(
         db.Numeric(10, 2),
         nullable=False
     )
 
-    estado = db.Column(
-        db.String(30),
-        nullable=False,
-        default="Pendiente"
+    total = db.Column(
+        db.Numeric(10, 2),
+        nullable=False
     )
 
-    usuario = db.relationship(
-        "User",
-        back_populates="pedidos"
+    pedido = db.relationship(
+        "Pedido",
+        back_populates="productos"
     )
 
 class CodigoAdmin(db.Model):
@@ -235,18 +267,12 @@ class CodigoAdmin(db.Model):
     intentos = db.Column(db.Integer, nullable=False, default=0)
     usado = db.Column(db.Boolean, nullable=False, default=False)
 
-
 def inicializar_base_datos():
-    """Crea las tablas definidas en los modelos si no existen."""
+
     BASE_DATOS.parent.mkdir(parents=True, exist_ok=True)
 
     with app.app_context():
         db.create_all()
-
-        app.logger.info(
-            "Base de datos inicializada en: %s",
-            BASE_DATOS
-        )
 def comprobar_tablas():
     conexion = sqlite3.connect(BASE_DATOS, timeout=10)
 
@@ -464,7 +490,270 @@ def agregar_cabeceras_seguridad(response):
 # ============================================================
 # ERRORES HTTP
 # ============================================================
+@app.route("/caja")
+@administrador_requerido
+def caja():
+    return render_template("caja.html")
+ 
+@app.route("/api/admin/caja/venta", methods=["POST"])
+@administrador_requerido
+def registrar_venta_caja():
 
+    datos = request.get_json(silent=True)
+
+    if not isinstance(datos, dict):
+        return jsonify({"error": "Datos no válidos."}), 400
+
+    usuario_id = datos.get("usuario_id")
+    productos = datos.get("productos")
+    metodo_pago = datos.get("metodo_pago", "efectivo")
+    descuento_porcentaje = datos.get("descuento", 0)
+
+    # Validar comprador
+    if (
+        isinstance(usuario_id, bool)
+        or not isinstance(usuario_id, int)
+        or usuario_id <= 0
+    ):
+        return jsonify({"error": "Selecciona un comprador válido."}), 400
+
+    comprador = db.session.get(User, usuario_id)
+
+    if comprador is None:
+        return jsonify({"error": "El comprador no existe."}), 404
+
+    # Validar método de pago
+    if metodo_pago != "efectivo":
+        return jsonify({"error": "Método de pago no disponible."}), 400
+
+    # Validar descuento
+    try:
+        if isinstance(descuento_porcentaje, bool):
+            raise ValueError
+
+        descuento_porcentaje = Decimal(
+            str(descuento_porcentaje)
+        )
+
+        if (
+            not descuento_porcentaje.is_finite()
+            or descuento_porcentaje < 0
+            or descuento_porcentaje > 100
+        ):
+            raise ValueError
+
+    except (ValueError, TypeError, InvalidOperation):
+        return jsonify({"error": "Descuento no válido."}), 400
+
+    # Validar productos
+    if (
+        not isinstance(productos, list)
+        or not productos
+        or len(productos) > 100
+    ):
+        return jsonify({"error": "Agrega productos a la venta."}), 400
+
+    cantidades = {}
+
+    for item in productos:
+
+        if not isinstance(item, dict):
+            return jsonify({"error": "Producto no válido."}), 400
+
+        codigo = str(item.get("codigo", "")).strip()
+        cantidad = item.get("cantidad")
+
+        if not codigo or len(codigo) > 80:
+            return jsonify({"error": "Código no válido."}), 400
+
+        if (
+            isinstance(cantidad, bool)
+            or not isinstance(cantidad, int)
+            or not 1 <= cantidad <= 10000
+        ):
+            return jsonify({"error": "Cantidad no válida."}), 400
+
+        cantidades[codigo] = cantidades.get(codigo, 0) + cantidad
+
+    if any(c > 10000 for c in cantidades.values()):
+        return jsonify({"error": "Cantidad demasiado grande."}), 400
+
+    subtotal = Decimal("0.00")
+
+    try:
+        # Crear el pedido asociado al comprador.
+        pedido = Pedido(
+            usuario_id=comprador.id,
+            subtotal=Decimal("0.00"),
+            descuento=Decimal("0.00"),
+            total=Decimal("0.00"),
+            metodo_pago=metodo_pago,
+            estado="Pagado"
+        )
+
+        db.session.add(pedido)
+        db.session.flush()
+
+        for codigo, cantidad in cantidades.items():
+
+            producto = db.session.execute(
+                text("""
+                    SELECT codigo, nombre, precio_venta, stock
+                    FROM productos
+                    WHERE codigo = :codigo
+                """),
+                {"codigo": codigo}
+            ).mappings().first()
+
+            if producto is None:
+                raise ValueError(
+                    f"No existe el producto {codigo}."
+                )
+
+            # Comprobar y descontar inventario.
+            resultado = db.session.execute(
+                text("""
+                    UPDATE productos
+                    SET stock = stock - :cantidad
+                    WHERE codigo = :codigo
+                    AND stock >= :cantidad
+                """),
+                {
+                    "codigo": codigo,
+                    "cantidad": cantidad
+                }
+            )
+
+            if resultado.rowcount != 1:
+                raise ValueError(
+                    f"Stock insuficiente para {producto['nombre']}."
+                )
+
+            precio = Decimal(
+                str(producto["precio_venta"])
+            ).quantize(Decimal("0.01"))
+
+            if not precio.is_finite() or precio < 0:
+                raise ValueError("Precio de producto no válido.")
+
+            total_producto = (
+                precio * cantidad
+            ).quantize(Decimal("0.01"))
+
+            detalle = PedidoItem(
+                pedido_id=pedido.id,
+                producto_codigo=codigo,
+                nombre=producto["nombre"],
+                cantidad=cantidad,
+                precio_unitario=precio,
+                total=total_producto
+            )
+
+            db.session.add(detalle)
+
+            subtotal += total_producto
+
+        # Calcular descuento y total.
+        subtotal = subtotal.quantize(Decimal("0.01"))
+
+        descuento = (
+            subtotal * descuento_porcentaje / Decimal("100")
+        ).quantize(Decimal("0.01"))
+
+        total = (subtotal - descuento).quantize(
+            Decimal("0.01")
+        )
+
+        pedido.subtotal = subtotal
+        pedido.descuento = descuento
+        pedido.total = total
+
+        db.session.commit()
+
+        return jsonify({
+            "mensaje": "Venta registrada correctamente.",
+            "pedido_id": pedido.id,
+            "comprador": comprador.username,
+            "subtotal": str(subtotal),
+            "descuento": str(descuento),
+            "total": str(total),
+            "estado": pedido.estado,
+            "url": url_for(
+                "detalle_pedido_admin",
+                pedido_id=pedido.id
+            )
+        }), 201
+
+    except ValueError as error:
+        db.session.rollback()
+
+        return jsonify({"error": str(error)}), 400
+
+    except Exception:
+        db.session.rollback()
+
+        app.logger.exception("Error registrando venta de caja.")
+
+        return jsonify({
+            "error": "No se pudo completar la venta."
+        }), 500
+    
+    
+@app.route("/admin/pedido/<int:pedido_id>")
+@administrador_requerido
+def detalle_pedido_admin(pedido_id):
+
+    pedido = db.session.get(Pedido, pedido_id)
+
+    if pedido is None:
+        abort(404)
+
+    return render_template(
+        "pedido.html",
+        pedido=pedido
+    )
+ 
+def migrar_pedidos_caja():
+    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
+
+    try:
+        columnas = {
+            fila[1]
+            for fila in conexion.execute(
+                "PRAGMA table_info(pedidos)"
+            ).fetchall()
+        }
+
+        if "descuento" not in columnas:
+            conexion.execute("""
+                ALTER TABLE pedidos
+                ADD COLUMN descuento NUMERIC(10,2)
+                NOT NULL DEFAULT 0
+            """)
+
+        if "total" not in columnas:
+            conexion.execute("""
+                ALTER TABLE pedidos
+                ADD COLUMN total NUMERIC(10,2)
+                NOT NULL DEFAULT 0
+            """)
+
+            conexion.execute("""
+                UPDATE pedidos
+                SET total = subtotal
+            """)
+
+        if "metodo_pago" not in columnas:
+            conexion.execute("""
+                ALTER TABLE pedidos
+                ADD COLUMN metodo_pago TEXT
+                NOT NULL DEFAULT 'efectivo'
+            """)
+
+        conexion.commit()
+
+    finally:
+        conexion.close()
 @app.errorhandler(403)
 def prohibido(error):
     if request.path.startswith("/api/"):
@@ -682,7 +971,10 @@ def verificar_admin():
 # ============================================================
 # ADMINISTRACIÓN
 # ============================================================
-
+def compra():
+	cursor.execute("""
+	UPDATE inventario: 
+	""")
 @app.route("/admin")
 @administrador_requerido
 def admin():
@@ -851,7 +1143,207 @@ def guardar_producto(datos):
     finally:
         conexion.close()
 
+# ============================================================
+# CHECKOUT: REGISTRAR UNA COMPRA
+# ============================================================
 
+@app.route("/api/pedidos", methods=["POST"])
+@login_required
+def crear_pedido():
+
+    datos = request.get_json(silent=True)
+
+    if not isinstance(datos, dict):
+        return jsonify({
+            "error": "Los datos de compra no son válidos."
+        }), 400
+
+    productos_solicitados = datos.get("productos")
+
+    if (
+        not isinstance(productos_solicitados, list)
+        or not productos_solicitados
+        or len(productos_solicitados) > 100
+    ):
+        return jsonify({
+            "error": "El carrito está vacío o no es válido."
+        }), 400
+
+    # Agrupar productos repetidos.
+    cantidades = {}
+
+    for item in productos_solicitados:
+
+        if not isinstance(item, dict):
+            return jsonify({
+                "error": "Producto no válido."
+            }), 400
+
+        codigo = str(item.get("id", "")).strip()
+        cantidad = item.get("cantidad")
+
+        if not codigo or len(codigo) > 80:
+            return jsonify({
+                "error": "Código de producto no válido."
+            }), 400
+
+        if (
+            isinstance(cantidad, bool)
+            or not isinstance(cantidad, int)
+            or cantidad <= 0
+            or cantidad > 10000
+        ):
+            return jsonify({
+                "error": "Cantidad no válida."
+            }), 400
+
+        cantidades[codigo] = (
+            cantidades.get(codigo, 0) + cantidad
+        )
+
+    if any(cantidad > 10000 for cantidad in cantidades.values()):
+        return jsonify({
+            "error": "La cantidad solicitada es demasiado grande."
+        }), 400
+
+    subtotal = Decimal("0.00")
+
+    try:
+
+        # Crear el pedido dentro de la transacción.
+        pedido = Pedido(
+            usuario_id=current_user.id,
+            subtotal=Decimal("0.00"),
+            estado="Pendiente"
+        )
+
+        db.session.add(pedido)
+        db.session.flush()
+
+        # Comprobar cada producto directamente en la BD.
+        for codigo, cantidad in cantidades.items():
+
+            producto = db.session.execute(
+                text("""
+                    SELECT codigo, nombre, precio_venta, stock
+                    FROM productos
+                    WHERE codigo = :codigo
+                """),
+                {"codigo": codigo}
+            ).mappings().first()
+
+            if producto is None:
+                raise ValueError(
+                    f"El producto {codigo} ya no existe."
+                )
+
+            stock = int(producto["stock"])
+
+            if stock < cantidad:
+                raise ValueError(
+                    f"No hay suficientes existencias de "
+                    f"{producto['nombre']}."
+                )
+
+            precio = Decimal(
+                str(producto["precio_venta"])
+            ).quantize(Decimal("0.01"))
+
+            if not precio.is_finite() or precio < 0:
+                raise ValueError(
+                    "El precio de un producto no es válido."
+                )
+
+            # Descontar stock de forma condicional.
+            resultado = db.session.execute(
+                text("""
+                    UPDATE productos
+                    SET stock = stock - :cantidad
+                    WHERE codigo = :codigo
+                    AND stock >= :cantidad
+                """),
+                {
+                    "cantidad": cantidad,
+                    "codigo": codigo
+                }
+            )
+
+            if resultado.rowcount != 1:
+                raise ValueError(
+                    "El stock ha cambiado. Actualiza tu carrito."
+                )
+
+            total_producto = (
+                precio * cantidad
+            ).quantize(Decimal("0.01"))
+
+            # Guardar los detalles de la compra.
+            detalle = PedidoItem(
+                pedido_id=pedido.id,
+                producto_codigo=codigo,
+                nombre=producto["nombre"],
+                cantidad=cantidad,
+                precio_unitario=precio,
+                total=total_producto
+            )
+
+            db.session.add(detalle)
+
+            subtotal += total_producto
+
+        # Guardar subtotal definitivo.
+        pedido.subtotal = subtotal
+        pedido.total = subtotal
+        pedido.descuento = Decimal("0.00")
+        pedido.metodo_pago = "efectivo"
+        # Confirmar pedido, detalles y stock juntos.
+        db.session.commit()
+
+        return jsonify({
+            "mensaje": "Pedido realizado correctamente.",
+            "pedido_id": pedido.id,
+            "url": url_for(
+                "detalle_pedido",
+                pedido_id=pedido.id
+            )
+        }), 201
+
+    except ValueError as error:
+
+        db.session.rollback()
+
+        return jsonify({
+            "error": str(error)
+        }), 400
+
+    except Exception:
+
+        db.session.rollback()
+
+        app.logger.exception(
+            "Error al procesar el pedido."
+        )
+
+        return jsonify({
+            "error": "No se pudo procesar la compra."
+        }), 500
+# ============================================================
+# DETALLES DE UN PEDIDO
+# ============================================================
+
+@app.route("/pedido/<int:pedido_id>")
+@login_required
+def detalle_pedido(pedido_id):
+
+    pedido = Pedido.query.filter_by(
+        id=pedido_id,
+        usuario_id=current_user.id
+    ).first_or_404()
+
+    return render_template(
+        "pedido.html",
+        pedido=pedido
+    )
 # Se conservan las tres URL anteriores.
 @app.route("/api/admin/productos_guardar", methods=["POST"])
 @administrador_requerido
@@ -1487,6 +1979,7 @@ def herramienta_ia_buscarproductos(texto):
 # Inicializar las bases de datos al cargar Flask en Render
 inicializar_base_datos()
 crear_tabla_productos()
+migrar_pedidos_caja()
 if __name__ == "__main__":
     modo_debug = os.getenv("FLASK_DEBUG", "false").lower() in {
         "1", "true", "yes", "on"

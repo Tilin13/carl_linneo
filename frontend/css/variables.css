@@ -1041,7 +1041,12 @@ section {
 /* =========================================
    GLOBO DEL ASISTENTE
 ========================================= */
-
+.letrero_descuento{
+	background-color: var(--terracota);
+	color: var(--texto-secundario);
+	width: 45px;
+	height: 35px;
+}
 .mensaje_asistente {
 
     align-self: flex-start;
