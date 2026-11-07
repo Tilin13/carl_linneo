@@ -1220,7 +1220,7 @@ def guardar_producto(datos):
 # ============================================================
 
 @app.route("/pedido_personalizado")
-def pedido_personalizado):
+def pedido_personalizado():
 	return render_template("pedidos_personalizado.html")
 @app.route("/api/pedidos", methods=["POST"])
 @login_required
