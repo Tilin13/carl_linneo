@@ -31,10 +31,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const contadorNovedades = $("contador");
     const atrasNovedades = $("atras_novedades");
     const adelanteNovedades = $("adelante_novedades");
-    const ver_personalizado = document.getElementById("ver_personalizado");
-button.addEventListener("click", function(){
-	window.location.href("/pedido_personalizado");
-});
+const ver_personalizado = document.getElementById("ver_personalizado");
+
+if (ver_personalizado) {
+    ver_personalizado.addEventListener("click", function() {
+        window.location.href = "/pedido_personalizado";
+    });
+}
     
 
     const popup = $("popup");
