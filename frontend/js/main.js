@@ -435,7 +435,10 @@ function actualizarCarrito() {
 // =====================================================
 // CARRITO: BOTONES DE PRODUCTOS
 // =====================================================
-
+const ver_personalizado = document.getElementById("ver_personalizado");
+button.addEventListener("click", function(){
+	window.location.href("/pedido_personalizado");
+});
 document.querySelectorAll(".agregar-carrito").forEach(function (boton) {
 
     boton.addEventListener("click", function () {
