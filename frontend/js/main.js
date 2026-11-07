@@ -31,6 +31,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const contadorNovedades = $("contador");
     const atrasNovedades = $("atras_novedades");
     const adelanteNovedades = $("adelante_novedades");
+    const ver_personalizado = document.getElementById("ver_personalizado");
+button.addEventListener("click", function(){
+	window.location.href("/pedido_personalizado");
+});
     
 
     const popup = $("popup");
@@ -435,10 +439,7 @@ function actualizarCarrito() {
 // =====================================================
 // CARRITO: BOTONES DE PRODUCTOS
 // =====================================================
-const ver_personalizado = document.getElementById("ver_personalizado");
-button.addEventListener("click", function(){
-	window.location.href("/pedido_personalizado");
-});
+
 document.querySelectorAll(".agregar-carrito").forEach(function (boton) {
 
     boton.addEventListener("click", function () {
