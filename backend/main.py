@@ -135,15 +135,33 @@ limiter = Limiter(
 # ============================================================
 # MODELOS SQLALCHEMY
 # ============================================================
-
 class User(UserMixin, db.Model):
     __tablename__ = "usuarios"
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(255), unique=True, nullable=False)
-    phone = db.Column(db.String(20), unique=True, nullable=True)
-    
+
+    username = db.Column(
+        db.String(80),
+        unique=True,
+        nullable=False
+    )
+
+    email = db.Column(
+        db.String(255),
+        unique=True,
+        nullable=False
+    )
+
+    phone = db.Column(
+        db.String(20),
+        unique=True,
+        nullable=True
+    )
+
+    password = db.Column(
+        db.String(255),
+        nullable=True
+    )
 
     rol = db.Column(
         db.String(10),
@@ -156,13 +174,22 @@ class User(UserMixin, db.Model):
         back_populates="usuario",
         cascade="all, delete-orphan"
     )
+
     def set_password(self, password):
         self.password = generate_password_hash(password)
 
     def check_password(self, password):
-        return check_password_hash(self.password, password)
+        if not self.password:
+            return False
 
-
+        return check_password_hash(
+            self.password,
+            password
+        )
+print(
+    "COLUMNAS DEL MODELO USER:",
+    list(User.__table__.columns.keys())
+)
 class Pedido(db.Model):
     __tablename__ = "pedidos"
 
@@ -218,7 +245,45 @@ class Pedido(db.Model):
         cascade="all, delete-orphan"
     )
 
+def migrar_usuarios_password():
 
+    conexion = sqlite3.connect(
+        BASE_DATOS,
+        timeout=10
+    )
+
+    try:
+
+        columnas = {
+            fila[1]
+            for fila in conexion.execute(
+                "PRAGMA table_info(usuarios)"
+            ).fetchall()
+        }
+
+        if "password" not in columnas:
+
+            conexion.execute("""
+                ALTER TABLE usuarios
+                ADD COLUMN password VARCHAR(255)
+            """)
+
+            conexion.commit()
+
+            print(
+                "Migración completada: "
+                "columna password agregada."
+            )
+
+        else:
+
+            print(
+                "La columna password ya existe."
+            )
+
+    finally:
+
+        conexion.close()
 class PedidoItem(db.Model):
     __tablename__ = "pedido_items"
 
@@ -1988,7 +2053,14 @@ def herramienta_ia_buscarproductos(texto):
 # ============================================================
 # Inicializar las bases de datos al cargar Flask en Render
 inicializar_base_datos()
+
+# Migraciones de la estructura de usuarios
+migrar_usuarios_password()
+
+# Inicialización del inventario
 crear_tabla_productos()
+
+# Migraciones de pedidos
 migrar_pedidos_caja()
 if __name__ == "__main__":
     modo_debug = os.getenv("FLASK_DEBUG", "false").lower() in {
