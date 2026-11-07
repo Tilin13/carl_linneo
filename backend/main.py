@@ -1841,6 +1841,45 @@ def contacto():
 @app.route("/pedido_personalizado")
 def pedido_personalizado():
 	return render_template("pedidos_personalizados.html")
+
+
+def especies_disponibles():
+    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
+    conexion.row_factory = sqlite3.Row
+
+    try:
+        filas = conexion.execute("""
+            SELECT
+                codigo,
+                nombre,
+                categoria,
+                stock
+            FROM productos
+            WHERE categoria IN (
+                'Mariposas',
+                'Escarabajos',
+                'Odonatos'
+            )
+            AND stock > 0
+            ORDER BY categoria, nombre COLLATE NOCASE
+        """).fetchall()
+
+        return [dict(fila) for fila in filas]
+
+    finally:
+        conexion.close()
+
+@app.route("/pedido_personalizado")
+def pedido_personalizado():
+
+    especies = especies_disponibles()
+
+    return render_template(
+        "pedidos_personalizados.html",
+        especies=especies
+    )
+
+
 @app.route("/catalogo")
 @app.route("/catalogo/<categoria>")
 def catalogo(categoria=None):
