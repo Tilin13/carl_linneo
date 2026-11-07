@@ -230,14 +230,11 @@ function agregarAlCarrito(id, nombre, precio, stockDisponible = null) {
         return;
     }
 
-    if (stock === 0) {
-        alert("Este producto no tiene existencias.");
-        return;
-    }
+    
 
     const productoExistente = carrito.find(
-        p => p.id === id
-    );
+    p => String(p.id) === id
+);
 
     if (productoExistente) {
 
@@ -1338,9 +1335,9 @@ actualizarFavoritos();
 	const passw = document.getElementById("passw");
 	function mostrar_contrasena(){
 		if(passw.type=="password"){
-			passw.type=="text";
+			passw.type="text";
 		}else{
-			passw.type=="password";
+			passw.type="password";
 		}
 		
 	}

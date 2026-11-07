@@ -186,6 +186,136 @@ class User(UserMixin, db.Model):
             self.password,
             password
         )
+class LoginLock(db.Model):
+    __tablename__ = "login_locks"
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    lock_key = db.Column(
+        db.String(64),
+        unique=True,
+        nullable=False
+    )
+
+    intentos = db.Column(
+        db.Integer,
+        nullable=False,
+        default=0
+    )
+
+    bloqueado_hasta = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+    
+from datetime import datetime, timedelta, timezone
+import hashlib
+
+
+MAX_INTENTOS_LOGIN = 5
+DURACION_BLOQUEO = timedelta(minutes=30)
+
+
+def obtener_clave_bloqueo(identificador):
+
+    identificador = " ".join(
+        identificador.split()
+    ).casefold()
+
+    ip = get_remote_address() or "desconocida"
+
+    contenido = f"{identificador}|{ip}"
+
+    return hashlib.sha256(
+        contenido.encode("utf-8")
+    ).hexdigest()
+
+
+def comprobar_bloqueo(clave):
+
+    registro = db.session.scalar(
+        select(LoginLock).where(
+            LoginLock.lock_key == clave
+        )
+    )
+
+    if registro is None:
+        return False, None
+
+    ahora = datetime.now(timezone.utc)
+
+    if registro.bloqueado_hasta is None:
+        return False, registro
+
+    bloqueado_hasta = (
+        registro.bloqueado_hasta.replace(
+            tzinfo=timezone.utc
+        )
+    )
+
+    if ahora < bloqueado_hasta:
+        return True, registro
+
+    registro.intentos = 0
+    registro.bloqueado_hasta = None
+
+    db.session.commit()
+
+    return False, registro
+
+
+def registrar_fallo_login(clave):
+
+    registro = db.session.scalar(
+        select(LoginLock).where(
+            LoginLock.lock_key == clave
+        )
+    )
+
+    if registro is None:
+
+        registro = LoginLock(
+            lock_key=clave,
+            intentos=0
+        )
+
+        db.session.add(registro)
+
+    registro.intentos += 1
+
+    if registro.intentos >= MAX_INTENTOS_LOGIN:
+
+        registro.bloqueado_hasta = (
+            datetime.now(timezone.utc)
+            + DURACION_BLOQUEO
+        )
+
+        db.session.commit()
+
+        return True
+
+    db.session.commit()
+
+    return False
+
+
+def reiniciar_intentos_login(clave):
+
+    registro = db.session.scalar(
+        select(LoginLock).where(
+            LoginLock.lock_key == clave
+        )
+    )
+
+    if registro:
+
+        registro.intentos = 0
+        registro.bloqueado_hasta = None
+
+        db.session.commit()
 
 class Pedido(db.Model):
     __tablename__ = "pedidos"
@@ -1761,11 +1891,12 @@ def producto(nombre):
 # ============================================================
 # REGISTRO, LOGIN, LOGOUT Y USUARIOS
 # ============================================================
-
 @app.route("/iniciar_sesion", methods=["GET", "POST"])
 @limiter.limit("10 per minute", methods=["POST"])
 def login():
+
     if current_user.is_authenticated:
+
         correo_actual = (
             getattr(current_user, "email", "") or ""
         ).strip().lower()
@@ -1779,59 +1910,121 @@ def login():
         return redirect(url_for("index"))
 
     if request.method == "POST":
+
         identificador = request.form.get(
             "identificador", ""
         ).strip()
-        password = request.form.get("password", "")
+
+        password = request.form.get(
+            "password", ""
+        )
 
         if not identificador or not password:
+
             flash(
                 "Introduce tu usuario o correo y tu contraseña.",
-                "error",
+                "error"
             )
-            return render_template("login.html"), 400
 
-        identificador_normalizado = identificador.lower()
+            return render_template(
+                "login.html"
+            ), 400
+
+        clave = obtener_clave_bloqueo(
+            identificador
+        )
+
+        bloqueado, registro = comprobar_bloqueo(
+            clave
+        )
+
+        if bloqueado:
+
+            flash(
+                "Has alcanzado el límite de intentos. "
+                "Inténtalo nuevamente después de 30 minutos.",
+                "error"
+            )
+
+            return render_template(
+                "login.html"
+            ), 429
+
+        identificador_normalizado = (
+            " ".join(
+                identificador.split()
+            ).casefold()
+        )
 
         usuario = db.session.scalar(
             select(User).where(
                 or_(
-                    func.lower(User.email) == identificador_normalizado,
-                    func.lower(User.username) == identificador_normalizado,
+                    func.lower(User.email)
+                    == identificador_normalizado,
+
+                    func.lower(User.username)
+                    == identificador_normalizado
                 )
             )
         )
 
-        if usuario is None or not usuario.check_password(password):
+        if (
+            usuario is None
+            or not usuario.check_password(password)
+        ):
+
+            bloqueado = registrar_fallo_login(
+                clave
+            )
+
+            if bloqueado:
+
+                flash(
+                    "Has realizado cinco intentos "
+                    "incorrectos. Acceso bloqueado durante 30 minutos.",
+                    "error"
+                )
+
+                return render_template(
+                    "login.html"
+                ), 429
+
             flash(
                 "Usuario/correo o contraseña incorrectos.",
-                "error",
+                "error"
             )
-            return render_template("login.html"), 401
+
+            return render_template(
+                "login.html"
+            ), 401
+
+        reiniciar_intentos_login(clave)
 
         correo_usuario = (
-            (usuario.email or "").strip().lower()
-        )
+            usuario.email or ""
+        ).strip().lower()
 
-        # ADMIN_EMAIL es la única identidad administradora.
-        # El inicio de sesión sigue exigiendo contraseña válida.
         if correo_usuario == ADMIN_EMAIL:
+
             if usuario.rol != "admin":
                 usuario.rol = "admin"
                 db.session.commit()
 
         elif usuario.rol == "admin":
-            # Impide que un rol antiguo o manipulado otorgue
-            # privilegios a otro correo.
+
             usuario.rol = "user"
             db.session.commit()
 
         session.clear()
-        login_user(usuario, remember=False)
+
+        login_user(
+            usuario,
+            remember=False
+        )
+
         session.permanent = True
 
         if correo_usuario == ADMIN_EMAIL:
-            # No hay redirección a 2FA.
             return redirect(url_for("admin"))
 
         destino = request.args.get("next", "")
@@ -1842,8 +2035,6 @@ def login():
         return redirect(url_for("index"))
 
     return render_template("login.html")
-
-
 @app.route("/registrarse", methods=["GET", "POST"])
 @limiter.limit("5 per minute", methods=["POST"])
 def registrarse():
@@ -1851,9 +2042,9 @@ def registrarse():
         return redirect(url_for("index"))
 
     if request.method == "POST":
-        username = request.form.get(
-            "username", ""
-        ).strip().lower()
+        username = " ".join(
+            request.form.get("username", "").split()
+        ).casefold()
 
         email = request.form.get(
             "email", ""
