@@ -186,10 +186,7 @@ class User(UserMixin, db.Model):
             self.password,
             password
         )
-print(
-    "COLUMNAS DEL MODELO USER:",
-    list(User.__table__.columns.keys())
-)
+
 class Pedido(db.Model):
     __tablename__ = "pedidos"
 

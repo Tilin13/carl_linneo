@@ -1,0 +1,313 @@
+	<!DOCTYPE html>
+	<html lang="es">
+
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport"
+      content="width=device-width, initial-scale=1">
+
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0"
+		>
+		<meta name="csrf-token" content="{{ csrf_token() }}">
+
+		<title>Linneo</title>
+
+		<link rel="stylesheet" href="/css/variables.css">
+	
+		<link
+			rel="icon"
+			type="image/png"
+			href="linneo_isotipo.png"
+		>
+	</head>
+
+
+
+	<body>
+
+		<header class="barra" id="barra_global">
+
+			<h2>Linneo</h2>
+
+
+			<button
+				class="button"
+				id="buscarbtn"
+				type="button"
+			>
+				🔍︎
+			</button>
+
+			<button
+				class="button"
+				id="carritobtn"
+				type="button"
+			>
+				🛒
+			</button>
+			<div id="carrito_productos" >
+				<h5 id="cantidad_productos"></h5>
+			</div>
+			<button 
+				class="button"
+				id="favoritos_btn"
+				type="button"
+			>♡
+			</button>
+
+			<button
+				class="button"
+				id="menubtn"
+				type="button"
+			>
+				☰
+			</button>
+		{% if current_user.is_authenticated %}
+
+    <span>
+        Hola, {{ current_user.username }}
+    </span>
+
+    <a href="{{ url_for('mi_cuenta') }}">
+        Mi cuenta
+    </a>
+
+    <form action="{{ url_for('cerrar_sesion') }}"
+          method="POST">
+
+        <input type="hidden"
+               name="csrf_token"
+               value="{{ csrf_token() }}">
+
+        <button type="submit">
+            Cerrar sesión
+        </button>
+
+    </form>
+
+{% else %}
+
+    <a href="{{ url_for('login') }}">
+        Iniciar sesión
+    </a>
+
+    <a href="{{ url_for('registrarse') }}">
+        Registrarse
+    </a>
+
+{% endif %}
+			<div id="busqueda_div">
+				<form action="/buscar" method="GET">
+
+				<input
+					type="search"
+					id="barra_busqueda"
+					name="busqueda"
+					placeholder="Buscar productos..."
+					autocomplete="off"
+				>
+
+				<button
+					class="button"
+					type="submit"
+				>
+					Buscar
+				</button>
+			</form>
+			
+
+			</div>
+			
+
+		</header>
+
+		<main>
+
+			<div id="tarjeta_logo">
+				<img
+				src="tarjeta2.png"
+				alt="tarjeta"
+				>
+			
+			</div>
+			<h1>Pedidos personalizados</h1>
+			<h1>Escoge las especies y personaliza un pedido único y especial para ti</h1>
+			<h1>Nuestro chatbot te orientara sobre las especies disponibles y resolerá tus dudas</h1>
+			
+			<hr>
+			<h1>Opciones de pedidos personalizados</h1>
+			<div>
+				<h1 class="h1_redondo">Individual</h1>
+				<h2>Un solo ejemplar que se llevará toda la atención en el cuadro</h2>
+			</div>
+			<div>
+				<h1 class="h1_redondo">Tres espcímenes</h1>
+				<h2>Tres especimenes de distintas especies ordenados a tu preferencia</h2>
+			</div>
+			<div>
+				<h1 class="h1_redondo">Cinco especímenes</h1>
+				<h2>Cinco especímenesde distintas especies ordenados a tu preferencia</h2>
+			</div>
+			<h1>También puedes pedir que los ejemplares sean todos de un mismo color o que tengan cierto patrón de colores</h1>
+			<h1>Puedes escoger el color del marco, añadir fotos, dedicatorias, frases y palabras</h1>
+			<div>
+				<button id="crear_mi_marco" class="button">Crear mi marco personalizado ya!</button>
+			</div>
+
+		<button id="chat_btn" class="button">💬</button>
+
+<!-- PANEL DEL CARRITO -->
+<nav id="carrito_bar" class="barra">
+
+    <h1>MI CARRITO</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio</th>
+                <th>Eliminar</th>
+            </tr>
+        </thead>
+
+        <tbody id="lista_carrito">
+            <tr>
+                <td colspan="4">El carrito está vacío.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>
+        Subtotal:
+        <span id="subtotal_carrito">$0.00</span>
+    </h3>
+
+    <button
+        type="button"
+        id="comprar_carrito_btn"
+        class="button"
+    >
+        Comprar
+    </button>
+
+    <button
+        type="button"
+        id="cerrar_carrito"
+        class="button"
+    >
+        Cerrar carrito
+    </button>
+
+</nav>
+
+	<nav id="favoritos_bar" class="barra">
+
+    <h1>MIS FAVORITOS</h1>
+
+    <div id="contenido_favoritos">
+        <p>No tienes productos favoritos.</p>
+    </div>
+
+    <button
+        type="button"
+        id="cerrar_favoritos"
+        class="button"
+    >
+        Cerrar
+    </button>
+
+
+
+<nav class="barra" id="compra_tarjeta">
+    <h1>¿Cómo realizar una compra?</h1>
+
+    <div class="pasos_compra">
+
+        <div class="paso">
+            <h1 class="h1_redondos">1</h1>
+            <h3>Escoge los productos de tu elección en el carrito</h3>
+        </div>
+
+        <div class="paso">
+            <h1 class="h1_redondos">2</h1>
+            <h3>Inicia sesión o crea una cuenta</h3>
+        </div>
+
+        <div class="paso">
+            <h1 class="h1_redondos">3</h1>
+            <h3>Escoge el método y dirección de envío</h3>
+        </div>
+
+        <div class="paso">
+            <h1 class="h1_redondos">4</h1>
+            <h3>Paga</h3>
+        </div>
+
+    </div></nav>
+				
+			
+			</div>
+		</nav>
+		
+	<div class="popup" id="popup" role="dialog" aria-modal="true" aria-labelledby="titulo_popup">
+		<button
+			id="quitar_popup"
+			type="button"
+			aria-label="Cerrar ventana"
+		>×</button>
+
+		<h2 id="titulo_popup">10% de descuento en tu primera compra</h2>
+		<p>Descubre nuestra colección de historia natural.</p>
+		<h2>¡Crea tu cuenta ahora!</h2>
+
+		<a class="button" href="/registrarse">
+			Crear cuenta
+		</a>
+	</div>
+
+		<nav class="barra" id="menu_bar">
+
+			<button
+				id="atras_menu"
+				type="button"
+				class="button"
+			>
+				↚
+			</button>
+			<div>
+				<a
+					class="text_menu"
+					href="/catalogo"
+				>
+					Catálogo
+				</a>
+			</div>
+			<div>
+				<a
+					class="text_menu"
+					href="/contacto"
+				>
+					Contáctanos
+				</a>
+			</div>
+			<div>
+				<a
+				
+				
+					class="text_menu"
+					href="/informacion"
+				>
+					¿Quiénes somos?
+				</a>
+			</div>
+
+		</nav>
+
+		<script src="/js/main.js"></script>
+
+	</body>
+
+	</html>
