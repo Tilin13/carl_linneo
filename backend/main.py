@@ -1872,7 +1872,7 @@ def pedido_personalizado():
 def crear_pedido():
 	especies = especies_disponibles()
 	return render_template(
-	"crear_pedido.html"
+	"crear_pedido.html",
 	especies=especies
 	)
 
