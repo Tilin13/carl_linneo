@@ -1153,8 +1153,7 @@ actualizarFavoritos();
     if (crear_mi_marco) {
     crear_mi_marco.addEventListener("click", function() {
         window.location.href = "/crear_pedido";
-    });
-}
+    });}
 
     const contador = document.getElementById("contador_especies");
     const limiteTexto = document.getElementById("limite_especies");
