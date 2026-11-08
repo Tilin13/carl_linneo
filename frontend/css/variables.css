@@ -2795,3 +2795,123 @@ body:has(.popup.visible) {
 
     gap: 20px;
 }
+
+/* SECCIÓN DE PRECIOS */
+
+#costos {
+    width: min(100% - 32px, 1000px);
+    margin: 70px auto;
+    padding: 35px 20px;
+    background: #f5f1e8;
+    border-radius: 22px;
+}
+
+/* ENCABEZADO */
+
+.costos_encabezado {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.costos_encabezado h2 {
+    color: #344c3b;
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.costos_encabezado p {
+    color: #716d61;
+    line-height: 1.6;
+}
+
+/* CONTENEDOR */
+
+.tabla_contenedor {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 14px;
+}
+
+/* TABLA */
+
+.tabla_precios {
+    width: 100%;
+    min-width: 550px;
+    border-collapse: collapse;
+    background: #fffdf8;
+    color: #3d453b;
+}
+
+/* ENCABEZADOS */
+
+.tabla_precios thead {
+    background: #344c3b;
+    color: #fffdf8;
+}
+
+.tabla_precios th,
+.tabla_precios td {
+    padding: 18px 15px;
+    text-align: center;
+    border-bottom: 1px solid #e5dfd2;
+}
+
+/* PRIMERA COLUMNA */
+
+.tabla_precios tbody th {
+    text-align: left;
+    color: #344c3b;
+    font-weight: 700;
+}
+
+/* FILAS ALTERNADAS */
+
+.tabla_precios tbody tr:nth-child(even) {
+    background: #f2eee5;
+}
+
+/* INTERACCIÓN */
+
+.tabla_precios tbody tr {
+    transition: background 0.2s ease;
+}
+
+.tabla_precios tbody tr:hover {
+    background: #e5eadf;
+}
+
+/* PRECIOS */
+
+.tabla_precios td {
+    font-weight: 600;
+    color: #8b6245;
+}
+
+/* NOTA */
+
+.nota_precios {
+    margin-top: 18px;
+    text-align: center;
+    color: #81796b;
+    font-size: 0.85rem;
+}
+
+/* MÓVILES */
+
+@media (max-width: 600px) {
+    #costos {
+        padding: 25px 12px;
+        margin: 40px auto;
+    }
+
+    .costos_encabezado h2 {
+        font-size: 1.6rem;
+    }
+
+    .tabla_precios th,
+    .tabla_precios td {
+        padding: 14px 10px;
+        font-size: 0.9rem;
+    }
+}
+
