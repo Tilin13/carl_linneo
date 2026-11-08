@@ -1838,10 +1838,6 @@ def informacion():
 def contacto():
     return render_template("contacto.html")
 
-@app.route("/pedido_personalizado")
-def pedido_personalizado():
-	return render_template("pedidos_personalizados.html")
-
 def especies_disponibles():
     conexion = sqlite3.connect(BASE_DATOS, timeout=10)
     conexion.row_factory = sqlite3.Row
