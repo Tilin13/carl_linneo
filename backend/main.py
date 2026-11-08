@@ -1865,7 +1865,7 @@ def especies_disponibles():
 def pedido_personalizado():
 
     return render_template(
-        "pedidos_personalizados.html",
+        "pedidos_personalizados.html"
     
     )
 @app.route("/crear_pedido")
