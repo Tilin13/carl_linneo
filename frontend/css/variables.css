@@ -2771,3 +2771,27 @@ body:has(.popup.visible) {
 #contador_especies {
     font-weight: bold;
 }
+.seleccion-paquete {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 25px;
+
+    background: var(--tarjeta);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio-grande);
+
+    box-shadow: var(--sombra-suave);
+}
+
+#especies_seleccionadas {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(220px, 1fr));
+
+    gap: 20px;
+}
