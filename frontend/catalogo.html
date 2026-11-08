@@ -258,22 +258,27 @@
                 <div class="disponibilidad_favicon">
 				</div>
 
-               <button
+              
+<button
     class="agregar-carrito button"
     type="button"
-    data-producto-id="{{ producto.id }}"
+    data-producto-id="{{ producto.codigo }}"
     data-producto-nombre="{{ producto.nombre }}"
     data-producto-precio="{{ producto.precio_venta }}"
+    data-producto-stock="{{ producto.stock }}"
 >
     Agregar al carrito
 </button>
+
 <button
-    class="favorito_producto"
+    class="favoritos_ b"
     type="button"
-    data-producto-id="{{ producto.id }}"
+    data-producto-id="{{ producto.codigo }}"
     data-producto-nombre="{{ producto.nombre }}"
     data-producto-precio="{{ producto.precio_venta }}"
+    data-producto-stock="{{ producto.stock }}"
     aria-label="Agregar a favoritos"
+    aria-pressed="false"
 >
     ♡
 </button>

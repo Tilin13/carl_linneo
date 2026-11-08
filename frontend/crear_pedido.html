@@ -146,22 +146,92 @@
 				<h1>Opcionalmente puedes agregar alguna dedicatoria o frase</h1>
 			</div>
 		</div>
-		<section>
-			<select id="paquete_pedido" name="paquete_pedido">
-				<option value="individual">Paquete individual</option>
-				<option value="trio">Paquete de tres ejemplares</option>
-				<option value="quinteto">Paquete de cinco ejemplares</option>
-			</select>
-		</section>
-		<section id="distribución">
-			<>
-		</section>
-		<section id="especies_barra">
-			<h1>Mariposas</h1>
-			<h1>Escarabajos</h1>
-		</section>
-		<section id="especies_seleccionadas">
 		
+<section class="seleccion-paquete">
+    <h2>1. Escoge tu paquete</h2>
+
+    <select id="paquete_pedido" name="paquete_pedido">
+        <option value="individual">Paquete individual (1 ejemplar)</option>
+        <option value="trio">Paquete de tres ejemplares</option>
+        <option value="quinteto">Paquete de cinco ejemplares</option>
+    </select>
+
+    <p id="limite_especies">
+        Puedes seleccionar hasta 1 ejemplar.
+    </p>
+
+    <p id="contador_especies">Seleccionados: 0 / 1</p>
+</section>
+
+<section id="especies_seccion">
+
+    <h2>2. Escoge tus especies</h2>
+
+    <p>Selecciona las especies que deseas incluir en tu marco.</p>
+
+    <nav id="especies_barra">
+        <button type="button" class="filtro_especie activo"
+                data-categoria="Mariposas">
+            Mariposas
+        </button>
+
+        <button type="button" class="filtro_especie"
+                data-categoria="Escarabajos">
+            Escarabajos
+        </button>
+
+        <button type="button" class="filtro_especie"
+                data-categoria="Odonatos">
+            Odonatos
+        </button>
+    </nav>
+
+    <div id="especies_seleccionadas">
+
+        {% for especie in especies %}
+
+        <article class="tarjeta_especie"
+                 data-categoria="{{ especie.categoria }}">
+
+            <h3>{{ especie.nombre }}</h3>
+
+            <p>{{ especie.categoria }}</p>
+
+            <p>
+                Disponibles:
+                <strong>{{ especie.stock }}</strong>
+            </p>
+
+            <label for="cantidad_{{ loop.index }}">
+                Cantidad:
+            </label>
+
+            <input
+                type="number"
+                class="cantidad_especie"
+                id="cantidad_{{ loop.index }}"
+                name="especies[{{ especie.codigo }}]"
+                data-codigo="{{ especie.codigo }}"
+                data-stock="{{ especie.stock }}"
+                value="0"
+                min="0"
+                max="{{ especie.stock }}"
+            >
+
+        </article>
+
+        {% else %}
+
+        <p>No hay especies disponibles actualmente.</p>
+
+        {% endfor %}
+
+    </div>
+
+    <p id="mensaje_especies" aria-live="polite"></p>
+
+</section>
+
 
 			
 

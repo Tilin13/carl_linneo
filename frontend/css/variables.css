@@ -2718,3 +2718,56 @@ body:has(.popup.visible) {
         padding: 16px;
     }
 }
+
+#especies_seccion {
+    margin: 30px auto;
+    max-width: 1100px;
+    padding: 20px;
+}
+
+#especies_barra {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 25px 0;
+}
+
+.filtro_especie {
+    padding: 12px 22px;
+    border: 1px solid var(--verde-musgo);
+    border-radius: 20px;
+    cursor: pointer;
+    background: white;
+}
+
+.filtro_especie.activo {
+    background: var(--verde-musgo);
+    color: white;
+}
+
+#especies_seleccionadas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+.tarjeta_especie {
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    background: white;
+}
+
+.tarjeta_especie input {
+    width: 70px;
+    padding: 8px;
+}
+
+.tarjeta_especie[hidden] {
+    display: none;
+}
+
+#contador_especies {
+    font-weight: bold;
+}

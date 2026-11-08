@@ -1144,6 +1144,167 @@ actualizarFavoritos();
         );
 
     }
+    
+    const paquete = document.getElementById("paquete_pedido");
+    const cantidades = document.querySelectorAll(".cantidad_especie");
+    const filtros = document.querySelectorAll(".filtro_especie");
+
+    const contador = document.getElementById("contador_especies");
+    const limiteTexto = document.getElementById("limite_especies");
+    const mensaje = document.getElementById("mensaje_especies");
+
+    if (!paquete || cantidades.length === 0) return;
+
+    const limites = {
+        individual: 1,
+        trio: 3,
+        quinteto: 5
+    };
+
+    function obtenerLimite() {
+        return limites[paquete.value] || 1;
+    }
+
+    function obtenerTotal() {
+        return Array.from(cantidades).reduce(function (total, input) {
+            return total + (Number(input.value) || 0);
+        }, 0);
+    }
+
+    function actualizarCantidades(inputModificado = null) {
+
+        const limite = obtenerLimite();
+        let total = obtenerTotal();
+
+        // Si el cliente supera el límite, corregir su selección.
+        if (total > limite && inputModificado) {
+
+            const anterior = Number(inputModificado.value);
+
+            inputModificado.value = Math.max(
+                0,
+                anterior - (total - limite)
+            );
+
+        }
+
+        // Actualizar el máximo permitido para cada especie.
+        cantidades.forEach(function (input) {
+
+            const stock = Number(input.dataset.stock);
+            const seleccionados = obtenerTotal();
+
+            const disponiblesParaEstaEspecie =
+                limite - (seleccionados - Number(input.value));
+
+            input.max = Math.max(
+                0,
+                Math.min(stock, disponiblesParaEstaEspecie)
+            );
+
+            input.disabled =
+                Number(input.max) === 0 &&
+                Number(input.value) === 0;
+
+        });
+
+        const seleccionados = obtenerTotal();
+
+        contador.textContent =
+            "Seleccionados: " + seleccionados + " / " + limite;
+
+        limiteTexto.textContent =
+            "Puedes seleccionar hasta " + limite + " ejemplar(es).";
+
+        if (seleccionados === limite) {
+            mensaje.textContent = "¡Has completado tu paquete!";
+        } else {
+            mensaje.textContent =
+                "Puedes seleccionar " + (limite - seleccionados) +
+                " ejemplar(es) más.";
+        }
+    }
+
+    // Cambiar de paquete.
+    paquete.addEventListener("change", function () {
+
+        const limite = obtenerLimite();
+        let restantes = limite;
+
+        cantidades.forEach(function (input) {
+
+            const actual = Number(input.value);
+            const stock = Number(input.dataset.stock);
+
+            const permitido = Math.min(
+                actual,
+                stock,
+                restantes
+            );
+
+            input.value = permitido;
+            restantes -= permitido;
+
+        });
+
+        actualizarCantidades();
+    });
+
+    // Controlar las cantidades.
+    cantidades.forEach(function (input) {
+
+        input.addEventListener("input", function () {
+
+            let cantidad = Number(this.value);
+
+            if (!Number.isInteger(cantidad) || cantidad < 0) {
+                cantidad = 0;
+            }
+
+            const stock = Number(this.dataset.stock);
+            const limite = obtenerLimite();
+
+            const otros = obtenerTotal() - (Number(this.value) || 0);
+
+            const maximo = Math.max(
+                0,
+                Math.min(stock, limite - otros)
+            );
+
+            this.value = Math.min(cantidad, maximo);
+
+            actualizarCantidades(this);
+
+        });
+
+    });
+
+    // Filtrar por categoría.
+    filtros.forEach(function (boton) {
+
+        boton.addEventListener("click", function () {
+
+            const categoria = this.dataset.categoria;
+
+            filtros.forEach(function (f) {
+                f.classList.remove("activo");
+            });
+
+            this.classList.add("activo");
+
+            document.querySelectorAll(".tarjeta_especie")
+                .forEach(function (tarjeta) {
+
+                    tarjeta.hidden =
+                        tarjeta.dataset.categoria !== categoria;
+
+                });
+
+        });
+
+    });
+
+    actualizarCantidades();
 
 
     // =====================================================
@@ -1331,6 +1492,23 @@ actualizarFavoritos();
     // =====================================================
     // ADMINISTRACIÓN: INVENTARIO Y USUARIOS
     // =====================================================
+    //======================================================
+    //FUNCIONES PEDIDO
+    //======================================================
+    const cantidad_ejemplares = 0;
+    if(paquete == "individual"){
+		cantidad_ejemplares = 1;
+	} if (paquete =="trio"){
+		cantidad_ejemplares =3;
+	} if (paquete == "quiinteto"){
+		cantidad_ejemplares = 5;
+	} else{
+		cantidad_ejemplares =9;
+	}
+	
+	
+    
+    
 	const visiblidad_password_btn = document.getElementById("visiblidad_password_btn");
 	const passw = document.getElementById("passw");
 	function mostrar_contrasena(){

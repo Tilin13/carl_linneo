@@ -295,17 +295,39 @@
     {% endfor %}
 
 		</section>
-		<section>
-			<button class="botones_catalogo" id="mariposas_btn">Mariposas</button>
-			<button class="botones_catalogo" id="escarabajos_btn">Escarabajos</button>
-			<button class="botones_catalogo" id="odonatos_btn">Odonatos</button>
-			<button class="botones_catalogo" id="fosiles_btn">Fósiles</button>
-			<button class="botones_catalogo" id="esqueletos_btn">Esqueletos</button>
-			<button class="botones_catalogo" id="minerales_btn">Minerales</button>
-			<h1>REVISA EL CATÁLOGO COMPLETO</h1>
-			<button class="button">Catálogo</button>
-			<hr>
-		</section>
+		
+<section>
+    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Mariposas') }}">
+        Mariposas
+    </a>
+
+    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Escarabajos') }}">
+        Escarabajos
+    </a>
+
+    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Odonatos') }}">
+        Odonatos
+    </a>
+
+    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Fosiles') }}">
+        Fósiles
+    </a>
+
+    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Esqueletos') }}">
+        Esqueletos
+    </a>
+
+    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Minerales') }}">
+        Minerales
+    </a>
+
+    <h1>REVISA EL CATÁLOGO COMPLETO</h1>
+
+    <a class="button" href="{{ url_for('catalogo') }}">
+        Catálogo completo
+    </a>
+</section>
+
 		<hr>
 		<section id="pedidos_personalizados" class="tarjeta">
 			<h1>Pedidos personalizados</h1>

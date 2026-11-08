@@ -1842,18 +1842,13 @@ def contacto():
 def pedido_personalizado():
 	return render_template("pedidos_personalizados.html")
 
-
 def especies_disponibles():
     conexion = sqlite3.connect(BASE_DATOS, timeout=10)
     conexion.row_factory = sqlite3.Row
 
     try:
         filas = conexion.execute("""
-            SELECT
-                codigo,
-                nombre,
-                categoria,
-                stock
+            SELECT codigo, nombre, categoria, stock
             FROM productos
             WHERE categoria IN (
                 'Mariposas',
@@ -1869,9 +1864,9 @@ def especies_disponibles():
     finally:
         conexion.close()
 
+
 @app.route("/pedido_personalizado")
 def pedido_personalizado():
-
     especies = especies_disponibles()
 
     return render_template(
