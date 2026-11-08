@@ -1501,16 +1501,19 @@ actualizarFavoritos();
     //======================================================
     //FUNCIONES PEDIDO
     //======================================================
-    const cantidad_ejemplares = 0;
-    if(paquete == "individual"){
-		cantidad_ejemplares = 1;
-	} if (paquete =="trio"){
-		cantidad_ejemplares =3;
-	} if (paquete == "quiinteto"){
-		cantidad_ejemplares = 5;
-	} else{
-		cantidad_ejemplares =9;
-	}
+  let cantidad_ejemplares = 0;
+
+if (paquete) {
+    if (paquete.value === "individual") {
+        cantidad_ejemplares = 1;
+    } else if (paquete.value === "trio") {
+        cantidad_ejemplares = 3;
+    } else if (paquete.value === "quinteto") {
+        cantidad_ejemplares = 5;
+    } else {
+        cantidad_ejemplares = 9;
+    }
+}
 	
 	
     
