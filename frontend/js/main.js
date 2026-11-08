@@ -1148,6 +1148,13 @@ actualizarFavoritos();
     const paquete = document.getElementById("paquete_pedido");
     const cantidades = document.querySelectorAll(".cantidad_especie");
     const filtros = document.querySelectorAll(".filtro_especie");
+    
+    const crear_mi_marco = document.getElementById("crear_mi_marco");
+    if (crear_mi_marco) {
+    crear_mi_marco.addEventListener("click", function() {
+        window.location.href = "/crear_pedido";
+    });
+}
 
     const contador = document.getElementById("contador_especies");
     const limiteTexto = document.getElementById("limite_especies");
