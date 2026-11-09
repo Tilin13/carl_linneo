@@ -475,6 +475,8 @@ def inicializar_base_datos():
 
     with app.app_context():
         db.create_all()
+    with app.app_context():
+        diagnosticar_usuarios()
 def comprobar_tablas():
     conexion = sqlite3.connect(BASE_DATOS, timeout=10)
 
@@ -915,47 +917,65 @@ def detalle_pedido_admin(pedido_id):
         pedido=pedido
     )
  
-def migrar_pedidos_caja():
-    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
+def diagnosticar_usuarios():
+
+    conexion = sqlite3.connect(
+        BASE_DATOS,
+        timeout=10
+    )
 
     try:
-        columnas = {
-            fila[1]
-            for fila in conexion.execute(
-                "PRAGMA table_info(pedidos)"
-            ).fetchall()
-        }
 
-        if "descuento" not in columnas:
-            conexion.execute("""
-                ALTER TABLE pedidos
-                ADD COLUMN descuento NUMERIC(10,2)
-                NOT NULL DEFAULT 0
-            """)
+        tablas = conexion.execute("""
+            SELECT name
+            FROM sqlite_master
+            WHERE type = 'table'
+        """).fetchall()
 
-        if "total" not in columnas:
-            conexion.execute("""
-                ALTER TABLE pedidos
-                ADD COLUMN total NUMERIC(10,2)
-                NOT NULL DEFAULT 0
-            """)
+        print("\n===== DIAGNÓSTICO USUARIOS =====")
 
-            conexion.execute("""
-                UPDATE pedidos
-                SET total = subtotal
-            """)
+        print("Base de datos:", BASE_DATOS)
 
-        if "metodo_pago" not in columnas:
-            conexion.execute("""
-                ALTER TABLE pedidos
-                ADD COLUMN metodo_pago TEXT
-                NOT NULL DEFAULT 'efectivo'
-            """)
+        print("Tabla usuarios:",
+              "usuarios" in [t[0] for t in tablas])
 
-        conexion.commit()
+        columnas = conexion.execute(
+            "PRAGMA table_info(usuarios)"
+        ).fetchall()
+
+        print("\nColumnas:")
+
+        for columna in columnas:
+            print(columna)
+
+        print("\nÍndices:")
+
+        indices = conexion.execute(
+            "PRAGMA index_list(usuarios)"
+        ).fetchall()
+
+        for indice in indices:
+            print(indice)
+
+        print("\nUsuarios registrados:")
+
+        usuarios = conexion.execute("""
+            SELECT id, username, email, phone, rol,
+                   CASE
+                       WHEN password IS NULL THEN 'SIN PASSWORD'
+                       ELSE 'CON PASSWORD'
+                   END
+            FROM usuarios
+        """).fetchall()
+
+        for usuario in usuarios:
+            print(usuario)
+
+        print("===== FIN DIAGNÓSTICO =====\n")
 
     finally:
-        conexion.close()
+        conexion.close() 
+ 
 @app.errorhandler(403)
 def prohibido(error):
     if request.path.startswith("/api/"):
@@ -2279,9 +2299,6 @@ def herramienta_ia_buscarproductos(texto):
 # ============================================================
 # Inicializar las bases de datos al cargar Flask en Render
 inicializar_base_datos()
-
-# Migraciones de la estructura de usuarios
-migrar_usuarios_password()
 
 # Inicialización del inventario
 crear_tabla_productos()
