@@ -266,7 +266,52 @@ def comprobar_bloqueo(clave):
 
     return False, registro
 
+def migrar_usuarios_password():
 
+    conexion = sqlite3.connect(
+        BASE_DATOS,
+        timeout=10
+    )
+
+    try:
+
+        columnas = {
+            fila[1]
+            for fila in conexion.execute(
+                "PRAGMA table_info(usuarios)"
+            ).fetchall()
+        }
+
+        if "password_hash" in columnas:
+
+            print(
+                "Correcto: existe password_hash."
+            )
+
+        elif "password" in columnas:
+
+            conexion.execute("""
+                ALTER TABLE usuarios
+                RENAME COLUMN password TO password_hash
+            """)
+
+            conexion.commit()
+
+            print(
+                "Migración completada: "
+                "password renombrada a password_hash."
+            )
+
+        else:
+
+            raise RuntimeError(
+                "La tabla usuarios no tiene "
+                "password ni password_hash."
+            )
+
+    finally:
+
+        conexion.close()
 def registrar_fallo_login(clave):
 
     registro = db.session.scalar(
@@ -471,12 +516,13 @@ class CodigoAdmin(db.Model):
 
 def inicializar_base_datos():
 
-    BASE_DATOS.parent.mkdir(parents=True, exist_ok=True)
+    BASE_DATOS.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
 
     with app.app_context():
         db.create_all()
-    with app.app_context():
-        diagnosticar_usuarios()
 def comprobar_tablas():
     conexion = sqlite3.connect(BASE_DATOS, timeout=10)
 
@@ -2297,11 +2343,17 @@ def herramienta_ia_buscarproductos(texto):
 # ============================================================
 # EJECUCIÓN
 # ============================================================
-# Inicializar las bases de datos al cargar Flask en Render
+# Inicialización de tablas
 inicializar_base_datos()
 
-# Inicialización del inventario
+# Migración de contraseñas
+migrar_usuarios_password()
+
+# Inventario
 crear_tabla_productos()
+
+# Migración de pedidos
+migrar_pedidos_caja()
 
 # Migraciones de pedidos
 migrar_pedidos_caja()
