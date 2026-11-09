@@ -2352,9 +2352,6 @@ migrar_usuarios_password()
 # Inventario
 crear_tabla_productos()
 
-# Migración de pedidos
-# Migraciones de pedidos
-migrar_pedidos_caja()
 if __name__ == "__main__":
     modo_debug = os.getenv("FLASK_DEBUG", "false").lower() in {
         "1", "true", "yes", "on"
