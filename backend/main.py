@@ -2353,8 +2353,6 @@ migrar_usuarios_password()
 crear_tabla_productos()
 
 # Migración de pedidos
-migrar_pedidos_caja()
-
 # Migraciones de pedidos
 migrar_pedidos_caja()
 if __name__ == "__main__":
