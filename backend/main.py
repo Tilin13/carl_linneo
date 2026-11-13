@@ -7,7 +7,7 @@ import math
 import os
 import re
 import secrets
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from sqlalchemy import text
 from datetime import datetime
 from flask_login import (
@@ -1038,7 +1038,7 @@ def caja():
 @administrador_requerido
 def admin_finanzas():
     return render_template("finanzas.html")
-   
+
 @app.route(
     "/api/admin/caja/compradores-externos",
     methods=["GET"]
@@ -1046,29 +1046,32 @@ def admin_finanzas():
 @administrador_requerido
 def listar_compradores_externos():
 
-@administrador_requerido
-def listar_compradores_externos():
+    try:
+        compradores = db.session.scalars(
+            select(CompradorExterno).order_by(
+                CompradorExterno.nombre.asc()
+            )
+        ).all()
 
-    compradores = db.session.scalars(
-        select(CompradorExterno).order_by(
-            CompradorExterno.nombre.asc()
+        return jsonify([
+            {
+                "id": comprador.id,
+                "nombre": comprador.nombre,
+                "contacto": comprador.contacto or ""
+            }
+            for comprador in compradores
+        ])
+
+    except Exception:
+        db.session.rollback()
+        app.logger.exception(
+            "Error consultando compradores externos."
         )
-    ).all()
 
-    return jsonify([
-        {
-            "id": comprador.id,
-            "nombre": comprador.nombre,
-            "contacto": comprador.contacto or ""
-        }
-        for comprador in compradores
-    ])
+        return jsonify({
+            "error": "No se pudieron cargar los compradores."
+        }), 500
 
-
-@app.route(
-    "/api/admin/caja/venta",
-    methods=["POST"]
-)
 @app.route(
     "/api/admin/finanzas/ventas",
     methods=["GET"]
@@ -1246,11 +1249,6 @@ def obtener_historial_ventas():
         return jsonify({
             "error": "No se pudo cargar el historial financiero."
         }), 500
-     
-@app.route(
-    "/api/admin/caja/venta",
-    methods=["POST"]
-)
 
 
 @app.route("/api/admin/caja/venta", methods=["POST"])
