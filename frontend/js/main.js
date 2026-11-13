@@ -2235,6 +2235,7 @@ const botonTerminarCaja = $("terminar_pago");
 if (botonTerminarCaja) {
 
     botonTerminarCaja.addEventListener("click", async function () {
+		console.log("¡Se pulsó registrar venta!");
 
         if (productosVenta.length === 0) {
             alert("Agrega al menos un producto a la venta.");
