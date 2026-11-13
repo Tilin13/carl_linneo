@@ -2,148 +2,93 @@
 import sqlite3
 from pathlib import Path
 
-# Ruta de la base de datos
-BASE_DIR = Path(__file__).resolve().parent.parent
-BASE_DATOS = BASE_DIR / "pos.db"
+# Ajusta esta ruta a la ubicación real de tu base de datos
+BASE_DIR = Path(__file__).resolve().parent
+DB_PATH = BASE_DIR / "pos.db"
 
-print("=" * 55)
-print("DIAGNÓSTICO DE BASE DE DATOS - LINNEO")
-print("=" * 55)
+def mostrar_esquema():
+    if not DB_PATH.exists():
+        print(f"No se encontró la base de datos: {DB_PATH}")
+        return
 
-print(f"\nBase de datos examinada: {BASE_DATOS.resolve()}")
-print(f"Existe: {BASE_DATOS.exists()}")
-
-# Evita crear una base de datos vacía si la ruta es incorrecta
-if not BASE_DATOS.exists():
-    print("\nERROR: No se encontró el archivo pos.db.")
-    raise SystemExit(1)
-
-try:
-    # Abrir en modo solo lectura
-    conexion = sqlite3.connect(
-        BASE_DATOS.resolve().as_uri() + "?mode=ro",
-        uri=True
-    )
+    conexion = sqlite3.connect(DB_PATH)
+    conexion.row_factory = sqlite3.Row
     cursor = conexion.cursor()
 
-    # 1. Mostrar tablas
-    print("\n" + "=" * 55)
-    print("TABLAS")
-    print("=" * 55)
+    print("\n" + "=" * 90)
+    print("             ESTRUCTURA COMPLETA DE LA BASE DE DATOS LINNEO")
+    print("=" * 90)
 
-    cursor.execute("""
-        SELECT name
+    tablas = cursor.execute("""
+        SELECT name, sql
         FROM sqlite_master
         WHERE type = 'table'
-        ORDER BY name
-    """)
+          AND name NOT LIKE 'sqlite_%'
+        ORDER BY name;
+    """).fetchall()
 
-    tablas = cursor.fetchall()
+    if not tablas:
+        print("No hay tablas en la base de datos.")
+        conexion.close()
+        return
 
-    if tablas:
-        for tabla in tablas:
-            print("-", tabla[0])
-    else:
-        print("No hay tablas.")
+    for tabla in tablas:
+        nombre = tabla["name"]
 
-    # 2. Estructura de usuarios
-    print("\n" + "=" * 55)
-    print("ESTRUCTURA DE LA TABLA USUARIOS")
-    print("=" * 55)
+        print(f"\n{'=' * 90}")
+        print(f" TABLA: {nombre}")
+        print("=" * 90)
 
-    cursor.execute("""
-        SELECT name
-        FROM sqlite_master
-        WHERE type = 'table' AND name = 'usuarios'
-    """)
+        columnas = cursor.execute(
+            f'PRAGMA table_info("{nombre}")'
+        ).fetchall()
 
-    if cursor.fetchone():
-        cursor.execute("PRAGMA table_info(usuarios)")
+        print("\nCOLUMNAS:")
+        for columna in columnas:
+            print(
+                f"  - {columna['name']:<30}"
+                f" Tipo: {columna['type']:<15}"
+                f" PK: {columna['pk']}"
+                f" NOT NULL: {columna['notnull']}"
+                f" DEFAULT: {columna['dflt_value']}"
+            )
 
-        for columna in cursor.fetchall():
-            print(columna)
+        claves = cursor.execute(
+            f'PRAGMA foreign_key_list("{nombre}")'
+        ).fetchall()
 
-        # 3. Usuarios registrados (sin contraseñas ni hashes)
-        print("\n" + "=" * 55)
-        print("USUARIOS REGISTRADOS")
-        print("=" * 55)
-
-        cursor.execute("""
-            SELECT id, username, email, phone, rol
-            FROM usuarios
-            ORDER BY id
-        """)
-
-        usuarios = cursor.fetchall()
-
-        if usuarios:
-            for usuario in usuarios:
-                print(usuario)
+        print("\nCLAVES FORÁNEAS:")
+        if claves:
+            for clave in claves:
+                print(
+                    f"  - {clave['from']} -> "
+                    f"{clave['table']}.{clave['to']}"
+                )
         else:
-            print("No hay usuarios registrados.")
+            print("  No tiene claves foráneas.")
 
-        # 4. Índices
-        print("\n" + "=" * 55)
-        print("ÍNDICES DE USUARIOS")
-        print("=" * 55)
+        indices = cursor.execute(
+            f'PRAGMA index_list("{nombre}")'
+        ).fetchall()
 
-        cursor.execute("PRAGMA index_list(usuarios)")
-        indices = cursor.fetchall()
-
+        print("\nÍNDICES:")
         if indices:
             for indice in indices:
-                print(indice)
+                print(
+                    f"  - {indice['name']} "
+                    f"(único: {indice['unique']})"
+                )
         else:
-            print("No hay índices.")
+            print("  No tiene índices adicionales.")
 
-        # 5. Comprobar duplicados de username
-        print("\n" + "=" * 55)
-        print("USERNAME DUPLICADOS")
-        print("=" * 55)
-
-        cursor.execute("""
-            SELECT username, COUNT(*)
-            FROM usuarios
-            GROUP BY username
-            HAVING COUNT(*) > 1
-        """)
-
-        duplicados = cursor.fetchall()
-
-        if duplicados:
-            for duplicado in duplicados:
-                print(duplicado)
-        else:
-            print("No se encontraron usernames duplicados.")
-
-        # 6. Comprobar duplicados de email
-        print("\n" + "=" * 55)
-        print("EMAILS DUPLICADOS")
-        print("=" * 55)
-
-        cursor.execute("""
-            SELECT email, COUNT(*)
-            FROM usuarios
-            GROUP BY email
-            HAVING COUNT(*) > 1
-        """)
-
-        duplicados = cursor.fetchall()
-
-        if duplicados:
-            for duplicado in duplicados:
-                print(duplicado)
-        else:
-            print("No se encontraron emails duplicados.")
-
-    else:
-        print("\nERROR: La tabla usuarios no existe.")
+        print("\nSQL DE CREACIÓN:")
+        print(tabla["sql"])
 
     conexion.close()
+    print("\n" + "=" * 90)
+    print("             FIN DEL REPORTE")
+    print("=" * 90)
 
-    print("\n" + "=" * 55)
-    print("DIAGNÓSTICO FINALIZADO")
-    print("=" * 55)
 
-except sqlite3.Error as error:
-    print(f"\nERROR DE SQLITE: {error}")
+if __name__ == "__main__":
+    mostrar_esquema()

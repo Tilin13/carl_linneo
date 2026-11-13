@@ -2226,6 +2226,153 @@ if (paquete) {
     if (inventario) cargarInventario();
     if (clientes) cargarUsuarios();
 
+/* =========================================
+   CAJA: CONFIRMAR Y REGISTRAR VENTA
+========================================= */
+
+const botonTerminarCaja = $("terminar_pago");
+
+if (botonTerminarCaja) {
+
+    botonTerminarCaja.addEventListener("click", async function () {
+
+        if (productosVenta.length === 0) {
+            alert("Agrega al menos un producto a la venta.");
+            return;
+        }
+
+        const canal = $("canal")?.value;
+        const tipoComprador = $("tipo_comprador")?.value;
+        const metodoPago = $("metodo_pago")?.value;
+        const estadoPago = $("estado_pago")?.value;
+
+        let usuarioId = null;
+        let compradorNombre = "";
+        let compradorContacto = "";
+
+        if (!canal || !tipoComprador || !metodoPago || !estadoPago) {
+            alert("Completa los datos de la venta.");
+            return;
+        }
+
+        if (tipoComprador === "registrado") {
+
+            const compradorSeleccionado = selectorComprador?.value;
+
+            if (!compradorSeleccionado) {
+                alert("Selecciona un comprador registrado.");
+                return;
+            }
+
+            usuarioId = Number(compradorSeleccionado);
+
+            if (!Number.isSafeInteger(usuarioId) || usuarioId <= 0) {
+                alert("El comprador seleccionado no es válido.");
+                return;
+            }
+
+        } else if (tipoComprador === "externo") {
+
+            compradorNombre = $("nombre_externo")?.value.trim() || "";
+            compradorContacto = $("contacto_externo")?.value.trim() || "";
+
+            if (!compradorNombre) {
+                alert("Escribe el nombre del comprador.");
+                return;
+            }
+
+        } else {
+            alert("Selecciona un tipo de comprador válido.");
+            return;
+        }
+
+        const descuento = Number(descuentoCaja.value);
+
+        if (!Number.isFinite(descuento) || descuento < 0 || descuento > 100) {
+            alert("El descuento debe estar entre 0 y 100.");
+            return;
+        }
+
+        const datosVenta = {
+            canal: canal,
+            usuario_id: usuarioId,
+            comprador_nombre: compradorNombre,
+            comprador_contacto: compradorContacto,
+            descuento: descuento,
+            metodo_pago: metodoPago,
+            estado_pago: estadoPago,
+
+            productos: productosVenta.map(function (producto) {
+                return {
+                    codigo: producto.codigo,
+                    cantidad: producto.cantidad
+                };
+            })
+        };
+
+        if (!confirm("¿Confirmas el registro de esta venta?")) {
+            return;
+        }
+
+        botonTerminarCaja.disabled = true;
+        botonTerminarCaja.textContent = "Registrando...";
+
+        try {
+
+            const resultado = await peticion(
+                "/api/admin/caja/venta",
+                {
+                    method: "POST",
+                    body: JSON.stringify(datosVenta)
+                }
+            );
+
+            if (mensajeCaja) {
+                mensajeCaja.textContent =
+                    resultado.mensaje || "Venta registrada correctamente.";
+            }
+
+            // Limpiar la venta únicamente después del éxito.
+            productosVenta = [];
+
+            if (descuentoCaja) {
+                descuentoCaja.value = 0;
+            }
+
+            actualizarTablaCaja();
+
+            // Actualizar el catálogo y el stock mostrado.
+            await cargarProductosCaja();
+
+            // Restablecer el formulario de comprador externo.
+            if ($("nombre_externo")) {
+                $("nombre_externo").value = "";
+            }
+
+            if ($("contacto_externo")) {
+                $("contacto_externo").value = "";
+            }
+
+        } catch (error) {
+
+            if (mensajeCaja) {
+                mensajeCaja.textContent =
+                    error.message || "No se pudo registrar la venta.";
+            }
+
+            console.error("Error al registrar la venta:", error);
+
+        } finally {
+
+            botonTerminarCaja.disabled = false;
+            botonTerminarCaja.textContent = "Terminar pago";
+
+        }
+
+    });
+
+}
+
     // =====================================================
     // CHATBOT Y NAVEGACIÓN
     // =====================================================

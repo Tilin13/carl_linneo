@@ -888,7 +888,11 @@ def agregar_cabeceras_seguridad(response):
 
     return response
 
-
+def registrar_venta(usuario, fecha, subtotalo, estado):
+	cursor.execute("""INSERT INTO pedidos(
+	usuario,fecha, subtotal, estado, values=?,?,?,?
+	)""")
+	
 # ============================================================
 # ERRORES HTTP
 # ============================================================
@@ -905,8 +909,10 @@ def caja():
     "/api/admin/caja/venta",
     methods=["POST"]
 )
-
-@app.route("/api/admin/caja/compradores-externos", methods=["GET"])
+@app.route(
+    "/api/admin/caja/compradores-externos",
+    methods=["GET"]
+)
 @administrador_requerido
 def listar_compradores_externos():
 
@@ -925,6 +931,11 @@ def listar_compradores_externos():
         for comprador in compradores
     ])
 
+
+@app.route(
+    "/api/admin/caja/venta",
+    methods=["POST"]
+)
 @administrador_requerido
 def registrar_venta_caja():
 
