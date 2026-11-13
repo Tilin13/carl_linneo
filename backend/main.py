@@ -999,11 +999,6 @@ def agregar_cabeceras_seguridad(response):
 
     return response
 
-def registrar_venta(usuario, fecha, subtotalo, estado):
-	cursor.execute("""INSERT INTO pedidos(
-	usuario,fecha, subtotal, estado, values=?,?,?,?
-	)""")
-	
 # ============================================================
 # ERRORES HTTP
 # ============================================================
