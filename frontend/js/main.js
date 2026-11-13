@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const menubtn = $("menubtn");
     const menu_bar = $("menu_bar");
     const atras_menu = $("atras_menu");
+     const paquete = document.getElementById("paquete_pedido");
 
     const carritobtn = $("carritobtn");
     const carrito_bar = $("carrito_bar");
@@ -2388,7 +2389,7 @@ if (botonTerminarCaja) {
         });
 
     }
-        const paquete = document.getElementById("paquete_pedido");
+       
     const cantidades = document.querySelectorAll(".cantidad_especie");
     const filtros = document.querySelectorAll(".filtro_especie");
     
