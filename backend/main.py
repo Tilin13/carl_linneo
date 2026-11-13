@@ -1231,6 +1231,42 @@ def caja_compradores():
             "error": "No se pudieron cargar los compradores."
         }), 500 
  
+@app.route("/api/admin/caja/productos", methods=["GET"])
+@administrador_requerido
+def caja_productos():
+
+    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
+    conexion.row_factory = sqlite3.Row
+
+    try:
+        filas = conexion.execute("""
+            SELECT
+                codigo,
+                nombre,
+                categoria,
+                precio_venta,
+                stock
+            FROM productos
+            WHERE stock > 0
+            ORDER BY nombre COLLATE NOCASE ASC
+        """).fetchall()
+
+        productos = [dict(fila) for fila in filas]
+
+        return jsonify(productos), 200
+
+    except sqlite3.Error:
+        app.logger.exception(
+            "Error cargando productos disponibles en caja."
+        )
+
+        return jsonify({
+            "error": "No se pudieron cargar los productos."
+        }), 500
+
+    finally:
+        conexion.close()
+
     
 @app.route("/admin/pedido/<int:pedido_id>")
 @administrador_requerido
