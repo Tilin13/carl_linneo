@@ -701,7 +701,353 @@ function actualizarFavoritos() {
 
 /* =========================================
    CAJA: COMPRADORES Y PRODUCTOS
+==========================
+/* =========================================
+   CAJA: GESTIÓN DE PRODUCTOS DE LA VENTA
 ========================================= */
+
+const botonAgregarProducto = $("agregar_producto");
+const listaProductosCaja = $("lista_productos");
+
+const cantidadCaja = $("cantidad");
+
+const subtotalCaja = $("subtotal");
+const descuentoCaja = $("descuento");
+const descuentoTotalCaja = $("descuento_total");
+const totalCaja = $("total");
+
+const mensajeCaja = $("mensaje_caja");
+
+// Productos seleccionados para la venta.
+// Esta lista es independiente del catálogo.
+let productosVenta = [];
+
+
+/* =========================================
+   AGREGAR PRODUCTO
+========================================= */
+
+function agregarProductoCaja() {
+
+    const codigo = selectorProducto.value;
+
+    const cantidad = Number(cantidadCaja.value);
+
+    if (!codigo) {
+        alert("Selecciona un producto.");
+        return;
+    }
+
+    if (!Number.isSafeInteger(cantidad) || cantidad <= 0) {
+        alert("Introduce una cantidad válida.");
+        return;
+    }
+
+    // Buscar producto en el catálogo recibido del servidor.
+
+    const producto = productosCaja.find(
+        p => String(p.codigo) === String(codigo)
+    );
+
+    if (!producto) {
+        alert("No se encontró el producto seleccionado.");
+        return;
+    }
+
+    const stock = Number(producto.stock);
+    const precio = Number(producto.precio_venta);
+
+    if (
+        !Number.isSafeInteger(stock) ||
+        stock < 0 ||
+        !Number.isFinite(precio) ||
+        precio < 0
+    ) {
+        alert("Los datos del producto no son válidos.");
+        return;
+    }
+
+    if (stock === 0) {
+        alert("Este producto no tiene existencias.");
+        return;
+    }
+
+    // Comprobar si ya está agregado.
+
+    const existente = productosVenta.find(
+        p => p.codigo === String(codigo)
+    );
+
+    const cantidadActual = existente
+        ? existente.cantidad
+        : 0;
+
+    if (cantidadActual + cantidad > stock) {
+        alert("No hay suficiente stock disponible.");
+        return;
+    }
+
+    if (existente) {
+
+        existente.cantidad += cantidad;
+
+    } else {
+
+        productosVenta.push({
+
+            codigo: String(producto.codigo),
+            nombre: String(producto.nombre),
+            stock: stock,
+            cantidad: cantidad,
+            precio: precio
+
+        });
+
+    }
+
+    // Actualizar interfaz.
+
+    actualizarTablaCaja();
+
+    // Restablecer cantidad.
+
+    cantidadCaja.value = 1;
+
+    selectorProducto.value = "";
+
+}
+
+
+/* =========================================
+   DIBUJAR TABLA DE PRODUCTOS
+========================================= */
+
+function actualizarTablaCaja() {
+
+    if (!listaProductosCaja) return;
+
+    listaProductosCaja.replaceChildren();
+
+    if (productosVenta.length === 0) {
+
+        const fila = document.createElement("tr");
+        const celda = document.createElement("td");
+
+        celda.colSpan = 6;
+        celda.textContent = "No hay productos agregados.";
+
+        fila.appendChild(celda);
+        listaProductosCaja.appendChild(fila);
+
+    } else {
+
+        productosVenta.forEach(function(producto) {
+
+            const fila = document.createElement("tr");
+
+            // Nombre
+
+            const nombre = document.createElement("td");
+            nombre.textContent =
+                producto.codigo + " | " + producto.nombre;
+
+            // Stock
+
+            const stock = document.createElement("td");
+            stock.textContent = producto.stock;
+
+            // Cantidad
+
+            const cantidad = document.createElement("td");
+
+            const botonMenos = document.createElement("button");
+            botonMenos.type = "button";
+            botonMenos.textContent = "−";
+
+            botonMenos.addEventListener("click", function() {
+                cambiarCantidadCaja(producto.codigo, -1);
+            });
+
+            const textoCantidad = document.createElement("span");
+            textoCantidad.textContent =
+                " " + producto.cantidad + " ";
+
+            const botonMas = document.createElement("button");
+            botonMas.type = "button";
+            botonMas.textContent = "+";
+
+            botonMas.addEventListener("click", function() {
+                cambiarCantidadCaja(producto.codigo, 1);
+            });
+
+            cantidad.append(
+                botonMenos,
+                textoCantidad,
+                botonMas
+            );
+
+            // Precio unitario
+
+            const precio = document.createElement("td");
+            precio.textContent =
+                formatoPrecio(producto.precio);
+
+            // Total del producto
+
+            const total = document.createElement("td");
+            total.textContent =
+                formatoPrecio(
+                    producto.precio * producto.cantidad
+                );
+
+            // Eliminar
+
+            const accion = document.createElement("td");
+
+            const eliminar = document.createElement("button");
+            eliminar.type = "button";
+            eliminar.textContent = "Eliminar";
+
+            eliminar.addEventListener("click", function() {
+                eliminarProductoCaja(producto.codigo);
+            });
+
+            accion.appendChild(eliminar);
+
+            fila.append(
+                nombre,
+                stock,
+                cantidad,
+                precio,
+                total,
+                accion
+            );
+
+            listaProductosCaja.appendChild(fila);
+
+        });
+
+    }
+
+    actualizarResumenCaja();
+
+}
+
+
+/* =========================================
+   CAMBIAR CANTIDAD
+========================================= */
+
+function cambiarCantidadCaja(codigo, cambio) {
+
+    const producto = productosVenta.find(
+        p => p.codigo === String(codigo)
+    );
+
+    if (!producto) return;
+
+    const nuevaCantidad = producto.cantidad + cambio;
+
+    if (nuevaCantidad <= 0) {
+        eliminarProductoCaja(codigo);
+        return;
+    }
+
+    if (nuevaCantidad > producto.stock) {
+        alert("No hay suficiente stock.");
+        return;
+    }
+
+    producto.cantidad = nuevaCantidad;
+
+    actualizarTablaCaja();
+
+}
+
+
+/* =========================================
+   ELIMINAR PRODUCTO
+========================================= */
+
+function eliminarProductoCaja(codigo) {
+
+    productosVenta = productosVenta.filter(
+        p => p.codigo !== String(codigo)
+    );
+
+    actualizarTablaCaja();
+
+}
+
+
+/* =========================================
+   CALCULAR SUBTOTAL Y TOTAL
+========================================= */
+
+function actualizarResumenCaja() {
+
+    const subtotal = productosVenta.reduce(
+        (total, producto) => {
+            return total + (
+                producto.precio * producto.cantidad
+            );
+        },
+        0
+    );
+
+    let porcentaje = Number(descuentoCaja.value);
+
+    if (!Number.isFinite(porcentaje)) {
+        porcentaje = 0;
+    }
+
+    porcentaje = Math.min(
+        100,
+        Math.max(0, porcentaje)
+    );
+
+    const descuento = subtotal * porcentaje / 100;
+
+    const total = subtotal - descuento;
+
+    subtotalCaja.textContent =
+        formatoPrecio(subtotal);
+
+    descuentoTotalCaja.textContent =
+        formatoPrecio(descuento);
+
+    totalCaja.textContent =
+        formatoPrecio(total);
+
+}
+
+
+/* =========================================
+   EVENTOS DE LA CAJA
+========================================= */
+
+if (botonAgregarProducto) {
+
+    botonAgregarProducto.addEventListener(
+        "click",
+        agregarProductoCaja
+    );
+
+}
+
+if (descuentoCaja) {
+
+    descuentoCaja.addEventListener(
+        "input",
+        actualizarResumenCaja
+    );
+
+}
+
+// Estado inicial.
+
+actualizarTablaCaja();
+=============== */
 
 const selectorComprador = $("comprador");
 const selectorProducto = $("producto");
