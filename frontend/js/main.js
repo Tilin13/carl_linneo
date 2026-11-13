@@ -34,6 +34,398 @@ document.addEventListener("DOMContentLoaded", function () {
     const adelanteNovedades = $("adelante_novedades");
 const ver_personalizado = document.getElementById("ver_personalizado");
 
+/* =========================================
+   FINANZAS
+========================================= */
+
+const tablaFinanzas = document.getElementById("tabla_ventas");
+const mensajeFinanzas = document.getElementById("mensaje");
+
+const buscarFinanzas = document.getElementById("buscar");
+const filtroEstadoFinanzas = document.getElementById("filtro_estado");
+const actualizarFinanzasBtn = document.getElementById("actualizar");
+
+const detalleSeccion = document.getElementById("detalle_seccion");
+const detalleVenta = document.getElementById("detalle_venta");
+
+let operaciones = [];
+
+/* =========================================
+   FORMATO DE DINERO
+========================================= */
+
+function dinero(valor) {
+    return new Intl.NumberFormat("es-MX", {
+        style: "currency",
+        currency: "MXN"
+    }).format(Number(valor || 0));
+}
+
+/* =========================================
+   CREAR ELEMENTOS
+========================================= */
+
+function crearElemento(tag, texto = "") {
+    const nodo = document.createElement(tag);
+    nodo.textContent = texto ?? "";
+    return nodo;
+}
+
+/* =========================================
+   CARGAR FINANZAS DESDE EL SERVIDOR
+========================================= */
+
+async function cargarFinanzas() {
+
+    if (!tablaFinanzas || !mensajeFinanzas) return;
+
+    mensajeFinanzas.textContent = "Cargando información...";
+
+    if (actualizarFinanzasBtn) {
+        actualizarFinanzasBtn.disabled = true;
+    }
+
+    try {
+
+        const respuesta = await fetch(
+            "/api/admin/finanzas/ventas",
+            {
+                method: "GET",
+                credentials: "same-origin",
+                headers: {
+                    "Accept": "application/json"
+                }
+            }
+        );
+
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok) {
+            throw new Error(
+                datos.error || "No se pudieron cargar las finanzas."
+            );
+        }
+
+        if (!datos.resumen || !Array.isArray(datos.ventas)) {
+            throw new Error("La respuesta del servidor tiene un formato incorrecto.");
+        }
+
+        operaciones = datos.ventas;
+
+        actualizarResumenFinanzas(datos.resumen);
+
+        mostrarOperaciones();
+
+        mensajeFinanzas.textContent = "Finanzas actualizadas correctamente.";
+
+    } catch (error) {
+
+        console.error("Error en finanzas:", error);
+
+        mensajeFinanzas.textContent = error.message;
+
+        tablaFinanzas.replaceChildren();
+
+        const fila = crearElemento("tr");
+        const celda = crearElemento("td", error.message);
+
+        celda.colSpan = 7;
+
+        fila.appendChild(celda);
+        tablaFinanzas.appendChild(fila);
+
+    } finally {
+
+        if (actualizarFinanzasBtn) {
+            actualizarFinanzasBtn.disabled = false;
+        }
+
+    }
+}
+
+/* =========================================
+   ACTUALIZAR RESUMEN FINANCIERO
+========================================= */
+
+function actualizarResumenFinanzas(resumen) {
+
+    const campos = {
+        ingresos: dinero(resumen.ingresos),
+        costos: dinero(resumen.costos),
+        ganancia: dinero(resumen.ganancia_bruta),
+        perdida: dinero(resumen.perdida),
+        pendiente: dinero(resumen.pendiente_cobro),
+        operaciones: resumen.operaciones ?? 0
+    };
+
+    Object.entries(campos).forEach(([id, valor]) => {
+
+        const elemento = document.getElementById(id);
+
+        if (elemento) {
+            elemento.textContent = valor;
+        }
+
+    });
+
+}
+
+/* =========================================
+   FILTRAR OPERACIONES
+========================================= */
+
+function mostrarOperaciones() {
+
+    if (!tablaFinanzas) return;
+
+    const busqueda = buscarFinanzas
+        ? buscarFinanzas.value.toLowerCase().trim()
+        : "";
+
+    const estado = filtroEstadoFinanzas
+        ? filtroEstadoFinanzas.value
+        : "";
+
+    const filtradas = operaciones.filter(venta => {
+
+        const comprador = String(venta.comprador || "").toLowerCase();
+
+        const detalles = Array.isArray(venta.detalles)
+            ? venta.detalles
+            : [];
+
+        const coincideBusqueda =
+            comprador.includes(busqueda) ||
+            detalles.some(item =>
+                String(item.producto || "")
+                    .toLowerCase()
+                    .includes(busqueda)
+            );
+
+        const coincideEstado =
+            !estado || venta.estado_pago === estado;
+
+        return coincideBusqueda && coincideEstado;
+
+    });
+
+    tablaFinanzas.replaceChildren();
+
+    if (filtradas.length === 0) {
+
+        const fila = crearElemento("tr");
+        const celda = crearElemento(
+            "td",
+            "No hay operaciones encontradas."
+        );
+
+        celda.colSpan = 7;
+
+        fila.appendChild(celda);
+        tablaFinanzas.appendChild(fila);
+
+        return;
+    }
+
+    filtradas.forEach(venta => {
+
+        const fila = crearElemento("tr");
+
+        const datos = [
+            `${venta.tipo === "pedido" ? "P" : "V"}-${venta.id}`,
+            venta.fecha
+                ? new Date(venta.fecha).toLocaleString("es-MX")
+                : "Sin fecha",
+            venta.comprador || "Sin comprador",
+            venta.tipo === "pedido"
+                ? "Pedido digital"
+                : venta.canal || "Sin canal",
+            dinero(venta.total),
+            venta.estado_pago || "Desconocido"
+        ];
+
+        datos.forEach(texto => {
+            fila.appendChild(crearElemento("td", texto));
+        });
+
+        const celdaAccion = crearElemento("td");
+
+        const boton = crearElemento("button", "Ver detalles");
+
+        boton.type = "button";
+
+        boton.addEventListener("click", () => {
+            mostrarDetalleVenta(venta);
+        });
+
+        celdaAccion.appendChild(boton);
+        fila.appendChild(celdaAccion);
+
+        tablaFinanzas.appendChild(fila);
+
+    });
+
+}
+
+/* =========================================
+   MOSTRAR DETALLES DE UNA VENTA
+========================================= */
+
+function mostrarDetalleVenta(venta) {
+
+    if (!detalleSeccion || !detalleVenta) return;
+
+    detalleVenta.replaceChildren();
+
+    const titulo = crearElemento(
+        "h3",
+        `Operación ${venta.tipo} #${venta.id}`
+    );
+
+    detalleVenta.appendChild(titulo);
+
+    const informacion = [
+        ["Comprador", venta.comprador],
+        ["Contacto", venta.contacto],
+        ["Fecha", venta.fecha
+            ? new Date(venta.fecha).toLocaleString("es-MX")
+            : "Sin fecha"],
+        ["Canal", venta.canal],
+        ["Método de pago", venta.metodo_pago],
+        ["Estado", venta.estado_pago],
+        ["Subtotal", dinero(venta.subtotal)],
+        ["Descuento", dinero(venta.descuento)],
+        ["Total", dinero(venta.total)],
+        ["Costo de mercancía", dinero(venta.costo)],
+        [
+            "Ganancia",
+            venta.ganancia === null ||
+            venta.ganancia === undefined
+                ? "Costo histórico desconocido"
+                : dinero(venta.ganancia)
+        ]
+    ];
+
+    informacion.forEach(([etiqueta, valor]) => {
+
+        const parrafo = crearElemento("p");
+
+        const nombre = crearElemento(
+            "strong",
+            `${etiqueta}: `
+        );
+
+        parrafo.appendChild(nombre);
+
+        parrafo.appendChild(
+            document.createTextNode(String(valor ?? "No disponible"))
+        );
+
+        detalleVenta.appendChild(parrafo);
+
+    });
+
+    detalleVenta.appendChild(
+        crearElemento("h3", "Productos adquiridos")
+    );
+
+    const tabla = crearElemento("table");
+    const thead = crearElemento("thead");
+    const filaEncabezado = crearElemento("tr");
+
+    [
+        "Código",
+        "Producto",
+        "Cantidad",
+        "Precio unitario",
+        "Costo unitario",
+        "Total"
+    ].forEach(texto => {
+        filaEncabezado.appendChild(
+            crearElemento("th", texto)
+        );
+    });
+
+    thead.appendChild(filaEncabezado);
+    tabla.appendChild(thead);
+
+    const tbody = crearElemento("tbody");
+
+    const detalles = Array.isArray(venta.detalles)
+        ? venta.detalles
+        : [];
+
+    detalles.forEach(item => {
+
+        const fila = crearElemento("tr");
+
+        const valores = [
+            item.codigo,
+            item.producto,
+            item.cantidad,
+            dinero(item.precio),
+            item.costo_unitario === null ||
+            item.costo_unitario === undefined
+                ? "Desconocido"
+                : dinero(item.costo_unitario),
+            dinero(item.total)
+        ];
+
+        valores.forEach(valor => {
+            fila.appendChild(
+                crearElemento("td", String(valor ?? ""))
+            );
+        });
+
+        tbody.appendChild(fila);
+
+    });
+
+    tabla.appendChild(tbody);
+    detalleVenta.appendChild(tabla);
+
+    detalleSeccion.hidden = false;
+
+    detalleSeccion.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+
+}
+
+/* =========================================
+   EVENTOS
+========================================= */
+
+if (buscarFinanzas) {
+    buscarFinanzas.addEventListener(
+        "input",
+        mostrarOperaciones
+    );
+}
+
+if (filtroEstadoFinanzas) {
+    filtroEstadoFinanzas.addEventListener(
+        "change",
+        mostrarOperaciones
+    );
+}
+
+if (actualizarFinanzasBtn) {
+    actualizarFinanzasBtn.addEventListener(
+        "click",
+        cargarFinanzas
+    );
+}
+
+/* =========================================
+   INICIALIZAR
+========================================= */
+
+if (tablaFinanzas && mensajeFinanzas) {
+    cargarFinanzas();
+}
+
 if (ver_personalizado) {
     ver_personalizado.addEventListener("click", function() {
         window.location.href = "/pedido_personalizado";
