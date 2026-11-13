@@ -699,145 +699,156 @@ function actualizarFavoritos() {
 
 }
 
-// =====================================================
-// CAJA: CARGAR COMPRADORES
-// =====================================================
+/* =========================================
+   CAJA: COMPRADORES Y PRODUCTOS
+========================================= */
+
+const selectorComprador = $("comprador");
+const selectorProducto = $("producto");
+
+let compradoresCaja = [];
+let productosCaja = [];
 
 async function cargarCompradoresCaja() {
-    const selector = document.getElementById("comprador");
 
-    if (!selector) return;
+    if (!selectorComprador) return;
 
-    selector.replaceChildren();
+    selectorComprador.replaceChildren();
 
     const inicial = document.createElement("option");
     inicial.value = "";
     inicial.textContent = "Cargando compradores...";
-    selector.appendChild(inicial);
+    selectorComprador.appendChild(inicial);
 
     try {
-        const compradores = await peticion(
+
+        compradoresCaja = await peticion(
             "/api/admin/caja/compradores"
         );
 
-        if (!Array.isArray(compradores)) {
-            throw new Error("La respuesta de compradores no es válida.");
+        if (!Array.isArray(compradoresCaja)) {
+            throw new Error("Formato de compradores incorrecto.");
         }
 
-        selector.replaceChildren();
-
-        if (compradores.length === 0) {
-            const opcion = document.createElement("option");
-            opcion.value = "";
-            opcion.textContent = "No hay compradores registrados.";
-            selector.appendChild(opcion);
-            return;
-        }
-
-        const inicial = document.createElement("option");
-        inicial.value = "";
-        inicial.textContent = "Selecciona un comprador";
-        selector.appendChild(inicial);
-
-        compradores.forEach(function (comprador) {
-            const opcion = document.createElement("option");
-
-            opcion.value = comprador.id;
-            opcion.textContent =
-                comprador.username +
-                (comprador.email ? " | " + comprador.email : "");
-
-            selector.appendChild(opcion);
-        });
-
-    } catch (error) {
-        console.error("Error cargando compradores:", error);
-
-        selector.replaceChildren();
+        selectorComprador.replaceChildren();
 
         const opcion = document.createElement("option");
         opcion.value = "";
-        opcion.textContent = "Error al cargar compradores.";
-        selector.appendChild(opcion);
+        opcion.textContent = "Selecciona un comprador";
+
+        selectorComprador.appendChild(opcion);
+
+        compradoresCaja.forEach(function(usuario) {
+
+            const option = document.createElement("option");
+
+            option.value = usuario.id;
+
+            option.textContent =
+                usuario.username +
+                (usuario.email ? " | " + usuario.email : "");
+
+            selectorComprador.appendChild(option);
+
+        });
+
+        if (compradoresCaja.length === 0) {
+            opcion.textContent = "No hay compradores registrados.";
+        }
+
+    } catch (error) {
+
+        console.error("Error de compradores:", error);
+
+        selectorComprador.replaceChildren();
+
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Error al cargar compradores.";
+
+        selectorComprador.appendChild(option);
+
     }
 }
 
 
-// =====================================================
-// CAJA: CARGAR PRODUCTOS
-// =====================================================
-
 async function cargarProductosCaja() {
-    const selector = document.getElementById("producto");
 
-    if (!selector) return;
+    if (!selectorProducto) return;
 
-    selector.replaceChildren();
+    selectorProducto.replaceChildren();
 
     const inicial = document.createElement("option");
     inicial.value = "";
     inicial.textContent = "Cargando productos...";
-    selector.appendChild(inicial);
+
+    selectorProducto.appendChild(inicial);
 
     try {
-        const productos = await peticion(
+
+        productosCaja = await peticion(
             "/api/admin/caja/productos"
         );
 
-        if (!Array.isArray(productos)) {
-            throw new Error("La respuesta de productos no es válida.");
+        if (!Array.isArray(productosCaja)) {
+            throw new Error("Formato de productos incorrecto.");
         }
 
-        selector.replaceChildren();
-
-        if (productos.length === 0) {
-            const opcion = document.createElement("option");
-            opcion.value = "";
-            opcion.textContent = "No hay productos disponibles.";
-            selector.appendChild(opcion);
-            return;
-        }
-
-        const inicial = document.createElement("option");
-        inicial.value = "";
-        inicial.textContent = "Selecciona un producto";
-        selector.appendChild(inicial);
-
-        productos.forEach(function (producto) {
-            const opcion = document.createElement("option");
-
-            opcion.value = producto.codigo;
-            opcion.textContent =
-                producto.codigo + " | " +
-                producto.nombre + " | Stock: " +
-                producto.stock + " | Precio: $" +
-                Number(producto.precio_venta).toFixed(2);
-
-            selector.appendChild(opcion);
-        });
-
-    } catch (error) {
-        console.error("Error cargando productos:", error);
-
-        selector.replaceChildren();
+        selectorProducto.replaceChildren();
 
         const opcion = document.createElement("option");
         opcion.value = "";
-        opcion.textContent = "Error al cargar productos.";
-        selector.appendChild(opcion);
+        opcion.textContent = "Selecciona un producto";
+
+        selectorProducto.appendChild(opcion);
+
+        productosCaja.forEach(function(producto) {
+
+            const option = document.createElement("option");
+
+            option.value = producto.codigo;
+
+            option.textContent =
+                producto.codigo + " | " +
+                producto.nombre + " | Stock: " +
+                producto.stock + " | $" +
+                Number(producto.precio_venta).toFixed(2);
+
+            selectorProducto.appendChild(option);
+
+        });
+
+        if (productosCaja.length === 0) {
+            opcion.textContent = "No hay productos disponibles.";
+        }
+
+    } catch (error) {
+
+        console.error("Error de productos:", error);
+
+        selectorProducto.replaceChildren();
+
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Error al cargar productos.";
+
+        selectorProducto.appendChild(option);
+
     }
 }
 
 
-// =====================================================
-// INICIALIZAR SELECTORES DE CAJA
-// =====================================================
+/* =========================================
+   INICIALIZAR
+========================================= */
 
 async function inicializarCaja() {
+
     await Promise.all([
         cargarCompradoresCaja(),
         cargarProductosCaja()
     ]);
+
 }
 
 inicializarCaja();
