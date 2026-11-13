@@ -983,6 +983,79 @@ actualizarFavoritos();
     // =====================================================
     // CHATBOT LINNEO
     // =====================================================
+    
+// =====================================================
+// CAJA: CARGAR PRODUCTOS DISPONIBLES
+// =====================================================
+
+async function cargarProductosCaja() {
+
+    const selector = document.getElementById("producto");
+
+    if (!selector) return;
+
+    selector.replaceChildren();
+
+    const opcionInicial = document.createElement("option");
+    opcionInicial.value = "";
+    opcionInicial.textContent = "Cargando productos...";
+    selector.appendChild(opcionInicial);
+
+    try {
+
+        const productos = await peticion(
+            "/api/admin/caja/productos"
+        );
+
+        if (!Array.isArray(productos)) {
+            throw new Error("La respuesta de productos no es válida.");
+        }
+
+        selector.replaceChildren();
+
+        if (productos.length === 0) {
+
+            const opcion = document.createElement("option");
+            opcion.value = "";
+            opcion.textContent = "No hay productos disponibles.";
+
+            selector.appendChild(opcion);
+            return;
+        }
+
+        productos.forEach(function(producto) {
+
+            const opcion = document.createElement("option");
+
+            opcion.value = producto.codigo;
+
+            opcion.textContent =
+                producto.nombre +
+                " | Stock: " + producto.stock +
+                " | Precio: $" +
+                Number(producto.precio_venta).toFixed(2);
+
+            selector.appendChild(opcion);
+
+        });
+
+    } catch (error) {
+
+        console.error("Error cargando productos de caja:", error);
+
+        selector.replaceChildren();
+
+        const opcion = document.createElement("option");
+        opcion.value = "";
+        opcion.textContent = "Error al cargar productos.";
+
+        selector.appendChild(opcion);
+
+    }
+}
+
+cargarProductosCaja();
+
 
     const barraMensajes = $("bar_mensajes");
     const historialMensajes = $("historial_mensajes");
