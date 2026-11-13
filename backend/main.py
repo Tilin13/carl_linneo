@@ -511,6 +511,12 @@ class VentaCaja(db.Model):
         nullable=True,
         index=True
     )
+    comprador_externo_id = db.Column(
+        db.Integer,
+        db.ForeignKey("compradores_externos.id"),
+        nullable=True,
+        index=True
+    )    
 
     # Datos del comprador conservados como historial.
     comprador_nombre = db.Column(
@@ -615,6 +621,33 @@ class VentaCajaItem(db.Model):
     venta = db.relationship(
         "VentaCaja",
         back_populates="productos"
+    )
+
+class CompradorExterno(db.Model):
+    __tablename__ = "compradores_externos"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    nombre = db.Column(
+        db.String(150),
+        nullable=False
+    )
+
+    contacto = db.Column(
+        db.String(255),
+        nullable=True
+    )
+
+    fecha_registro = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+
+    ventas = db.relationship(
+        "VentaCaja",
+        backref="comprador_externo",
+        lazy=True
     )
 
 class CodigoAdmin(db.Model):
@@ -872,6 +905,26 @@ def caja():
     "/api/admin/caja/venta",
     methods=["POST"]
 )
+
+@app.route("/api/admin/caja/compradores-externos", methods=["GET"])
+@administrador_requerido
+def listar_compradores_externos():
+
+    compradores = db.session.scalars(
+        select(CompradorExterno).order_by(
+            CompradorExterno.nombre.asc()
+        )
+    ).all()
+
+    return jsonify([
+        {
+            "id": comprador.id,
+            "nombre": comprador.nombre,
+            "contacto": comprador.contacto or ""
+        }
+        for comprador in compradores
+    ])
+
 @administrador_requerido
 def registrar_venta_caja():
 
@@ -932,7 +985,70 @@ def registrar_venta_caja():
     # VALIDAR COMPRADOR
     # --------------------------------------------------------
 
+    
     comprador = None
+    comprador_externo = None
+
+    if usuario_id is not None:
+
+        if (
+            isinstance(usuario_id, bool)
+            or not isinstance(usuario_id, int)
+            or usuario_id <= 0
+        ):
+            return jsonify({
+                "error": "Comprador registrado no válido."
+            }), 400
+
+        comprador = db.session.get(User, usuario_id)
+
+        if comprador is None:
+            return jsonify({
+                "error": "El usuario seleccionado no existe."
+            }), 404
+
+        comprador_nombre = comprador.username
+        comprador_contacto = comprador.email
+
+    else:
+
+        if not comprador_nombre or len(comprador_nombre) > 150:
+            return jsonify({
+                "error": "Introduce el nombre del comprador."
+            }), 400
+    
+        if len(comprador_contacto) > 255:
+            return jsonify({
+                "error": "El contacto es demasiado largo."
+            }), 400
+
+    # Buscar comprador externo existente.
+        consulta = select(CompradorExterno).where(
+            func.lower(CompradorExterno.nombre)
+            == comprador_nombre.casefold()
+        )
+
+        if comprador_contacto:
+            consulta = consulta.where(
+                CompradorExterno.contacto == comprador_contacto
+            )
+        else:
+            consulta = consulta.where(
+                CompradorExterno.contacto.is_(None)
+            )
+
+        comprador_externo = db.session.scalar(consulta)
+
+    # Si no existe, registrarlo.
+        if comprador_externo is None:
+            comprador_externo = CompradorExterno(
+                nombre=comprador_nombre,
+                contacto=comprador_contacto or None
+            )
+
+            db.session.add(comprador_externo)
+            db.session.flush()
+
 
     if usuario_id is not None:
 
@@ -1063,6 +1179,9 @@ def registrar_venta_caja():
 
         venta = VentaCaja(
             usuario_id=comprador.id if comprador else None,
+            comprador_externo_id=(
+                comprador_externo.id if comprador_externo else None
+            ),
             comprador_nombre=comprador_nombre,
             comprador_contacto=comprador_contacto or None,
             canal=canal,
