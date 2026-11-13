@@ -266,52 +266,6 @@ def comprobar_bloqueo(clave):
 
     return False, registro
 
-def migrar_usuarios_password():
-
-    conexion = sqlite3.connect(
-        BASE_DATOS,
-        timeout=10
-    )
-
-    try:
-
-        columnas = {
-            fila[1]
-            for fila in conexion.execute(
-                "PRAGMA table_info(usuarios)"
-            ).fetchall()
-        }
-
-        if "password_hash" in columnas:
-
-            print(
-                "Correcto: existe password_hash."
-            )
-
-        elif "password" in columnas:
-
-            conexion.execute("""
-                ALTER TABLE usuarios
-                RENAME COLUMN password TO password_hash
-            """)
-
-            conexion.commit()
-
-            print(
-                "Migración completada: "
-                "password renombrada a password_hash."
-            )
-
-        else:
-
-            raise RuntimeError(
-                "La tabla usuarios no tiene "
-                "password ni password_hash."
-            )
-
-    finally:
-
-        conexion.close()
 def registrar_fallo_login(clave):
 
     registro = db.session.scalar(
@@ -418,14 +372,13 @@ class Pedido(db.Model):
     )
 
 def migrar_usuarios_password():
-
-    conexion = sqlite3.connect(
-        BASE_DATOS,
-        timeout=10
-    )
+    """
+    Mantiene la columna password que utiliza el modelo User.
+    Si existe password_hash, recupera sus hashes sin perderlos.
+    """
+    conexion = sqlite3.connect(BASE_DATOS, timeout=10)
 
     try:
-
         columnas = {
             fila[1]
             for fila in conexion.execute(
@@ -433,29 +386,38 @@ def migrar_usuarios_password():
             ).fetchall()
         }
 
-        if "password" not in columnas:
+        if not columnas:
+            raise RuntimeError(
+                "No existe la tabla usuarios."
+            )
 
+        # Crear password solamente si todavía no existe.
+        if "password" not in columnas:
             conexion.execute("""
                 ALTER TABLE usuarios
                 ADD COLUMN password VARCHAR(255)
             """)
 
-            conexion.commit()
+        # Recuperar los hashes anteriores, si existen.
+        if "password_hash" in columnas:
+            conexion.execute("""
+                UPDATE usuarios
+                SET password = password_hash
+                WHERE (password IS NULL OR password = '')
+                  AND password_hash IS NOT NULL
+            """)
 
-            print(
-                "Migración completada: "
-                "columna password agregada."
-            )
+        conexion.commit()
 
-        else:
+        print("Migración de contraseñas completada.")
 
-            print(
-                "La columna password ya existe."
-            )
+    except Exception:
+        conexion.rollback()
+        raise
 
     finally:
-
         conexion.close()
+
 class PedidoItem(db.Model):
     __tablename__ = "pedido_items"
 
