@@ -498,7 +498,143 @@ class PedidoItem(db.Model):
 # ============================================================
 # CAJA: VENTAS FISICAS Y DIGITALES
 # ============================================================
+def migrar_costos_historicos():
 
+    conexion = sqlite3.connect(BASE_DATOS, timeout=20)
+
+    try:
+        for tabla in ("ventas_caja_items", "pedido_items"):
+
+            columnas = {
+                fila[1]
+                for fila in conexion.execute(
+                    f"PRAGMA table_info({tabla})"
+                ).fetchall()
+            }
+
+            if "costo_unitario" not in columnas:
+                conexion.execute(f"""
+                    ALTER TABLE {tabla}
+                    ADD COLUMN costo_unitario NUMERIC(10, 2)
+                """)
+
+        conexion.commit()
+
+    except Exception:
+        conexion.rollback()
+        raise
+
+    finally:
+        conexion.close()
+def registrar_items_venta(venta, productos_solicitados):
+    """
+    Registra los artículos de una venta y guarda el costo histórico
+    de cada producto para calcular correctamente las ganancias.
+
+    venta: objeto VentaCaja ya creado.
+    productos_solicitados: lista de diccionarios con:
+        - producto_id
+        - cantidad
+        - precio (opcional)
+    """
+
+    from decimal import Decimal, ROUND_HALF_UP
+
+    total_venta = Decimal("0.00")
+    total_costo = Decimal("0.00")
+
+    for item in productos_solicitados:
+        producto_id = item.get("producto_id")
+        cantidad = int(item.get("cantidad", 0))
+
+        if not producto_id or cantidad <= 0:
+            raise ValueError("Producto o cantidad inválida.")
+
+        producto = db.session.execute(
+            text("""
+                SELECT
+                    id,
+                    nombre,
+                    precio_compra,
+                    precio_manofactura,
+                    precio_venta,
+                    stock
+                FROM productos
+                WHERE id = :producto_id
+            """),
+            {"producto_id": producto_id}
+        ).mappings().first()
+
+        if not producto:
+            raise ValueError(
+                f"No se encontró el producto con ID {producto_id}."
+            )
+
+        stock_actual = int(producto["stock"] or 0)
+
+        if stock_actual < cantidad:
+            raise ValueError(
+                f"Stock insuficiente para {producto['nombre']}. "
+                f"Disponible: {stock_actual}."
+            )
+
+        precio_unitario = Decimal(
+            str(item.get("precio", producto["precio_venta"] or 0))
+        ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+        costo_compra = Decimal(
+            str(producto["precio_compra"] or 0)
+        )
+
+        costo_fabricacion = Decimal(
+            str(producto["precio_manofactura"] or 0)
+        )
+
+        costo_unitario = (
+            costo_compra + costo_fabricacion
+        ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+        subtotal = (
+            precio_unitario * cantidad
+        ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+        costo_total_item = (
+            costo_unitario * cantidad
+        ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+        detalle = VentaCajaItem(
+            venta_id=venta.id,
+            producto_id=producto["id"],
+            cantidad=cantidad,
+            precio_unitario=precio_unitario,
+            costo_unitario=costo_unitario
+        )
+
+        db.session.add(detalle)
+
+        # Descontar existencias
+        db.session.execute(
+            text("""
+                UPDATE productos
+                SET stock = stock - :cantidad
+                WHERE id = :producto_id
+            """),
+            {
+                "cantidad": cantidad,
+                "producto_id": producto_id
+            }
+        )
+
+        total_venta += subtotal
+        total_costo += costo_total_item
+
+    return {
+        "total": total_venta.quantize(Decimal("0.01")),
+        "costo": total_costo.quantize(Decimal("0.01")),
+        "ganancia": (total_venta - total_costo).quantize(
+            Decimal("0.01")
+        )
+    }
 class VentaCaja(db.Model):
     __tablename__ = "ventas_caja"
 
@@ -581,47 +717,22 @@ class VentaCaja(db.Model):
 class VentaCajaItem(db.Model):
     __tablename__ = "ventas_caja_items"
 
-    id = db.Column(
-        db.Integer,
-        primary_key=True
-    )
-
+    id = db.Column(db.Integer, primary_key=True)
     venta_id = db.Column(
         db.Integer,
         db.ForeignKey("ventas_caja.id"),
-        nullable=False,
-        index=True
-    )
-
-    producto_codigo = db.Column(
-        db.String(80),
         nullable=False
     )
-
-    nombre = db.Column(
-        db.String(200),
-        nullable=False
-    )
-
-    cantidad = db.Column(
+    producto_id = db.Column(
         db.Integer,
+        db.ForeignKey("productos.id"),
         nullable=False
     )
+    cantidad = db.Column(db.Integer, nullable=False)
+    precio_unitario = db.Column(db.Numeric(10, 2), nullable=False)
+    costo_unitario = db.Column(db.Numeric(10, 2), nullable=True)
 
-    precio_unitario = db.Column(
-        db.Numeric(10, 2),
-        nullable=False
-    )
-
-    total = db.Column(
-        db.Numeric(10, 2),
-        nullable=False
-    )
-
-    venta = db.relationship(
-        "VentaCaja",
-        back_populates="productos"
-    )
+    producto = db.relationship("Producto")
 
 class CompradorExterno(db.Model):
     __tablename__ = "compradores_externos"
@@ -904,15 +1015,192 @@ def caja():
 # ============================================================
 # REGISTRAR VENTAS EN CAJA
 # ============================================================
+@app.route("/admin/finanzas")
+@administrador_requerido
+def admin_finanzas():
+    return render_template("finanzas.html")
+   
+@app.route("/api/admin/finanzas/ventas", methods=["GET"])
+@administrador_requerido
+def obtener_historial_ventas():
 
-@app.route(
-    "/api/admin/caja/venta",
-    methods=["POST"]
-)
+    try:
+        ventas = db.session.scalars(
+            select(VentaCaja).order_by(
+                VentaCaja.fecha.desc()
+            )
+        ).all()
+
+        pedidos = db.session.scalars(
+            select(Pedido).order_by(
+                Pedido.fecha.desc()
+            )
+        ).all()
+
+        resultado = []
+
+        ingresos = Decimal("0.00")
+        costos = Decimal("0.00")
+        pendientes = Decimal("0.00")
+
+        for venta in ventas:
+
+            detalles = []
+            costo_venta = Decimal("0.00")
+
+            for item in venta.productos:
+
+                costo = (
+                    item.costo_unitario
+                    if item.costo_unitario is not None
+                    else None
+                )
+
+                if costo is not None:
+                    costo_venta += Decimal(str(costo)) * item.cantidad
+
+                detalles.append({
+                    "codigo": item.producto_codigo,
+                    "producto": item.nombre,
+                    "cantidad": item.cantidad,
+                    "precio": str(item.precio_unitario),
+                    "costo_unitario": (
+                        str(costo) if costo is not None else None
+                    ),
+                    "total": str(item.total)
+                })
+
+            pagada = venta.estado_pago == "pagado"
+
+            if pagada:
+                ingresos += Decimal(str(venta.total))
+                costos += costo_venta
+            else:
+                pendientes += Decimal(str(venta.total))
+
+            resultado.append({
+                "tipo": "venta_caja",
+                "id": venta.id,
+                "fecha": venta.fecha.isoformat(),
+                "comprador": venta.comprador_nombre,
+                "contacto": venta.comprador_contacto or "",
+                "canal": venta.canal,
+                "subtotal": str(venta.subtotal),
+                "descuento": str(venta.descuento),
+                "total": str(venta.total),
+                "metodo_pago": venta.metodo_pago,
+                "estado_pago": venta.estado_pago,
+                "costo": str(costo_venta),
+                "ganancia": (
+                    str(Decimal(str(venta.total)) - costo_venta)
+                    if pagada and all(
+                        item.costo_unitario is not None
+                        for item in venta.productos
+                    )
+                    else None
+                ),
+                "detalles": detalles
+            })
+
+        for pedido in pedidos:
+
+            detalles = []
+            costo_pedido = Decimal("0.00")
+
+            for item in pedido.productos:
+
+                costo = item.costo_unitario
+
+                if costo is not None:
+                    costo_pedido += (
+                        Decimal(str(costo)) * item.cantidad
+                    )
+
+                detalles.append({
+                    "codigo": item.producto_codigo,
+                    "producto": item.nombre,
+                    "cantidad": item.cantidad,
+                    "precio": str(item.precio_unitario),
+                    "costo_unitario": (
+                        str(costo) if costo is not None else None
+                    ),
+                    "total": str(item.total)
+                })
+
+            pagado = pedido.estado.lower() == "pagado"
+
+            if pagado:
+                ingresos += Decimal(str(pedido.total))
+                costos += costo_pedido
+            else:
+                pendientes += Decimal(str(pedido.total))
+
+            resultado.append({
+                "tipo": "pedido",
+                "id": pedido.id,
+                "fecha": pedido.fecha.isoformat(),
+                "comprador": (
+                    pedido.usuario.username
+                    if pedido.usuario else "Desconocido"
+                ),
+                "contacto": (
+                    pedido.usuario.email
+                    if pedido.usuario else ""
+                ),
+                "canal": "digital",
+                "subtotal": str(pedido.subtotal),
+                "descuento": str(pedido.descuento),
+                "total": str(pedido.total),
+                "metodo_pago": pedido.metodo_pago,
+                "estado_pago": pedido.estado,
+                "costo": str(costo_pedido),
+                "ganancia": (
+                    str(Decimal(str(pedido.total)) - costo_pedido)
+                    if pagado and all(
+                        item.costo_unitario is not None
+                        for item in pedido.productos
+                    )
+                    else None
+                ),
+                "detalles": detalles
+            })
+
+        resultado.sort(
+            key=lambda x: x["fecha"],
+            reverse=True
+        )
+
+        ganancia = ingresos - costos
+
+        return jsonify({
+            "ventas": resultado,
+            "resumen": {
+                "ingresos": str(ingresos),
+                "costos": str(costos),
+                "ganancia_bruta": str(ganancia),
+                "perdida": str(max(Decimal("0"), -ganancia)),
+                "pendiente_cobro": str(pendientes),
+                "operaciones": len(resultado)
+            }
+        })
+
+    except Exception:
+        db.session.rollback()
+
+        app.logger.exception(
+            "Error consultando el historial financiero."
+        )
+
+        return jsonify({
+            "error": "No se pudo cargar el historial financiero."
+        }), 500
 @app.route(
     "/api/admin/caja/compradores-externos",
     methods=["GET"]
 )
+@administrador_requerido
+def listar_compradores_externos():
+
 @administrador_requerido
 def listar_compradores_externos():
 
@@ -936,6 +1224,180 @@ def listar_compradores_externos():
     "/api/admin/caja/venta",
     methods=["POST"]
 )
+@app.route("/api/admin/finanzas/ventas", methods=["GET"])
+@administrador_requerido
+def obtener_historial_ventas():
+
+    try:
+        ventas = db.session.scalars(
+            select(VentaCaja).order_by(
+                VentaCaja.fecha.desc()
+            )
+        ).all()
+
+        pedidos = db.session.scalars(
+            select(Pedido).order_by(
+                Pedido.fecha.desc()
+            )
+        ).all()
+
+        resultado = []
+
+        ingresos = Decimal("0.00")
+        costos = Decimal("0.00")
+        pendientes = Decimal("0.00")
+
+        for venta in ventas:
+
+            detalles = []
+            costo_venta = Decimal("0.00")
+
+            for item in venta.productos:
+
+                costo = (
+                    item.costo_unitario
+                    if item.costo_unitario is not None
+                    else None
+                )
+
+                if costo is not None:
+                    costo_venta += Decimal(str(costo)) * item.cantidad
+
+                detalles.append({
+                    "codigo": item.producto_codigo,
+                    "producto": item.nombre,
+                    "cantidad": item.cantidad,
+                    "precio": str(item.precio_unitario),
+                    "costo_unitario": (
+                        str(costo) if costo is not None else None
+                    ),
+                    "total": str(item.total)
+                })
+
+            pagada = venta.estado_pago == "pagado"
+
+            if pagada:
+                ingresos += Decimal(str(venta.total))
+                costos += costo_venta
+            else:
+                pendientes += Decimal(str(venta.total))
+
+            resultado.append({
+                "tipo": "venta_caja",
+                "id": venta.id,
+                "fecha": venta.fecha.isoformat(),
+                "comprador": venta.comprador_nombre,
+                "contacto": venta.comprador_contacto or "",
+                "canal": venta.canal,
+                "subtotal": str(venta.subtotal),
+                "descuento": str(venta.descuento),
+                "total": str(venta.total),
+                "metodo_pago": venta.metodo_pago,
+                "estado_pago": venta.estado_pago,
+                "costo": str(costo_venta),
+                "ganancia": (
+                    str(Decimal(str(venta.total)) - costo_venta)
+                    if pagada and all(
+                        item.costo_unitario is not None
+                        for item in venta.productos
+                    )
+                    else None
+                ),
+                "detalles": detalles
+            })
+
+        for pedido in pedidos:
+
+            detalles = []
+            costo_pedido = Decimal("0.00")
+
+            for item in pedido.productos:
+
+                costo = item.costo_unitario
+
+                if costo is not None:
+                    costo_pedido += (
+                        Decimal(str(costo)) * item.cantidad
+                    )
+
+                detalles.append({
+                    "codigo": item.producto_codigo,
+                    "producto": item.nombre,
+                    "cantidad": item.cantidad,
+                    "precio": str(item.precio_unitario),
+                    "costo_unitario": (
+                        str(costo) if costo is not None else None
+                    ),
+                    "total": str(item.total)
+                })
+
+            pagado = pedido.estado.lower() == "pagado"
+
+            if pagado:
+                ingresos += Decimal(str(pedido.total))
+                costos += costo_pedido
+            else:
+                pendientes += Decimal(str(pedido.total))
+
+            resultado.append({
+                "tipo": "pedido",
+                "id": pedido.id,
+                "fecha": pedido.fecha.isoformat(),
+                "comprador": (
+                    pedido.usuario.username
+                    if pedido.usuario else "Desconocido"
+                ),
+                "contacto": (
+                    pedido.usuario.email
+                    if pedido.usuario else ""
+                ),
+                "canal": "digital",
+                "subtotal": str(pedido.subtotal),
+                "descuento": str(pedido.descuento),
+                "total": str(pedido.total),
+                "metodo_pago": pedido.metodo_pago,
+                "estado_pago": pedido.estado,
+                "costo": str(costo_pedido),
+                "ganancia": (
+                    str(Decimal(str(pedido.total)) - costo_pedido)
+                    if pagado and all(
+                        item.costo_unitario is not None
+                        for item in pedido.productos
+                    )
+                    else None
+                ),
+                "detalles": detalles
+            })
+
+        resultado.sort(
+            key=lambda x: x["fecha"],
+            reverse=True
+        )
+
+        ganancia = ingresos - costos
+
+        return jsonify({
+            "ventas": resultado,
+            "resumen": {
+                "ingresos": str(ingresos),
+                "costos": str(costos),
+                "ganancia_bruta": str(ganancia),
+                "perdida": str(max(Decimal("0"), -ganancia)),
+                "pendiente_cobro": str(pendientes),
+                "operaciones": len(resultado)
+            }
+        })
+
+    except Exception:
+        db.session.rollback()
+
+        app.logger.exception(
+            "Error consultando el historial financiero."
+        )
+
+        return jsonify({
+            "error": "No se pudo cargar el historial financiero."
+        }), 500
 @administrador_requerido
 def registrar_venta_caja():
 
@@ -2792,14 +3254,11 @@ def herramienta_ia_buscarproductos(texto):
 # ============================================================
 # EJECUCIÓN
 # ============================================================
-# Inicialización de tablas
+
 inicializar_base_datos()
-
-# Migración de contraseñas
 migrar_usuarios_password()
-
-# Inventario
 crear_tabla_productos()
+migrar_costos_historicos()
 
 if __name__ == "__main__":
     modo_debug = os.getenv("FLASK_DEBUG", "false").lower() in {

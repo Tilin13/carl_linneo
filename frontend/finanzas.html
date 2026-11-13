@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <title>Finanzas | Linneo</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/variables.css') }}">
+
+    <script src="{{ url_for('static', filename='js/mj.js') }}"
+            defer></script>
+</head>
+
+<body>
+
+<main class="admin-pagina">
+
+    <header class="admin-encabezado">
+        <div>
+            <p class="admin-etiqueta">LINNEO · ADMINISTRACIÓN</p>
+            <h1>Control financiero</h1>
+            <p>Historial de operaciones, costos y rentabilidad.</p>
+        </div>
+    </header>
+
+    <section class="tarjeta">
+        <h2>Resumen financiero</h2>
+
+        <div class="resumen-financiero">
+
+            <article>
+                <p>Ingresos cobrados</p>
+                <strong id="ingresos">$0.00</strong>
+            </article>
+
+            <article>
+                <p>Costo de mercancía vendida</p>
+                <strong id="costos">$0.00</strong>
+            </article>
+
+            <article>
+                <p>Ganancia bruta</p>
+                <strong id="ganancia">$0.00</strong>
+            </article>
+
+            <article>
+                <p>Pérdida</p>
+                <strong id="perdida">$0.00</strong>
+            </article>
+
+            <article>
+                <p>Pendiente de cobro</p>
+                <strong id="pendiente">$0.00</strong>
+            </article>
+
+            <article>
+                <p>Operaciones registradas</p>
+                <strong id="operaciones">0</strong>
+            </article>
+
+        </div>
+    </section>
+
+    <section class="tarjeta">
+
+        <h2>Historial de compras y ventas</h2>
+
+        <label for="buscar">
+            Buscar comprador o producto
+        </label>
+
+        <input type="search"
+               id="buscar"
+               placeholder="Escribe un nombre o producto">
+
+        <label for="filtro_estado">Estado del pago</label>
+
+        <select id="filtro_estado">
+            <option value="">Todos</option>
+            <option value="pagado">Pagado</option>
+            <option value="pendiente">Pendiente</option>
+        </select>
+
+        <button type="button" id="actualizar">
+            Actualizar historial
+        </button>
+
+        <p id="mensaje"></p>
+
+        <div style="overflow-x:auto">
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Comprador</th>
+                        <th>Tipo</th>
+                        <th>Total</th>
+                        <th>Pago</th>
+                        <th>Detalles</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tabla_ventas">
+                    <tr>
+                        <td colspan="7">Cargando operaciones...</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+
+    </section>
+
+    <section class="tarjeta" id="detalle_seccion" hidden>
+
+        <h2>Detalle de la operación</h2>
+
+        <div id="detalle_venta"></div>
+
+    </section>
+
+</main>
+
+</body>
+</html>
