@@ -495,6 +495,128 @@ class PedidoItem(db.Model):
         back_populates="productos"
     )
 
+# ============================================================
+# CAJA: VENTAS FISICAS Y DIGITALES
+# ============================================================
+
+class VentaCaja(db.Model):
+    __tablename__ = "ventas_caja"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Comprador registrado: opcional.
+    usuario_id = db.Column(
+        db.Integer,
+        db.ForeignKey("usuarios.id"),
+        nullable=True,
+        index=True
+    )
+
+    # Datos del comprador conservados como historial.
+    comprador_nombre = db.Column(
+        db.String(150),
+        nullable=False
+    )
+
+    comprador_contacto = db.Column(
+        db.String(255),
+        nullable=True
+    )
+
+    # Canal de venta: fisico o digital.
+    canal = db.Column(
+        db.String(20),
+        nullable=False
+    )
+
+    fecha = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+
+    subtotal = db.Column(
+        db.Numeric(10, 2),
+        nullable=False
+    )
+
+    descuento = db.Column(
+        db.Numeric(10, 2),
+        nullable=False,
+        default=0
+    )
+
+    total = db.Column(
+        db.Numeric(10, 2),
+        nullable=False
+    )
+
+    metodo_pago = db.Column(
+        db.String(30),
+        nullable=False
+    )
+
+    estado_pago = db.Column(
+        db.String(20),
+        nullable=False,
+        default="pagado"
+    )
+
+    # Relaciones.
+    usuario = db.relationship("User")
+
+    productos = db.relationship(
+        "VentaCajaItem",
+        back_populates="venta",
+        cascade="all, delete-orphan"
+    )
+
+
+class VentaCajaItem(db.Model):
+    __tablename__ = "ventas_caja_items"
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    venta_id = db.Column(
+        db.Integer,
+        db.ForeignKey("ventas_caja.id"),
+        nullable=False,
+        index=True
+    )
+
+    producto_codigo = db.Column(
+        db.String(80),
+        nullable=False
+    )
+
+    nombre = db.Column(
+        db.String(200),
+        nullable=False
+    )
+
+    cantidad = db.Column(
+        db.Integer,
+        nullable=False
+    )
+
+    precio_unitario = db.Column(
+        db.Numeric(10, 2),
+        nullable=False
+    )
+
+    total = db.Column(
+        db.Numeric(10, 2),
+        nullable=False
+    )
+
+    venta = db.relationship(
+        "VentaCaja",
+        back_populates="productos"
+    )
+
 class CodigoAdmin(db.Model):
     # Se conserva por compatibilidad con la base de datos existente.
     # Ya no se utiliza para iniciar sesión.
@@ -741,6 +863,373 @@ def agregar_cabeceras_seguridad(response):
 @administrador_requerido
 def caja():
     return render_template("caja.html")
+
+# ============================================================
+# REGISTRAR VENTAS EN CAJA
+# ============================================================
+
+@app.route(
+    "/api/admin/caja/venta",
+    methods=["POST"]
+)
+@administrador_requerido
+def registrar_venta_caja():
+
+    datos = request.get_json(silent=True)
+
+    if not isinstance(datos, dict):
+        return jsonify({
+            "error": "Datos de venta no válidos."
+        }), 400
+
+    usuario_id = datos.get("usuario_id")
+    comprador_nombre = str(
+        datos.get("comprador_nombre", "")
+    ).strip()
+
+    comprador_contacto = str(
+        datos.get("comprador_contacto", "")
+    ).strip()
+
+    canal = datos.get("canal")
+    metodo_pago = datos.get("metodo_pago")
+    estado_pago = datos.get("estado_pago", "pagado")
+
+    productos = datos.get("productos")
+    descuento_porcentaje = datos.get("descuento", 0)
+
+    # --------------------------------------------------------
+    # VALIDAR CANAL
+    # --------------------------------------------------------
+
+    if canal not in ("fisico", "digital"):
+        return jsonify({
+            "error": "Canal de venta no válido."
+        }), 400
+
+    # --------------------------------------------------------
+    # VALIDAR MÉTODO DE PAGO
+    # --------------------------------------------------------
+
+    metodos_validos = {
+        "efectivo",
+        "tarjeta",
+        "transferencia",
+        "pago_en_linea"
+    }
+
+    if metodo_pago not in metodos_validos:
+        return jsonify({
+            "error": "Método de pago no válido."
+        }), 400
+
+    if estado_pago not in ("pagado", "pendiente"):
+        return jsonify({
+            "error": "Estado de pago no válido."
+        }), 400
+
+    # --------------------------------------------------------
+    # VALIDAR COMPRADOR
+    # --------------------------------------------------------
+
+    comprador = None
+
+    if usuario_id is not None:
+
+        if (
+            isinstance(usuario_id, bool)
+            or not isinstance(usuario_id, int)
+            or usuario_id <= 0
+        ):
+            return jsonify({
+                "error": "Comprador registrado no válido."
+            }), 400
+
+        comprador = db.session.get(User, usuario_id)
+
+        if comprador is None:
+            return jsonify({
+                "error": "El usuario seleccionado no existe."
+            }), 404
+
+        # Los datos se toman de la cuenta real.
+        comprador_nombre = comprador.username
+
+        comprador_contacto = comprador.email
+
+    else:
+
+        if (
+            not comprador_nombre
+            or len(comprador_nombre) > 150
+        ):
+            return jsonify({
+                "error": "Introduce el nombre del comprador."
+            }), 400
+
+        if len(comprador_contacto) > 255:
+            return jsonify({
+                "error": "El contacto es demasiado largo."
+            }), 400
+
+    # --------------------------------------------------------
+    # VALIDAR DESCUENTO
+    # --------------------------------------------------------
+
+    try:
+
+        if isinstance(descuento_porcentaje, bool):
+            raise ValueError
+
+        descuento_porcentaje = Decimal(
+            str(descuento_porcentaje)
+        )
+
+        if (
+            not descuento_porcentaje.is_finite()
+            or not Decimal("0") <= descuento_porcentaje
+            <= Decimal("100")
+        ):
+            raise ValueError
+
+    except (
+        ValueError,
+        TypeError,
+        InvalidOperation
+    ):
+
+        return jsonify({
+            "error": "El descuento no es válido."
+        }), 400
+
+    # --------------------------------------------------------
+    # VALIDAR PRODUCTOS
+    # --------------------------------------------------------
+
+    if (
+        not isinstance(productos, list)
+        or not productos
+        or len(productos) > 100
+    ):
+        return jsonify({
+            "error": "Agrega productos a la venta."
+        }), 400
+
+    cantidades = {}
+
+    for item in productos:
+
+        if not isinstance(item, dict):
+            return jsonify({
+                "error": "Producto no válido."
+            }), 400
+
+        codigo = str(
+            item.get("codigo", "")
+        ).strip()
+
+        cantidad = item.get("cantidad")
+
+        if not codigo or len(codigo) > 80:
+            return jsonify({
+                "error": "Código de producto no válido."
+            }), 400
+
+        if (
+            isinstance(cantidad, bool)
+            or not isinstance(cantidad, int)
+            or not 1 <= cantidad <= 10000
+        ):
+            return jsonify({
+                "error": "Cantidad no válida."
+            }), 400
+
+        cantidades[codigo] = (
+            cantidades.get(codigo, 0) + cantidad
+        )
+
+    if any(c > 10000 for c in cantidades.values()):
+        return jsonify({
+            "error": "Cantidad solicitada demasiado grande."
+        }), 400
+
+    # --------------------------------------------------------
+    # REGISTRAR VENTA Y DESCONTAR INVENTARIO
+    # --------------------------------------------------------
+
+    try:
+
+        subtotal = Decimal("0.00")
+
+        venta = VentaCaja(
+            usuario_id=comprador.id if comprador else None,
+            comprador_nombre=comprador_nombre,
+            comprador_contacto=comprador_contacto or None,
+            canal=canal,
+            subtotal=Decimal("0.00"),
+            descuento=Decimal("0.00"),
+            total=Decimal("0.00"),
+            metodo_pago=metodo_pago,
+            estado_pago=estado_pago
+        )
+
+        db.session.add(venta)
+
+        # Obtener ID de la venta.
+        db.session.flush()
+
+        for codigo, cantidad in cantidades.items():
+
+            producto = db.session.execute(
+                text("""
+                    SELECT codigo, nombre, precio_venta
+                    FROM productos
+                    WHERE codigo = :codigo
+                """),
+                {"codigo": codigo}
+            ).mappings().first()
+
+            if producto is None:
+                raise ValueError(
+                    f"No existe el producto {codigo}."
+                )
+
+            # Comprobar y descontar existencias
+            # mediante una única operación condicional.
+
+            resultado = db.session.execute(
+                text("""
+                    UPDATE productos
+                    SET stock = stock - :cantidad
+                    WHERE codigo = :codigo
+                    AND stock >= :cantidad
+                """),
+                {
+                    "codigo": codigo,
+                    "cantidad": cantidad
+                }
+            )
+
+            if resultado.rowcount != 1:
+                raise ValueError(
+                    f"Existencias insuficientes de "
+                    f"{producto['nombre']}."
+                )
+
+            precio = Decimal(
+                str(producto["precio_venta"])
+            ).quantize(Decimal("0.01"))
+
+            if (
+                not precio.is_finite()
+                or precio < 0
+            ):
+                raise ValueError(
+                    "Precio de producto no válido."
+                )
+
+            total_producto = (
+                precio * cantidad
+            ).quantize(Decimal("0.01"))
+
+            subtotal += total_producto
+
+            detalle = VentaCajaItem(
+                venta_id=venta.id,
+                producto_codigo=codigo,
+                nombre=producto["nombre"],
+                cantidad=cantidad,
+                precio_unitario=precio,
+                total=total_producto
+            )
+
+            db.session.add(detalle)
+
+        # ----------------------------------------------------
+        # CALCULAR TOTALES
+        # ----------------------------------------------------
+
+        subtotal = subtotal.quantize(
+            Decimal("0.01")
+        )
+
+        descuento = (
+            subtotal * descuento_porcentaje
+            / Decimal("100")
+        ).quantize(Decimal("0.01"))
+
+        total = (
+            subtotal - descuento
+        ).quantize(Decimal("0.01"))
+
+        venta.subtotal = subtotal
+        venta.descuento = descuento
+        venta.total = total
+
+        # Venta y descuento de stock se confirman juntos.
+        db.session.commit()
+
+        return jsonify({
+            "mensaje": "Venta registrada correctamente.",
+            "venta_id": venta.id,
+            "comprador": venta.comprador_nombre,
+            "canal": venta.canal,
+            "subtotal": str(subtotal),
+            "descuento": str(descuento),
+            "total": str(total),
+            "metodo_pago": venta.metodo_pago,
+            "estado_pago": venta.estado_pago
+        }), 201
+
+    except ValueError as error:
+
+        db.session.rollback()
+
+        return jsonify({
+            "error": str(error)
+        }), 400
+
+    except Exception:
+
+        db.session.rollback()
+
+        app.logger.exception(
+            "Error registrando venta en caja."
+        )
+
+        return jsonify({
+            "error": "No se pudo completar la venta."
+        }), 500
+ 
+@app.route("/api/admin/caja/compradores", methods=["GET"])
+@administrador_requerido
+def caja_compradores():
+
+    try:
+        usuarios = db.session.scalars(
+            select(User).order_by(User.username.asc())
+        ).all()
+
+        return jsonify([
+            {
+                "id": u.id,
+                "username": u.username,
+                "email": u.email,
+                "phone": u.phone or ""
+            }
+            for u in usuarios
+        ])
+
+    except Exception:
+        db.session.rollback()
+
+        app.logger.exception(
+            "Error cargando compradores de caja."
+        )
+
+        return jsonify({
+            "error": "No se pudieron cargar los compradores."
+        }), 500 
  
 @app.route("/api/admin/caja/venta", methods=["POST"])
 @administrador_requerido

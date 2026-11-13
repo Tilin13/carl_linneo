@@ -1,6 +1,7 @@
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -27,48 +28,129 @@
         <div>
             <p class="admin-etiqueta">LINNEO · PUNTO DE VENTA</p>
             <h1>Sistema de caja</h1>
-            <p>Registra ventas y asocia compradores registrados.</p>
+            <p>Administración de ventas físicas y digitales.</p>
         </div>
     </header>
 
+    <!-- 1. CANAL DE VENTA -->
+
     <section class="tarjeta">
 
-        <h2>1. Seleccionar comprador</h2>
+        <h2>1. Tipo de venta</h2>
 
-        <input
-            type="search"
-            id="buscar_comprador"
-            placeholder="Buscar por usuario o correo..."
-        >
+        <label for="canal">Canal de venta</label>
 
-        <select id="comprador" required>
-            <option value="">Cargando compradores...</option>
+        <select id="canal">
+            <option value="fisico">Venta física</option>
+            <option value="digital">Venta digital</option>
         </select>
-
-        <p id="datos_comprador"></p>
 
     </section>
 
+    <!-- 2. COMPRADOR -->
+
     <section class="tarjeta">
 
-        <h2>2. Productos</h2>
+        <h2>2. Comprador</h2>
+
+        <label for="tipo_comprador">
+            Tipo de comprador
+        </label>
+
+        <select id="tipo_comprador">
+            <option value="registrado">
+                Usuario registrado
+            </option>
+
+            <option value="externo">
+                Comprador sin cuenta
+            </option>
+        </select>
+
+        <div id="comprador_registrado">
+
+            <label for="buscar_comprador">
+                Buscar usuario
+            </label>
+
+            <input
+                type="search"
+                id="buscar_comprador"
+                placeholder="Buscar por usuario o correo..."
+            >
+
+            <select id="comprador">
+                <option value="">
+                    Cargando compradores...
+                </option>
+            </select>
+
+            <p id="datos_comprador"></p>
+
+        </div>
+
+        <div id="comprador_externo" hidden>
+
+            <label for="nombre_externo">
+                Nombre del comprador
+            </label>
+
+            <input
+                type="text"
+                id="nombre_externo"
+                maxlength="150"
+                placeholder="Nombre del comprador"
+            >
+
+            <label for="contacto_externo">
+                Correo o teléfono (opcional)
+            </label>
+
+            <input
+                type="text"
+                id="contacto_externo"
+                maxlength="255"
+                placeholder="Correo electrónico o teléfono"
+            >
+
+        </div>
+
+    </section>
+
+    <!-- 3. PRODUCTOS -->
+
+    <section class="tarjeta">
+
+        <h2>3. Productos</h2>
 
         <div>
+
+            <label for="producto">
+                Seleccionar producto
+            </label>
+
             <select id="producto">
-                <option value="">Seleccionar producto...</option>
+                <option value="">
+                    Cargando productos...
+                </option>
             </select>
+
+            <label for="cantidad">
+                Cantidad
+            </label>
 
             <input
                 type="number"
                 id="cantidad"
                 min="1"
+                max="10000"
                 value="1"
-                placeholder="Cantidad"
             >
 
             <button type="button" id="agregar_producto">
                 Agregar producto
             </button>
+
         </div>
 
         <div style="overflow-x:auto;">
@@ -77,8 +159,9 @@
                 <thead>
                     <tr>
                         <th>Producto</th>
+                        <th>Stock disponible</th>
                         <th>Cantidad</th>
-                        <th>Unitario</th>
+                        <th>Precio</th>
                         <th>Total</th>
                         <th>Acción</th>
                     </tr>
@@ -86,19 +169,22 @@
 
                 <tbody id="lista_productos">
                     <tr>
-                        <td colspan="5">No hay productos agregados.</td>
+                        <td colspan="6">
+                            No hay productos agregados.
+                        </td>
                     </tr>
                 </tbody>
-
             </table>
 
         </div>
 
     </section>
 
+    <!-- 4. RESUMEN -->
+
     <section class="tarjeta">
 
-        <h2>3. Resumen de compra</h2>
+        <h2>4. Resumen de compra</h2>
 
         <p>
             Subtotal:
@@ -130,12 +216,46 @@
 
     </section>
 
+    <!-- 5. PAGO -->
+
     <section class="tarjeta">
 
-        <h2>4. Método de pago</h2>
+        <h2>5. Método de pago</h2>
+
+        <label for="metodo_pago">
+            Forma de pago
+        </label>
 
         <select id="metodo_pago">
+
             <option value="efectivo">Efectivo</option>
+
+            <option value="tarjeta">Tarjeta</option>
+
+            <option value="transferencia">
+                Transferencia bancaria
+            </option>
+
+            <option value="pago_en_linea">
+                Pago en línea
+            </option>
+
+        </select>
+
+        <label for="estado_pago">
+            Estado del pago
+        </label>
+
+        <select id="estado_pago">
+
+            <option value="pagado">
+                Pagado
+            </option>
+
+            <option value="pendiente">
+                Pendiente
+            </option>
+
         </select>
 
         <button
