@@ -2254,7 +2254,7 @@ if (botonTerminarCaja) {
         if (!canal || !tipoComprador || !metodoPago || !estadoPago) {
             alert("Completa los datos de la venta.");
             return;
-        }
+        }else{console.error("No se encontró el botón terminar_pago");}
 
         if (tipoComprador === "registrado") {
 
