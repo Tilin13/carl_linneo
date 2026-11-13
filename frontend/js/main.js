@@ -1044,10 +1044,8 @@ if (descuentoCaja) {
 
 }
 
-// Estado inicial.
 
 actualizarTablaCaja();
-=============== */
 
 const selectorComprador = $("comprador");
 const selectorProducto = $("producto");
