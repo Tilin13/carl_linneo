@@ -2915,3 +2915,513 @@ body:has(.popup.visible) {
     }
 }
 
+/* ==================================================
+   LINNEO — SISTEMA DE CAJA
+   Diseño botánico · Vintage · Administrativo
+   ================================================== */
+
+:root {
+    --sombra: 0 6px 20px rgba(35, 55, 42, 0.09);
+    --radio-grande: 18px;
+    --sombra-hover: 0 12px 28px rgba(35, 55, 42, 0.13);
+}
+
+/* 1. PÁGINA GENERAL */
+
+.admin-pagina {
+    width: min(1050px, calc(100% - 36px));
+    margin: 0 auto;
+    padding: 42px 0 65px;
+}
+
+/* 2. ENCABEZADO */
+
+.admin-pagina .admin-encabezado {
+    position: relative;
+    overflow: hidden;
+    padding: 38px;
+    margin-bottom: 30px;
+
+    background:
+        radial-gradient(
+            circle at 95% 10%,
+            rgba(185, 145, 70, 0.20),
+            transparent 35%
+        ),
+        var(--beige);
+
+    border: 1px solid var(--borde);
+    border-radius: 22px;
+
+    box-shadow: var(--sombra);
+}
+
+.admin-pagina .admin-encabezado::after {
+    content: "✳";
+    position: absolute;
+    right: 35px;
+    bottom: -45px;
+
+    color: rgba(76, 99, 67, 0.12);
+    font-size: 180px;
+    line-height: 1;
+
+    pointer-events: none;
+}
+
+.admin-pagina .admin-etiqueta {
+    color: var(--terracota);
+    font-family: Arial, sans-serif;
+    font-size: 0.76rem;
+    font-weight: bold;
+    letter-spacing: 0.17em;
+    margin-bottom: 12px;
+}
+
+.admin-pagina .admin-encabezado h1 {
+    position: relative;
+    z-index: 1;
+
+    margin: 0 0 12px;
+    color: var(--texto);
+
+    font-family: "Cormorant Garamond", serif;
+    font-size: clamp(2.5rem, 5vw, 3.7rem);
+    line-height: 1.1;
+}
+
+.admin-pagina .admin-encabezado p:last-child {
+    position: relative;
+    z-index: 1;
+
+    color: var(--texto-secundario);
+    font-size: 1.05rem;
+    margin-bottom: 0;
+}
+
+/* 3. TARJETAS DE CADA PASO */
+
+.admin-pagina > section.tarjeta {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+
+    margin-bottom: 23px;
+    padding: 28px;
+
+    background-color: var(--tarjeta);
+    color: var(--texto);
+
+    border: 1px solid var(--borde);
+    border-radius: 18px;
+
+    box-shadow: var(--sombra);
+
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease,
+        border-color 0.25s ease;
+}
+
+.admin-pagina > section.tarjeta:hover {
+    border-color: var(--verde-musgo);
+    box-shadow: var(--sombra-hover);
+    transform: translateY(-2px);
+}
+
+/* Títulos */
+
+.admin-pagina > section.tarjeta h2 {
+    position: relative;
+
+    margin: 0 0 8px;
+    padding-bottom: 13px;
+
+    color: var(--texto);
+    font-family: "Cormorant Garamond", serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+
+    border-bottom: 1px solid var(--beige);
+}
+
+.admin-pagina > section.tarjeta h2::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+
+    width: 55px;
+    height: 2px;
+
+    background-color: var(--ocre);
+}
+
+/* 4. ETIQUETAS */
+
+.admin-pagina > section.tarjeta label {
+    display: block;
+
+    color: var(--texto);
+    font-size: 0.96rem;
+    font-weight: 600;
+
+    margin-top: 4px;
+}
+
+/* 5. CAMPOS Y SELECTORES */
+
+.admin-pagina > section.tarjeta input,
+.admin-pagina > section.tarjeta select {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+
+    padding: 11px 14px;
+
+    background-color: #fff;
+    color: var(--texto);
+
+    border: 1px solid var(--borde);
+    border-radius: 10px;
+
+    font-family: inherit;
+    font-size: 1rem;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
+}
+
+/* Corrección del ID producto:
+   En esta página pertenece al selector,
+   no a una página de detalle de producto. */
+
+.admin-pagina select#producto {
+    display: block;
+    min-height: 48px;
+    height: auto;
+    flex: initial;
+}
+
+.admin-pagina > section.tarjeta input:hover,
+.admin-pagina > section.tarjeta select:hover {
+    border-color: var(--verde-musgo);
+}
+
+.admin-pagina > section.tarjeta input:focus,
+.admin-pagina > section.tarjeta select:focus {
+    outline: none;
+
+    border-color: var(--verde-musgo);
+
+    box-shadow:
+        0 0 0 3px rgba(76, 99, 67, 0.15);
+
+    background-color: #fffefa;
+}
+
+.admin-pagina > section.tarjeta input::placeholder {
+    color: #99988b;
+}
+
+/* 6. SECCIÓN DE PRODUCTOS */
+
+.admin-pagina #agregar_producto {
+    align-self: flex-start;
+
+    padding: 12px 22px;
+
+    background-color: var(--ocre);
+    color: var(--texto);
+
+    border: none;
+    border-radius: 50px;
+
+    font-family: inherit;
+    font-size: 0.98rem;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.admin-pagina #agregar_producto:hover {
+    background-color: var(--ocre-oscuro);
+    transform: translateY(-2px);
+    box-shadow: var(--sombra);
+}
+
+/* 7. TABLA DE PRODUCTOS */
+
+.admin-pagina > section.tarjeta > div[style*="overflow-x"] {
+    width: 100%;
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    background-color: #fffefa;
+}
+
+.admin-pagina table {
+    width: 100%;
+    min-width: 680px;
+
+    border-collapse: collapse;
+    color: var(--texto);
+
+    font-size: 0.94rem;
+}
+
+.admin-pagina table thead {
+    background-color: var(--verde-musgo);
+    color: var(--tarjeta);
+}
+
+.admin-pagina table th {
+    padding: 15px 12px;
+
+    font-weight: 600;
+    text-align: center;
+
+    white-space: nowrap;
+}
+
+.admin-pagina table td {
+    padding: 14px 12px;
+
+    text-align: center;
+    border-bottom: 1px solid #e9e4d9;
+}
+
+.admin-pagina table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.admin-pagina table tbody tr:nth-child(even) {
+    background-color: #f5f2e9;
+}
+
+.admin-pagina table tbody tr:hover {
+    background-color: #e9eee3;
+}
+
+.admin-pagina table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* 8. RESUMEN DE COMPRA */
+
+.admin-pagina > section.tarjeta:nth-of-type(4) {
+    background:
+        linear-gradient(
+            135deg,
+            var(--tarjeta),
+            #f0ecdf
+        );
+
+    border-left: 5px solid var(--ocre);
+}
+
+.admin-pagina > section.tarjeta:nth-of-type(4) p {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    margin: 0;
+    padding: 10px 0;
+
+    color: var(--texto-secundario);
+    border-bottom: 1px solid var(--beige);
+}
+
+.admin-pagina > section.tarjeta:nth-of-type(4) p strong {
+    color: var(--texto);
+    font-weight: 700;
+}
+
+.admin-pagina > section.tarjeta:nth-of-type(4) h2:last-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-top: 5px;
+    padding: 16px;
+
+    background-color: var(--beige);
+    border: none;
+    border-radius: 12px;
+
+    color: var(--texto);
+    font-size: 1.65rem;
+}
+
+.admin-pagina > section.tarjeta:nth-of-type(4) h2:last-child::after {
+    display: none;
+}
+
+.admin-pagina #total {
+    color: var(--precio);
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+/* 9. MÉTODO DE PAGO */
+
+.admin-pagina > section.tarjeta:last-child {
+    border-top: 4px solid var(--verde-musgo);
+}
+
+/* Botón principal de confirmación */
+
+.admin-pagina #terminar_pago {
+    width: 100%;
+    min-height: 54px;
+
+    margin: 12px 0 0;
+    padding: 14px 22px;
+
+    background-color: var(--verde-musgo);
+    color: white;
+
+    border: none;
+    border-radius: 50px;
+
+    font-family: inherit;
+    font-size: 1.1rem;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    box-shadow: 0 5px 12px rgba(76, 99, 67, 0.2);
+
+    transition:
+        background-color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.admin-pagina #terminar_pago:hover {
+    background-color: var(--verde-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(76, 99, 67, 0.25);
+}
+
+.admin-pagina #terminar_pago:active {
+    transform: translateY(0);
+}
+
+/* 10. MENSAJES */
+
+.admin-pagina #mensaje_caja {
+    min-height: 0;
+    margin: 0;
+
+    color: var(--verde-musgo);
+    font-size: 0.95rem;
+    font-weight: 600;
+
+    overflow-wrap: anywhere;
+}
+
+/* 11. ACCESIBILIDAD */
+
+.admin-pagina button:focus-visible,
+.admin-pagina input:focus-visible,
+.admin-pagina select:focus-visible {
+    outline: 3px solid var(--ocre);
+    outline-offset: 3px;
+}
+
+/* 12. TABLETAS */
+
+@media (max-width: 800px) {
+    .admin-pagina {
+        width: min(100% - 28px, 700px);
+        padding-top: 28px;
+    }
+
+    .admin-pagina .admin-encabezado {
+        padding: 30px 24px;
+    }
+
+    .admin-pagina > section.tarjeta {
+        padding: 24px;
+    }
+}
+
+/* 13. MÓVILES */
+
+@media (max-width: 600px) {
+    .admin-pagina {
+        width: calc(100% - 22px);
+        padding: 18px 0 35px;
+    }
+
+    .admin-pagina .admin-encabezado {
+        padding: 25px 19px;
+        margin-bottom: 20px;
+        border-radius: 16px;
+    }
+
+    .admin-pagina .admin-encabezado::after {
+        right: 8px;
+        bottom: -25px;
+        font-size: 115px;
+    }
+
+    .admin-pagina > section.tarjeta {
+        padding: 20px 16px;
+        margin-bottom: 16px;
+        gap: 13px;
+
+        border-radius: 14px;
+    }
+
+    .admin-pagina > section.tarjeta h2 {
+        font-size: 1.55rem;
+    }
+
+    .admin-pagina > section.tarjeta:nth-of-type(4) h2:last-child {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .admin-pagina #total {
+        font-size: 1.8rem;
+    }
+
+    .admin-pagina #agregar_producto {
+        width: 100%;
+    }
+
+    .admin-pagina #terminar_pago {
+        min-height: 52px;
+    }
+
+    .admin-pagina table {
+        font-size: 0.86rem;
+    }
+
+    .admin-pagina table th,
+    .admin-pagina table td {
+        padding: 12px 10px;
+    }
+}
+
+/* 14. MOVIMIENTO REDUCIDO */
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-pagina *,
+    .admin-pagina *::before,
+    .admin-pagina *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+
