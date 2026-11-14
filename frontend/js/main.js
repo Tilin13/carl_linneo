@@ -2642,9 +2642,9 @@ if (botonTerminarCaja) {
         let compradorContacto = "";
 
         if (!canal || !tipoComprador || !metodoPago || !estadoPago) {
-            alert("Completa los datos de la venta.");
-            return;
-        }else{console.error("No se encontró el botón terminar_pago");}
+    alert("Completa los datos de la venta.");
+    return;
+}
 
         if (tipoComprador === "registrado") {
 
@@ -2778,6 +2778,41 @@ if (botonTerminarCaja) {
         });
 
     }
+    const tipoCompradorSelect = $("tipo_comprador");
+const compradorRegistrado = $("comprador_registrado");
+const compradorExterno = $("comprador_externo");
+
+function actualizarTipoComprador() {
+    if (!tipoCompradorSelect || !compradorRegistrado || !compradorExterno) {
+        return;
+    }
+
+    const esExterno = tipoCompradorSelect.value === "externo";
+
+    compradorRegistrado.hidden = esExterno;
+    compradorExterno.hidden = !esExterno;
+
+    // Evita que se envíen datos del comprador que no corresponde.
+    const selector = $("comprador");
+    const nombre = $("nombre_externo");
+
+    if (selector) {
+        selector.disabled = esExterno;
+    }
+
+    if (nombre) {
+        nombre.required = esExterno;
+    }
+}
+
+if (tipoCompradorSelect) {
+    tipoCompradorSelect.addEventListener(
+        "change",
+        actualizarTipoComprador
+    );
+
+    actualizarTipoComprador();
+}
        
     const cantidades = document.querySelectorAll(".cantidad_especie");
     const filtros = document.querySelectorAll(".filtro_especie");
