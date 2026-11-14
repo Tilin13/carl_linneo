@@ -3044,8 +3044,35 @@ def herramienta_ia_buscarproductos(texto):
 # ============================================================
 # EJECUCIÓN
 # ============================================================
+def migrar_columnas_pedidos():
+    conexion = sqlite3.connect(BASE_DATOS, timeout=20)
 
+    try:
+        columnas = {
+            fila[1]
+            for fila in conexion.execute(
+                "PRAGMA table_info(pedidos)"
+            ).fetchall()
+        }
+
+        if "descuento" not in columnas:
+            conexion.execute("""
+                ALTER TABLE pedidos
+                ADD COLUMN descuento NUMERIC(10, 2) NOT NULL DEFAULT 0
+            """)
+
+        if "total" not in columnas:
+            conexion.execute("""
+                ALTER TABLE pedidos
+                ADD COLUMN total NUMERIC(10, 2) NOT NULL DEFAULT 0
+            """)
+
+        conexion.commit()
+
+    finally:
+        conexion.close()
 inicializar_base_datos()
+migrar_columnas_pedidos()
 migrar_usuarios_password()
 migrar_descuento_pedidos()
 crear_tabla_productos()
