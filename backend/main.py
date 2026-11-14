@@ -1115,7 +1115,7 @@ def migrar_metodo_pago_pedidos():
             "Migración aplicada: pedidos.metodo_pago"
         )
 @app.route(
-    "api/admin/finanzas/ventas",
+    "/api/admin/finanzas/ventas",
     methods=["GET"]
 )
 @administrador_requerido
