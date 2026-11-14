@@ -486,6 +486,12 @@ class PedidoItem(db.Model):
         nullable=False
     )
 
+    # AGREGA ESTA COLUMNA
+    costo_unitario = db.Column(
+        db.Numeric(10, 2),
+        nullable=True
+    )
+
     total = db.Column(
         db.Numeric(10, 2),
         nullable=False
@@ -495,7 +501,6 @@ class PedidoItem(db.Model):
         "Pedido",
         back_populates="productos"
     )
-
 # ============================================================
 # CAJA: VENTAS FISICAS Y DIGITALES
 # ============================================================
