@@ -1096,9 +1096,26 @@ def listar_compradores_externos():
         return jsonify({
             "error": "No se pudieron cargar los compradores."
         }), 500
+def migrar_metodo_pago_pedidos():
+    inspector = inspect(db.engine)
 
+    columnas = {
+        columna["name"]
+        for columna in inspector.get_columns("pedidos")
+    }
+
+    if "metodo_pago" not in columnas:
+        with db.engine.begin() as conexion:
+            conexion.execute(text("""
+                ALTER TABLE pedidos
+                ADD COLUMN metodo_pago VARCHAR(50)
+            """))
+
+        app.logger.info(
+            "Migración aplicada: pedidos.metodo_pago"
+        )
 @app.route(
-    "/admin/finanzas/ventas",
+    "api/admin/finanzas/ventas",
     methods=["GET"]
 )
 @administrador_requerido
@@ -3077,6 +3094,7 @@ migrar_usuarios_password()
 migrar_descuento_pedidos()
 crear_tabla_productos()
 migrar_costos_historicos()
+migrar_metodo_pago_pedidos()
 
 if __name__ == "__main__":
     modo_debug = os.getenv("FLASK_DEBUG", "false").lower() in {
