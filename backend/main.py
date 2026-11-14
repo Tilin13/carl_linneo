@@ -1293,9 +1293,6 @@ def obtener_historial_ventas():
             "error": "No se pudo cargar el historial financiero."
         }), 500
 
-
-@app.route("/api/admin/caja/venta", methods=["POST"])
-
 @app.route("/api/admin/caja/venta", methods=["POST"])
 @administrador_requerido
 def registrar_venta_caja():

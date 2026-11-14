@@ -87,16 +87,13 @@ async function cargarFinanzas() {
 
     try {
 
-        const respuesta = await fetch(
-            "/admin/finanzas/ventas",
-            {
-                method: "GET",
-                credentials: "same-origin",
-                headers: {
-                    "Accept": "application/json"
-                }
-            }
-        );
+        const respuesta = await fetch("/api/admin/finanzas/ventas", {
+    method: "GET",
+    credentials: "same-origin",
+    headers: {
+        "Accept": "application/json"
+    }
+});
 
         const datos = await respuesta.json();
 
