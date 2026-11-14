@@ -3095,7 +3095,8 @@ migrar_usuarios_password()
 migrar_descuento_pedidos()
 crear_tabla_productos()
 migrar_costos_historicos()
-migrar_metodo_pago_pedidos()
+with app.app_context():
+    migrar_metodo_pago_pedidos()
 
 if __name__ == "__main__":
     modo_debug = os.getenv("FLASK_DEBUG", "false").lower() in {
