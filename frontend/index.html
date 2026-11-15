@@ -1,883 +1,444 @@
-<!DOCTYPE html>
-<html lang="es">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-
-    <title>Linneo | Historia natural y coleccionismo</title>
-
-    <meta name="description" content="Descubre Linneo: piezas de historia natural, entomología, fósiles y minerales.">
-
-    <link rel="stylesheet" href="/css/variables.css">
-
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='linneo_isotipo.png') }}">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
-</head>
-
-<body>
-
-    <!-- ==============================
-         BARRA DE NAVEGACIÓN
-    =============================== -->
-
-    <header class="barra" id="barra_global">
-
-        <a class="marca-linneo" href="/" aria-label="Ir al inicio de Linneo">
-            <span class="marca-simbolo">✳</span>
-            <span>Linneo</span>
-        </a>
-
-        <nav class="navegacion-principal" aria-label="Navegación principal">
-            <a href="/">Inicio</a>
-            <a href="{{ url_for('catalogo') }}">Catálogo</a>
-            <a href="/informacion">Nosotros</a>
-            <a href="/contacto">Contacto</a>
-        </nav>
-
-        <div class="acciones-navegacion">
-
-            <button class="button icono-btn"
-                    id="buscarbtn"
-                    type="button"
-                    aria-label="Buscar productos">
-                ⌕
-            </button>
-
-            <button class="button icono-btn"
-                    id="carritobtn"
-                    type="button"
-                    aria-label="Abrir carrito">
-                🛒
-            </button>
-
-            <div id="carrito_productos">
-                <h5 id="cantidad_productos">0</h5>
-            </div>
-
-            <button class="button icono-btn"
-                    id="favoritos_btn"
-                    type="button"
-                    aria-label="Abrir favoritos">
-                ♡
-            </button>
-
-            <button class="button icono-btn"
-                    id="menubtn"
-                    type="button"
-                    aria-label="Abrir menú">
-                ☰
-            </button>
-
-        </div>
-
-        <div class="busqueda-contenedor" id="busqueda_div">
-            <form action="/buscar" method="GET">
-
-                <input
-                    type="search"
-                    id="barra_busqueda"
-                    name="busqueda"
-                    placeholder="Buscar productos..."
-                    autocomplete="off"
-                    aria-label="Buscar productos"
-                >
-
-                <button class="button" type="submit">
-                    Buscar
-                </button>
-
-            </form>
-        </div>
-
-        <div class="sesion-navegacion">
-
-            {% if current_user.is_authenticated %}
-
-                <span>
-                    Hola, {{ current_user.username }}
-                </span>
-
-                <a href="{{ url_for('mi_cuenta') }}">
-                    Mi cuenta
-                </a>
-
-                <form action="{{ url_for('cerrar_sesion') }}" method="POST">
-
-                    <input
-                        type="hidden"
-                        name="csrf_token"
-                        value="{{ csrf_token() }}"
-                    >
-
-                    <button class="button-sesion" type="submit">
-                        Cerrar sesión
-                    </button>
-
-                </form>
-
-            {% else %}
-
-                <a href="{{ url_for('login') }}">
-                    Iniciar sesión
-                </a>
-
-                <a class="enlace-registro" href="{{ url_for('registrarse') }}">
-                    Crear cuenta
-                </a>
-
-            {% endif %}
-
-        </div>
-
-    </header>
-
-
-    <main>
-
-        <!-- ==============================
-             PORTADA PRINCIPAL
-        =============================== -->
-
-        <section class="portada-linneo">
-
-            <div class="portada-contenido">
-
-                <p class="portada-etiqueta">
-                    LINNEO · HISTORIA NATURAL
-                </p>
-
-                <h1>
-                    La naturaleza merece
-                    <span>un lugar especial.</span>
-                </h1>
-
-                <p>
-                    Descubre piezas únicas de historia natural,
-                    entomología, fósiles y minerales.
-                    Pequeñas ventanas a la belleza del mundo natural.
-                </p>
-
-                <a href="{{ url_for('catalogo') }}" class="button portada-boton">
-                    Explorar colección
-                </a>
-
-            </div>
-
-            <div id="tarjeta_logo">
-                <img
-                    src="{{ url_for('static', filename='tarjeta2.png') }}"
-                    alt="Colección de historia natural Linneo"
-                >
-            </div>
-
-        </section>
-
-
-        <!-- ==============================
-             NOVEDADES
-        =============================== -->
-
-        <section id="novedades_bar">
-
-            <div class="seccion-introduccion">
-
-                <p class="seccion-etiqueta">DESCUBRE LO NUEVO</p>
-
-                <h2>Novedades</h2>
-
-                <p>
-                    Nuevas piezas y descubrimientos
-                    que llegan a nuestra colección.
-                </p>
-
-            </div>
-
-            <div class="novedades-galeria">
-
-                <button
-                    class="button novedades-control"
-                    id="atras_novedades"
-                    type="button"
-                    aria-label="Novedad anterior">
-                    ←
-                </button>
-
-                <div class="novedades-imagen-contenedor">
-
-                    <img
-                        id="imagen"
-                        src="{{ url_for('static', filename='novedades/1.jpg') }}"
-                        alt="Novedad actual de Linneo"
-                    >
-
-                    <p id="contador">1</p>
-
-                </div>
-
-                <button
-                    class="button novedades-control"
-                    id="adelante_novedades"
-                    type="button"
-                    aria-label="Siguiente novedad">
-                    →
-                </button>
-
-            </div>
-
-        </section>
-
-
-        <!-- ==============================
-             PRODUCTOS DESTACADOS
-        =============================== -->
-
-        <section class="seccion-productos">
-
-            <div class="encabezado-seccion">
-
-                <div>
-                    <p class="seccion-etiqueta">NUESTRA COLECCIÓN</p>
-                    <h2>Productos destacados</h2>
-                    <p>
-                        Explora algunas de las piezas disponibles
-                        en nuestra tienda.
-                    </p>
-                </div>
-
-                <a href="{{ url_for('catalogo') }}" class="enlace-secundario">
-                    Ver todo el catálogo →
-                </a>
-
-            </div>
-
-            <div id="productos">
-
-                {% for producto in productos %}
-
-                    <article
-                        class="tarjeta_producto"
-                        data-categoria="{{ producto.categoria }}"
-                        data-nombre="{{ producto.nombre }}"
-                        data-precio="{{ producto.precio_venta }}"
-                    >
-
-                        <div class="producto_imagen">
-
-                            <img
-                                src="{{ url_for(
-                                    'imagenes',
-                                    nombre_archivo=producto.nombre.replace(' ', '_') + '.jpg'
-                                ) }}"
-                                alt="{{ producto.nombre }}"
-                                loading="lazy"
-                            >
-
-                        </div>
-
-                        <div class="producto_info">
-
-                            <p class="producto-etiqueta">
-                                {{ producto.categoria }}
-                            </p>
-
-                            <h3>{{ producto.nombre }}</h3>
-
-                            <p class="producto_categoria">
-                                {{ producto.categoria }}
-                            </p>
-
-                            <p class="producto_precio">
-                                ${{ producto.precio_venta }}
-                            </p>
-
-                            <p class="producto_stock">
-                                Stock disponible: {{ producto.stock }}
-                            </p>
-
-                            <span
-                                class="disponibilidad_favicon"
-                                aria-label="Disponibilidad del producto">
-                            </span>
-
-                            <a
-                                class="producto-enlace"
-                                href="{{ url_for(
-                                    'producto',
-                                    nombre=producto.nombre
-                                ) }}"
-                            >
-                                Conocer la pieza →
-                            </a>
-
-                            <div class="producto-acciones">
-
-                                <button
-                                    class="agregar-carrito button"
-                                    type="button"
-                                    data-producto-id="{{ producto.codigo }}"
-                                    data-producto-nombre="{{ producto.nombre }}"
-                                    data-producto-precio="{{ producto.precio_venta }}"
-                                    data-producto-stock="{{ producto.stock }}"
-                                    {% if producto.stock <= 0 %}disabled{% endif %}
-                                >
-                                    {% if producto.stock > 0 %}
-                                        Agregar al carrito
-                                    {% else %}
-                                        Sin existencias
-                                    {% endif %}
-                                </button>
-
-                                <button
-                                    class="favoritos_ b"
-                                    type="button"
-                                    data-producto-id="{{ producto.codigo }}"
-                                    data-producto-nombre="{{ producto.nombre }}"
-                                    data-producto-precio="{{ producto.precio_venta }}"
-                                    data-producto-stock="{{ producto.stock }}"
-                                    aria-label="Agregar a favoritos"
-                                    aria-pressed="false"
-                                >
-                                    ♡
-                                </button>
-
-                            </div>
-
-                        </div>
-
-                    </article>
-
-                {% else %}
-
-                    <div class="sin-productos">
-                        <p>Actualmente no hay productos disponibles.</p>
-                    </div>
-
-                {% endfor %}
-
-            </div>
-
-        </section>
-
-
-        <!-- ==============================
-             CATEGORÍAS
-        =============================== -->
-
-        <section id="categorias_portada">
-
-            <div class="encabezado-seccion categorias-encabezado">
-
-                <p class="seccion-etiqueta">EXPLORA POR CATEGORÍA</p>
-
-                <h2>Un mundo por descubrir</h2>
-
-                <p>
-                    Encuentra piezas que conectan la ciencia,
-                    la naturaleza y la belleza.
-                </p>
-
-            </div>
-
-            <a
-                id="mariposas_btn"
-                class="botones_catalogo"
-                href="{{ url_for('catalogo', categoria='Mariposas') }}"
-            >
-                <span>01</span>
-                Mariposas
-            </a>
-
-            <a
-                id="escarabajos_btn"
-                class="botones_catalogo"
-                href="{{ url_for('catalogo', categoria='Escarabajos') }}"
-            >
-                <span>02</span>
-                Escarabajos
-            </a>
-
-            <a
-                id="odonatos_btn"
-                class="botones_catalogo"
-                href="{{ url_for('catalogo', categoria='Odonatos') }}"
-            >
-                <span>03</span>
-                Odonatos
-            </a>
-
-            <a
-                id="fosiles_btn"
-                class="botones_catalogo"
-                href="{{ url_for('catalogo', categoria='Fosiles') }}"
-            >
-                <span>04</span>
-                Fósiles
-            </a>
-
-            <a
-                id="esqueletos_btn"
-                class="botones_catalogo"
-                href="{{ url_for('catalogo', categoria='Esqueletos') }}"
-            >
-                <span>05</span>
-                Esqueletos
-            </a>
-
-            <a
-                id="minerales_btn"
-                class="botones_catalogo"
-                href="{{ url_for('catalogo', categoria='Minerales') }}"
-            >
-                <span>06</span>
-                Minerales
-            </a>
-
-            <div class="categorias-final">
-
-                <h3>¿Quieres descubrir toda nuestra colección?</h3>
-
-                <a class="button" href="{{ url_for('catalogo') }}">
-                    Explorar catálogo completo
-                </a>
-
-            </div>
-
-        </section>
-
-
-        <!-- ==============================
-             PEDIDOS PERSONALIZADOS
-        =============================== -->
-
-        <section id="pedidos_personalizados" class="personalizados-seccion">
-
-            <div class="personalizados-contenido">
-
-                <p class="seccion-etiqueta">
-                    UNA PIEZA HECHA PARA TI
-                </p>
-
-                <h2>Pedidos personalizados</h2>
-
-                <p>
-                    Tú escoges las especies, los colores y los detalles.
-                    Creamos una composición especial adaptada a tus gustos
-                    y a tu espacio.
-                </p>
-
-                <button
-                    id="ver_personalizado"
-                    class="button"
-                    type="button"
-                >
-                    Descubrir pedidos personalizados
-                </button>
-
-            </div>
-
-            <div class="personalizados-decoracion" aria-hidden="true">
-                ✳
-            </div>
-
-        </section>
-
-
-        <!-- ==============================
-             CUIDADOS
-        =============================== -->
-
-        <section class="cuidados-seccion">
-
-            <div class="encabezado-seccion">
-
-                <p class="seccion-etiqueta">CONSERVACIÓN</p>
-
-                <h2>Cuida tus piezas</h2>
-
-                <p>
-                    Para que nuestras piezas de historia natural
-                    puedan acompañarte durante muchos años,
-                    es importante conservarlas adecuadamente.
-                </p>
-
-            </div>
-
-            <div class="cuidados-grid">
-
-                <article class="cuidado-tarjeta">
-
-                    <span class="cuidado-numero">01</span>
-
-                    <h3>Mantener lejos de la humedad</h3>
-
-                    <p>
-                        Evita mojar las piezas y no retires los agentes
-                        desecantes de sílica que vienen incluidos.
-                    </p>
-
-                </article>
-
-                <article class="cuidado-tarjeta">
-
-                    <span class="cuidado-numero">02</span>
-
-                    <h3>Evitar la luz directa</h3>
-
-                    <p>
-                        Evita exponerlas durante largos periodos al sol
-                        directo o a luces ultravioletas, ya que pueden
-                        producir decoloración.
-                    </p>
-
-                </article>
-
-                <article class="cuidado-tarjeta">
-
-                    <span class="cuidado-numero">03</span>
-
-                    <h3>No abrir los cuadros</h3>
-
-                    <p>
-                        Evita abrir los cuadros, ya que pueden entrar
-                        humedad y otros agentes que deterioren las piezas.
-                    </p>
-
-                </article>
-
-            </div>
-
-        </section>
-
-
-        <!-- ==============================
-             CÓMO COMPRAR
-        =============================== -->
-
-        <section id="compra_tarjeta">
-
-            <div class="encabezado-seccion">
-
-                <p class="seccion-etiqueta">COMPRA DE FORMA SENCILLA</p>
-
-                <h2>¿Cómo realizar una compra?</h2>
-
-                <p>
-                    En solo cuatro pasos podrás adquirir tus piezas favoritas.
-                </p>
-
-            </div>
-
-            <div class="pasos_compra">
-
-                <article class="paso">
-
-                    <h3 class="h1_redondos">1</h3>
-
-                    <h3>Escoge tus productos</h3>
-
-                    <p>
-                        Explora el catálogo y agrega tus piezas
-                        favoritas al carrito.
-                    </p>
-
-                </article>
-
-                <article class="paso">
-
-                    <h3 class="h1_redondos">2</h3>
-
-                    <h3>Inicia sesión</h3>
-
-                    <p>
-                        Inicia sesión o crea una cuenta
-                        para continuar con tu compra.
-                    </p>
-
-                </article>
-
-                <article class="paso">
-
-                    <h3 class="h1_redondos">3</h3>
-
-                    <h3>Elige tu envío</h3>
-
-                    <p>
-                        Selecciona el método de envío
-                        y proporciona tu dirección.
-                    </p>
-
-                </article>
-
-                <article class="paso">
-
-                    <h3 class="h1_redondos">4</h3>
-
-                    <h3>Finaliza tu compra</h3>
-
-                    <p>
-                        Completa el proceso de pago
-                        y espera tus piezas.
-                    </p>
-
-                </article>
-
-            </div>
-
-        </section>
-
-    </main>
-
-
-    <!-- ==============================
-         CARRITO LATERAL
-    =============================== -->
-
-    <aside id="carrito_bar" class="barra" aria-label="Carrito de compras">
-
-        <div class="panel-lateral-encabezado">
-
-            <h2>Mi carrito</h2>
-
-            <button
-                id="cerrar_carrito"
-                class="button"
-                type="button"
-                aria-label="Cerrar carrito">
-                ×
-            </button>
-
-        </div>
-
-        <div class="tabla-carrito-contenedor">
-
-            <table class="tabla-carrito">
-
-                <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th>Cantidad</th>
-                        <th>Precio</th>
-                        <th>Eliminar</th>
-                    </tr>
-                </thead>
-
-                <tbody id="lista_carrito">
-                    <tr>
-                        <td colspan="4">El carrito está vacío.</td>
-                    </tr>
-                </tbody>
-
-            </table>
-
-        </div>
-
-        <div class="carrito-resumen">
-
-            <h3>
-                Subtotal:
-                <span id="subtotal_carrito">$0.00</span>
-            </h3>
-
-            <button
-                type="button"
-                id="comprar_carrito_btn"
-                class="button"
-            >
-                Continuar con la compra
-            </button>
-
-        </div>
-
-    </aside>
-
-
-    <!-- ==============================
-         FAVORITOS
-    =============================== -->
-
-    <aside id="favoritos_bar" class="barra" aria-label="Productos favoritos">
-
-        <div class="panel-lateral-encabezado">
-
-            <h2>Mis favoritos</h2>
-
-            <button
-                type="button"
-                id="cerrar_favoritos"
-                class="button"
-                aria-label="Cerrar favoritos">
-                ×
-            </button>
-
-        </div>
-
-        <div id="contenido_favoritos">
-            <p>No tienes productos favoritos.</p>
-        </div>
-
-    </aside>
-
-
-    <!-- ==============================
-         MENÚ LATERAL
-    =============================== -->
-
-    <nav id="menu_bar" class="barra" aria-label="Menú principal">
-
-        <button
-            id="atras_menu"
-            type="button"
-            class="button"
-            aria-label="Cerrar menú"
-        >
-            ← Volver
+	<!DOCTYPE html>
+	<html lang="es">
+
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport"
+      content="width=device-width, initial-scale=1">
+
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0"
+		>
+		<meta name="csrf-token" content="{{ csrf_token() }}">
+
+		<title>Linneo</title>
+
+		<link rel="stylesheet" href="/css/variables.css">
+	
+		<link
+			rel="icon"
+			type="image/png"
+			href="linneo_isotipo.png"
+		>
+	</head>
+
+
+
+	<body>
+
+		<header class="barra" id="barra_global">
+
+			<h2>Linneo</h2>
+
+
+			<button
+				class="button"
+				id="buscarbtn"
+				type="button"
+			>
+				🔍︎
+			</button>
+
+			<button
+				class="button"
+				id="carritobtn"
+				type="button"
+			>
+				🛒
+			</button>
+			<div id="carrito_productos" >
+				<h5 id="cantidad_productos"></h5>
+			</div>
+			<button 
+				class="button"
+				id="favoritos_btn"
+				type="button"
+			>♡
+			</button>
+
+			<button
+				class="button"
+				id="menubtn"
+				type="button"
+			>
+				☰
+			</button>
+		{% if current_user.is_authenticated %}
+
+    <span>
+        Hola, {{ current_user.username }}
+    </span>
+
+    <a href="{{ url_for('mi_cuenta') }}">
+        Mi cuenta
+    </a>
+
+    <form action="{{ url_for('cerrar_sesion') }}"
+          method="POST">
+
+        <input type="hidden"
+               name="csrf_token"
+               value="{{ csrf_token() }}">
+
+        <button type="submit">
+            Cerrar sesión
         </button>
 
-        <a class="text_menu" href="/">
-            Inicio
-        </a>
+    </form>
 
-        <a class="text_menu" href="{{ url_for('catalogo') }}">
-            Catálogo
-        </a>
+{% else %}
 
-        <a class="text_menu" href="/contacto">
-            Contáctanos
-        </a>
+    <a href="{{ url_for('login') }}">
+        Iniciar sesión
+    </a>
 
-        <a class="text_menu" href="/informacion">
-            ¿Quiénes somos?
-        </a>
+    <a href="{{ url_for('registrarse') }}">
+        Registrarse
+    </a>
 
-        {% if current_user.is_authenticated %}
+{% endif %}
+			<div id="busqueda_div">
+				<form action="/buscar" method="GET">
 
-            <a class="text_menu" href="{{ url_for('mi_cuenta') }}">
-                Mi cuenta
-            </a>
+				<input
+					type="search"
+					id="barra_busqueda"
+					name="busqueda"
+					placeholder="Buscar productos..."
+					autocomplete="off"
+				>
 
-        {% else %}
+				<button
+					class="button"
+					type="submit"
+				>
+					Buscar
+				</button>
+			</form>
+			
 
-            <a class="text_menu" href="{{ url_for('login') }}">
-                Iniciar sesión
-            </a>
+			</div>
+			
 
-            <a class="text_menu" href="{{ url_for('registrarse') }}">
-                Registrarse
-            </a>
+		</header>
 
-        {% endif %}
+		<main>
 
-    </nav>
+			<div id="tarjeta_logo">
+				<img
+				src="tarjeta2.png"
+				alt="tarjeta"
+				>
+			
+			</div>
 
+		</main>
+		<nav id="novedades_bar">
+			<h1>NOVEDADES</h1>
+			
+			<div>
+				<img
+				 id="imagen" src="novedades/1.jpg" alt="novedad actual" height="100" width="120"
+				>
+				<button class="button" id="atras_novedades">➡⬅️</button>
+				<button class="button" id="adelante_novedades">⬅️</button>
+				<p id="contador">1</p>
+			</div>
+			<div>
+			</div>
+		</nav>
+		<button id="chat_btn" class="button">💬</button>
 
-    <!-- ==============================
-         POPUP DE BIENVENIDA
-    =============================== -->
+<!-- PANEL DEL CARRITO -->
+<nav id="carrito_bar" class="barra">
 
-    <div
-        class="popup"
-        id="popup"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="titulo_popup"
-        aria-describedby="descripcion_popup"
-    >
+    <h1>MI CARRITO</h1>
 
-        <button
-            id="quitar_popup"
-            type="button"
-            aria-label="Cerrar ventana"
-        >
-            ×
-        </button>
+    <table>
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio</th>
+                <th>Eliminar</th>
+            </tr>
+        </thead>
 
-        <p class="seccion-etiqueta">BIENVENIDO A LINNEO</p>
+        <tbody id="lista_carrito">
+            <tr>
+                <td colspan="4">El carrito está vacío.</td>
+            </tr>
+        </tbody>
+    </table>
 
-        <h2 id="titulo_popup">
-            Un pequeño descubrimiento para comenzar.
-        </h2>
-
-        <p id="descripcion_popup">
-            Descubre nuestra colección de historia natural
-            y disfruta de un 10% de descuento en tu primera compra.
-        </p>
-
-        <a class="button" href="{{ url_for('registrarse') }}">
-            Crear mi cuenta
-        </a>
-
-    </div>
-
-
-    <!-- ==============================
-         BOTÓN DE CHAT
-    =============================== -->
+    <h3>
+        Subtotal:
+        <span id="subtotal_carrito">$0.00</span>
+    </h3>
 
     <button
-        id="chat_btn"
-        class="button"
         type="button"
-        aria-label="Abrir chat de atención">
-        💬
+        id="comprar_carrito_btn"
+        class="button"
+    >
+        Comprar
     </button>
 
+    <button
+        type="button"
+        id="cerrar_carrito"
+        class="button"
+    >
+        Cerrar carrito
+    </button>
 
-    <!-- ==============================
-         PIE DE PÁGINA
-    =============================== -->
+</nav>
 
-    <footer class="footer-linneo">
+	<nav id="favoritos_bar" class="barra">
 
-        <div class="footer-contenido">
+    <h1>MIS FAVORITOS</h1>
 
-            <div class="footer-marca">
+    <div id="contenido_favoritos">
+        <p>No tienes productos favoritos.</p>
+    </div>
 
-                <h2>✳ Linneo</h2>
+    <button
+        type="button"
+        id="cerrar_favoritos"
+        class="button"
+    >
+        Cerrar
+    </button>
 
-                <p>
-                    Un espacio dedicado a la belleza,
-                    la ciencia y la historia natural.
+</nav>
+		<hr>
+		<h1 class="centrado">Productos</h1>
+		<section id="productos">
+		
+			{% for producto in productos %}
+
+				<article
+					class="tarjeta_producto"
+					data-categoria="{{ producto.categoria }}"
+					data-nombre="{{ producto.nombre }}"
+					data-precio="{{ producto.precio_venta }}"
+				>
+
+				<div class="producto_imagen">
+
+					<img
+						src="{{ url_for(
+							'imagenes',
+							nombre_archivo=producto.nombre.replace(' ', '_') + '.jpg'
+						) }}"
+						alt="{{ producto.nombre }}"
+					>
+
+            </div>
+
+            <div class="producto_info">
+
+                <h2>{{ producto.nombre }}</h2>
+
+                <a href="/producto/{{ producto.nombre.replace(' ', '%20') }}">
+                    Ver producto
+                </a>
+
+                <p class="producto_categoria">
+                    Categoría: {{ producto.categoria }}
                 </p>
 
-            </div>
+                <p class="producto_precio">
+                    Precio: ${{ producto.precio_venta }}
+                </p>
 
-            <div class="footer-enlaces">
+                <p class="producto_stock">
+                    Stock: {{ producto.stock }}
+                </p>
+                <div class="disponibilidad_favicon">
+				</div>
 
-                <h3>Explora</h3>
+<button
+    class="agregar-carrito button"
+    type="button"
+    data-producto-id="{{ producto.codigo }}"
+    data-producto-nombre="{{ producto.nombre }}"
+    data-producto-precio="{{ producto.precio_venta }}"
+    data-producto-stock="{{ producto.stock }}"
+>
+    Agregar al carrito
+</button>
 
-                <a href="{{ url_for('catalogo') }}">Catálogo</a>
-                <a href="/informacion">Sobre nosotros</a>
-                <a href="/contacto">Contacto</a>
+<button
+    class="favoritos_ b"
+    type="button"
+    data-producto-id="{{ producto.codigo }}"
+    data-producto-nombre="{{ producto.nombre }}"
+    data-producto-precio="{{ producto.precio_venta }}"
+    data-producto-stock="{{ producto.stock }}"
+    aria-label="Agregar a favoritos"
+    aria-pressed="false"
+>
+    ♡
+</button>
+       
 
-            </div>
+        </article>
 
-            <div class="footer-enlaces">
+    {% else %}
 
-                <h3>Tu cuenta</h3>
+        <p class="sin-productos">
+            No hay productos disponibles.
+        </p>
 
-                <a href="{{ url_for('login') }}">Iniciar sesión</a>
-                <a href="{{ url_for('registrarse') }}">Registrarse</a>
+    {% endfor %}
 
-            </div>
+		</section>
+		
+<section>
+    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Mariposas') }}">
+        Mariposas
+    </a>
 
+    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Escarabajos') }}">
+        Escarabajos
+    </a>
+
+    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Odonatos') }}">
+        Odonatos
+    </a>
+
+    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Fosiles') }}">
+        Fósiles
+    </a>
+
+    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Esqueletos') }}">
+        Esqueletos
+    </a>
+
+    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Minerales') }}">
+        Minerales
+    </a>
+
+    <h1>REVISA EL CATÁLOGO COMPLETO</h1>
+
+    <a class="button" href="{{ url_for('catalogo') }}">
+        Catálogo completo
+    </a>
+</section>
+
+		<hr>
+		<section id="pedidos_personalizados" class="tarjeta">
+			<h1>Pedidos personalizados</h1>
+			<h2>Tu escoges las especies, los colores y sobre todo un cuadro único adaptado a ti</h2>
+			<button id="ver_personalizado" class="button">Ver más información sobre pedidos personalizados</button>
+		</section>
+<hr>
+<h1>Cuidados de las piezas entomológicas y de minerales</h1>
+<p>Para que nuestras hermosas piezas duren varios años decorando y divulgando la ciencia es necesario conocer algunos cuidados 
+para conservarlas</p>
+<div>
+	<h2>1. Mantener lejos de la humedad</h2>		
+	<p>Evitar mojar las piezas y no retirar los agentes desecantes de silica que ya vienen incluidos</p>
+</div>
+<div>
+	<h2>2. Mantenerlos lejos de la luz</h2>
+	<p>Evitar exponerlos por largos periodos de tiempo a la luz del sol directa o luces ultravioletas, ya que pueden 
+	decolorar las piezas</p>
+</div>
+<div>
+	<h2>3. No abrirlos</h2>
+	<p>Evitar abrir los cuadros, ya que al hacerlo pueden entrar hongos y humedad que arruinan las piezas</p>
+</div>
+
+<nav class="barra" id="compra_tarjeta">
+    <h1>¿Cómo realizar una compra?</h1>
+
+    <div class="pasos_compra">
+
+        <div class="paso">
+            <h1 class="h1_redondos">1</h1>
+            <h3>Escoge los productos de tu elección en el carrito</h3>
         </div>
 
-        <div class="footer-final">
-
-            <p>© {{ current_year if current_year is defined else '2026' }} Linneo. Todos los derechos reservados.</p>
-
+        <div class="paso">
+            <h1 class="h1_redondos">2</h1>
+            <h3>Inicia sesión o crea una cuenta</h3>
         </div>
 
-    </footer>
+        <div class="paso">
+            <h1 class="h1_redondos">3</h1>
+            <h3>Escoge el método y dirección de envío</h3>
+        </div>
 
+        <div class="paso">
+            <h1 class="h1_redondos">4</h1>
+            <h3>Paga</h3>
+        </div>
 
-    <!-- JAVASCRIPT -->
-    <script src="/js/main.js" defer></script>
+    </div></nav>
+				
+			
+			</div>
+		</nav>
+		
+	<div class="popup" id="popup" role="dialog" aria-modal="true" aria-labelledby="titulo_popup">
+		<button
+			id="quitar_popup"
+			type="button"
+			aria-label="Cerrar ventana"
+		>×</button>
 
-</body>
-</html>
+		<h2 id="titulo_popup">10% de descuento en tu primera compra</h2>
+		<p>Descubre nuestra colección de historia natural.</p>
+		<h2>¡Crea tu cuenta ahora!</h2>
+
+		<a class="button" href="/registrarse">
+			Crear cuenta
+		</a>
+	</div>
+
+		<nav class="barra" id="menu_bar">
+
+			<button
+				id="atras_menu"
+				type="button"
+				class="button"
+			>
+				↚
+			</button>
+			<div>
+				<a
+					class="text_menu"
+					href="/catalogo"
+				>
+					Catálogo
+				</a>
+			</div>
+			<div>
+				<a
+					class="text_menu"
+					href="/contacto"
+				>
+					Contáctanos
+				</a>
+			</div>
+			<div>
+				<a
+				
+				
+					class="text_menu"
+					href="/informacion"
+				>
+					¿Quiénes somos?
+				</a>
+			</div>
+
+		</nav>
+
+		<script src="/js/main.js"></script>
+
+	</body>
+
+	</html>
