@@ -2198,140 +2198,252 @@ actualizarFavoritos();
         });
 
     });
+// ================================================
+// PROMOCIONES: ADMINISTRADOR
+// ================================================
 
-/* =========================================
-   CATÁLOGO: CATEGORÍAS Y ORDENAMIENTO
-========================================= */
+const formularioPromocion = $("admin_promociones");
+const mensajePromocion = $("mensaje_promociones");
+const listaPromocionesAdmin = $("lista_promociones");
 
-const catalogo = $("catalogo");
-const menuCategorias = $("categoria_menu");
-const filtrosBtn = $("filtrosbtn");
-const filtroMenu = $("filtro_menu");
+async function cargarPromocionesAdmin() {
+    if (!listaPromocionesAdmin) return;
 
-function normalizarCategoria(texto) {
+    try {
+        const promociones = await peticion("/api/admin/promociones");
 
-    return normalizarTexto(texto);
+        if (!Array.isArray(promociones)) {
+            throw new Error("La respuesta de promociones no es válida.");
+        }
 
-}
+        listaPromocionesAdmin.replaceChildren();
 
-// FILTRAR POR CATEGORÍA
+        if (promociones.length === 0) {
+            listaPromocionesAdmin.textContent =
+                "No hay promociones registradas.";
+            return;
+        }
 
-if (menuCategorias && catalogo) {
+        promociones.forEach(function(promo) {
+            const tarjeta = document.createElement("div");
 
-    menuCategorias.querySelectorAll("[data-categoria]")
-        .forEach(function(boton) {
+            const nombre = document.createElement("p");
+            nombre.textContent =
+                `${promo.nombre} - ${promo.descuento}% de descuento`;
 
-            boton.addEventListener("click", function() {
+            const codigo = document.createElement("p");
+            codigo.textContent =
+                "Código: " + promo.producto_codigo;
 
-                const categoria = normalizarCategoria(
-                    this.dataset.categoria
-                );
+            const eliminar = document.createElement("button");
+            eliminar.type = "button";
+            eliminar.textContent = "Eliminar promoción";
 
-                catalogo.querySelectorAll(".tarjeta_producto")
-                    .forEach(function(producto) {
+            eliminar.addEventListener("click", async function() {
+                if (!confirm("¿Eliminar esta promoción?")) return;
 
-                        const categoriaProducto =
-                            normalizarCategoria(
-                                producto.dataset.categoria
-                            );
+                eliminar.disabled = true;
 
-                        producto.hidden =
-                            categoria !== "" &&
-                            categoriaProducto !== categoria;
+                try {
+                    await peticion(
+                        "/api/admin/promociones/" + promo.id,
+                        { method: "DELETE" }
+                    );
 
-                    });
+                    await cargarPromocionesAdmin();
 
-                menuCategorias.querySelectorAll(".sec_btn")
-                    .forEach(function(b) {
-                        b.classList.remove("activo");
-                    });
+                    if (mensajePromocion) {
+                        mensajePromocion.textContent =
+                            "Promoción eliminada correctamente.";
+                    }
 
-                this.classList.add("activo");
-
+                } catch(error) {
+                    alert(error.message);
+                    eliminar.disabled = false;
+                }
             });
 
+            tarjeta.append(nombre, codigo, eliminar);
+            listaPromocionesAdmin.appendChild(tarjeta);
         });
 
+    } catch(error) {
+        console.error("Error al cargar promociones:", error);
+
+        if (mensajePromocion) {
+            mensajePromocion.textContent = error.message;
+        }
+    }
 }
 
+if (formularioPromocion) {
+    formularioPromocion.addEventListener("submit", async function(evento) {
+        evento.preventDefault();
 
-// ABRIR Y CERRAR FILTROS
+        const codigo = $("codigo_promocion")?.value.trim();
+        const descuento = Number($("descuento_promocion")?.value);
+        const inicioValor = $("inicio_promocion")?.value;
+        const finValor = $("fin_promocion")?.value;
 
-if (filtrosBtn && filtroMenu) {
+        if (!codigo || !inicioValor || !finValor) {
+            if (mensajePromocion) {
+                mensajePromocion.textContent =
+                    "Completa todos los campos.";
+            }
+            return;
+        }
 
-    filtrosBtn.addEventListener("click", function() {
+        const inicio = new Date(inicioValor);
+        const fin = new Date(finValor);
 
-        const abierto = !filtroMenu.hidden;
+        if (
+            !Number.isFinite(descuento) ||
+            descuento <= 0 ||
+            descuento > 100 ||
+            Number.isNaN(inicio.getTime()) ||
+            Number.isNaN(fin.getTime()) ||
+            fin <= inicio
+        ) {
+            if (mensajePromocion) {
+                mensajePromocion.textContent =
+                    "Revisa el descuento y las fechas.";
+            }
+            return;
+        }
 
-        filtroMenu.hidden = abierto;
+        const datos = {
+            codigo: codigo,
+            descuento: descuento,
+            inicio: inicio.toISOString(),
+            fin: fin.toISOString()
+        };
 
-        filtrosBtn.setAttribute(
-            "aria-expanded",
-            String(!abierto)
-        );
-
-    });
-
-}
-
-
-// ORDENAR PRODUCTOS
-
-if (catalogo) {
-
-    const opcionesOrden = document.querySelectorAll(
-        'input[name="orden"]'
-    );
-
-    opcionesOrden.forEach(function(opcion) {
-
-        opcion.addEventListener("change", function() {
-
-            const tarjetas = Array.from(
-                catalogo.querySelectorAll(".tarjeta_producto")
+        try {
+            const resultado = await peticion(
+                "/api/admin/promociones",
+                {
+                    method: "POST",
+                    body: JSON.stringify(datos)
+                }
             );
 
-            const orden = this.value;
+            if (mensajePromocion) {
+                mensajePromocion.textContent =
+                    resultado.mensaje ||
+                    "Promoción creada correctamente.";
+            }
 
-            tarjetas.sort(function(a, b) {
+            formularioPromocion.reset();
+            await cargarPromocionesAdmin();
 
-                const nombreA = normalizarTexto(
-                    a.dataset.nombre
-                );
-
-                const nombreB = normalizarTexto(
-                    b.dataset.nombre
-                );
-
-                const precioA = Number(a.dataset.precio) || 0;
-                const precioB = Number(b.dataset.precio) || 0;
-
-                if (orden === "alfabetico") {
-                    return nombreA.localeCompare(nombreB);
-                }
-
-                if (orden === "mayorprecio") {
-                    return precioB - precioA;
-                }
-
-                if (orden === "menorprecio") {
-                    return precioA - precioB;
-                }
-
-                return 0;
-
-            });
-
-            tarjetas.forEach(function(tarjeta) {
-                catalogo.appendChild(tarjeta);
-            });
-
-        });
-
+        } catch(error) {
+            if (mensajePromocion) {
+                mensajePromocion.textContent = error.message;
+            }
+        }
     });
-
 }
 
+cargarPromocionesAdmin();
+
+
+// ================================================
+// PROMOCIONES: TIENDA
+// ================================================
+
+const contenedorOfertas = $("productos_promocion");
+
+async function cargarOfertas() {
+    if (!contenedorOfertas) return;
+
+    try {
+        const promociones = await peticion("/api/promociones");
+
+        if (!Array.isArray(promociones)) {
+            throw new Error("La respuesta de ofertas no es válida.");
+        }
+
+        contenedorOfertas.replaceChildren();
+
+        if (promociones.length === 0) {
+            contenedorOfertas.textContent =
+                "No hay ofertas disponibles actualmente.";
+            return;
+        }
+
+        promociones.forEach(function(promo) {
+            const tarjeta = document.createElement("article");
+            tarjeta.className = "tarjeta_producto tarjeta_oferta";
+
+            const nombre = document.createElement("h3");
+            nombre.textContent = promo.nombre;
+
+            const precioOriginal = document.createElement("p");
+            precioOriginal.textContent =
+                "Precio original: " +
+                formatoPrecio(promo.precio_original);
+
+            const descuento = document.createElement("p");
+            descuento.textContent =
+                "¡" + promo.descuento + "% de descuento!";
+
+            const precioOferta = document.createElement("p");
+            precioOferta.textContent =
+                "Precio de oferta: " +
+                formatoPrecio(promo.precio_oferta);
+
+            const boton = document.createElement("button");
+            boton.type = "button";
+            boton.className = "agregar-carrito";
+            boton.textContent = "Agregar al carrito";
+
+            boton.dataset.productoId = promo.codigo;
+            boton.dataset.productoNombre = promo.nombre;
+            boton.dataset.productoPrecio = promo.precio_oferta;
+            boton.dataset.productoStock = promo.stock;
+
+            if (Number(promo.stock) <= 0) {
+                boton.disabled = true;
+                boton.textContent = "Sin existencias";
+            }
+
+            tarjeta.append(
+                nombre,
+                precioOriginal,
+                descuento,
+                precioOferta,
+                boton
+            );
+
+            contenedorOfertas.appendChild(tarjeta);
+        });
+
+    } catch(error) {
+        console.error("Error al cargar ofertas:", error);
+        contenedorOfertas.textContent =
+            "No se pudieron cargar las ofertas.";
+    }
+}
+
+// Delegación de eventos para los botones creados dinámicamente.
+if (contenedorOfertas) {
+    contenedorOfertas.addEventListener("click", function(evento) {
+        const boton = evento.target.closest(".agregar-carrito");
+
+        if (!boton || !contenedorOfertas.contains(boton)) return;
+
+        agregarAlCarrito(
+            boton.dataset.productoId,
+            boton.dataset.productoNombre,
+            boton.dataset.productoPrecio,
+            boton.dataset.productoStock
+        );
+
+        abrirCarrito();
+    });
+}
+
+cargarOfertas();
 
     // =====================================================
     // ADMINISTRACIÓN: INVENTARIO Y USUARIOS
