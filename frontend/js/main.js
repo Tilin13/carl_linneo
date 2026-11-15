@@ -2199,24 +2199,139 @@ actualizarFavoritos();
 
     });
 
-    // =====================================================
-    // CATÁLOGO COMPLETO
-    // =====================================================
+/* =========================================
+   CATÁLOGO: CATEGORÍAS Y ORDENAMIENTO
+========================================= */
 
-    const catalogoBtn = $("catalogo_completo_btn");
+const catalogo = $("catalogo");
+const menuCategorias = $("categoria_menu");
+const filtrosBtn = $("filtrosbtn");
+const filtroMenu = $("filtro_menu");
 
-    if (catalogoBtn) {
+function normalizarCategoria(texto) {
 
-        catalogoBtn.addEventListener(
-            "click",
-            function () {
+    return normalizarTexto(texto);
 
-                window.location.href = "/catalogo";
+}
 
-            }
+// FILTRAR POR CATEGORÍA
+
+if (menuCategorias && catalogo) {
+
+    menuCategorias.querySelectorAll("[data-categoria]")
+        .forEach(function(boton) {
+
+            boton.addEventListener("click", function() {
+
+                const categoria = normalizarCategoria(
+                    this.dataset.categoria
+                );
+
+                catalogo.querySelectorAll(".tarjeta_producto")
+                    .forEach(function(producto) {
+
+                        const categoriaProducto =
+                            normalizarCategoria(
+                                producto.dataset.categoria
+                            );
+
+                        producto.hidden =
+                            categoria !== "" &&
+                            categoriaProducto !== categoria;
+
+                    });
+
+                menuCategorias.querySelectorAll(".sec_btn")
+                    .forEach(function(b) {
+                        b.classList.remove("activo");
+                    });
+
+                this.classList.add("activo");
+
+            });
+
+        });
+
+}
+
+
+// ABRIR Y CERRAR FILTROS
+
+if (filtrosBtn && filtroMenu) {
+
+    filtrosBtn.addEventListener("click", function() {
+
+        const abierto = !filtroMenu.hidden;
+
+        filtroMenu.hidden = abierto;
+
+        filtrosBtn.setAttribute(
+            "aria-expanded",
+            String(!abierto)
         );
 
-    }
+    });
+
+}
+
+
+// ORDENAR PRODUCTOS
+
+if (catalogo) {
+
+    const opcionesOrden = document.querySelectorAll(
+        'input[name="orden"]'
+    );
+
+    opcionesOrden.forEach(function(opcion) {
+
+        opcion.addEventListener("change", function() {
+
+            const tarjetas = Array.from(
+                catalogo.querySelectorAll(".tarjeta_producto")
+            );
+
+            const orden = this.value;
+
+            tarjetas.sort(function(a, b) {
+
+                const nombreA = normalizarTexto(
+                    a.dataset.nombre
+                );
+
+                const nombreB = normalizarTexto(
+                    b.dataset.nombre
+                );
+
+                const precioA = Number(a.dataset.precio) || 0;
+                const precioB = Number(b.dataset.precio) || 0;
+
+                if (orden === "alfabetico") {
+                    return nombreA.localeCompare(nombreB);
+                }
+
+                if (orden === "mayorprecio") {
+                    return precioB - precioA;
+                }
+
+                if (orden === "menorprecio") {
+                    return precioA - precioB;
+                }
+
+                return 0;
+
+            });
+
+            tarjetas.forEach(function(tarjeta) {
+                catalogo.appendChild(tarjeta);
+            });
+
+        });
+
+    });
+
+}
+
 
     // =====================================================
     // ADMINISTRACIÓN: INVENTARIO Y USUARIOS

@@ -1,412 +1,516 @@
-	<!DOCTYPE html>
-	<html lang="es">
 
-	<head>
-		<meta charset="UTF-8">
+<!DOCTYPE html>
+<html lang="es">
 
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1.0"
-		>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-		<title>Linneo</title>
+    <title>Linneo | Catálogo</title>
 
-		<link rel="stylesheet" href="/css/variables.css">
-	
-		<link
-			rel="icon"
-			type="image/png"
-			href="linneo_isotipo.png"
-		>
-	</head>
+    <link rel="stylesheet" href="/css/variables.css">
 
+    <link rel="icon" type="image/png" href="/linneo_isotipo.png">
+</head>
 
+<body>
 
-	<body>
+    <!-- =================================
+         ENCABEZADO
+    ================================== -->
 
-		<header class="barra" id="barra_global">
+    <header class="barra" id="barra_global">
 
-			<h2>Linneo</h2>
+        <h2>Linneo</h2>
 
+        <button class="button" id="buscarbtn" type="button">
+            🔍︎
+        </button>
 
-			<button
-				class="button"
-				id="buscarbtn"
-				type="button"
-			>
-				🔍︎
-			</button>
+        <button
+            class="button"
+            id="carritobtn"
+            type="button"
+            aria-controls="carrito_bar"
+            aria-expanded="false"
+        >
+            🛒
+        </button>
 
-			<button
-				class="button"
-				id="carritobtn"
-				type="button"
-			>
-				🛒
-			</button>
-			<div id="carrito_productos" >
-				<h5 id="cantidad_productos"></h5>
-			</div>
-			<button 
-				class="button"
-				id="favoritos_btn"
-				type="button"
-			>Favoritos
-			</button>
+        <div id="carrito_productos">
+            <h5 id="cantidad_productos">0</h5>
+        </div>
 
-			<button
-				class="button"
-				id="menubtn"
-				type="button"
-			>
-				☰
-			{% if current_user.is_authenticated %}
-  <span>Hola, {{ current_user.username }}</span>
+        <button
+            class="button"
+            id="favoritos_btn"
+            type="button"
+            aria-controls="favoritos_bar"
+            aria-expanded="false"
+        >
+            ♡
+        </button>
 
-  <form action="{{ url_for('cerrar_sesion') }}" method="POST">
-    <input type="hidden" name="csrf_token"
-           value="{{ csrf_token() }}">
-    <button type="submit">Cerrar sesión</button>
-  </form>
-{% else %}
-  <a href="{{ url_for('login') }}">Iniciar sesión</a>
-  <a href="{{ url_for('registrarse') }}">Registrarse</a>
-{% endif %}
-			<div id="busqueda_div">
-				<form action="/buscar" method="GET">
+        <button class="button" id="menubtn" type="button">
+            ☰
+        </button>
 
-				<input
-					type="search"
-					id="barra_busqueda"
-					name="busqueda"
-					placeholder="Buscar productos..."
-					autocomplete="off"
-				>
+        {% if current_user.is_authenticated %}
 
-				<button
-					class="button"
-					type="submit"
-				>
-					Buscar
-				</button>
-			</form>
-			
+            <span>
+                Hola, {{ current_user.username }}
+            </span>
 
-			</div>
-			
+            <a href="{{ url_for('mi_cuenta') }}">
+                Mi cuenta
+            </a>
 
-		</header>
+            <form
+                action="{{ url_for('cerrar_sesion') }}"
+                method="POST"
+            >
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="{{ csrf_token() }}"
+                >
 
+                <button type="submit">
+                    Cerrar sesión
+                </button>
+            </form>
 
-		<main>
-        <nav class="barra" id="categoria_menu" aria-label="Categorías">
-			<button
-				class="sec_btn"
-				id="todo_catbtn"
-				type="button"
-				data-categoria=""
-			>Todos
-			</button>
-			<button
-				class="sec_btn"
-				id="mariposas_catbtn"
-				type="button"
-				data-categoria="Mariposas"
-			>
-				Mariposas
-			</button>
+        {% else %}
 
-			<button
-				class="sec_btn"
-				id="escarabajos_catbtn"
-				type="button"
-				data-categoria="Escarabajos"
-			>
-				Escarabajos
-			</button>
+            <a href="{{ url_for('login') }}">
+                Iniciar sesión
+            </a>
 
-			<button
-				class="sec_btn"
-				id="otrosinsectos_catbtn"
-				type="button"
-				data-categoria="Odonatos"
-			>
-				Odonatos
-			</button>
-			<button
-				class="sec_btn"
-				id="minerales_catbtn"
-				type="button"
-				data-categoria="Minerales"
-			>
-				Minerales
-			</button>
-			<button
-				class="sec_btn"
-				id="cuarzos_catbtn"
-				type="button"
-				data-categoria="Cuarzos"
-			>
-				Cuarzos
-			</button>
+            <a href="{{ url_for('registrarse') }}">
+                Registrarse
+            </a>
+
+        {% endif %}
+
+        <div id="busqueda_div">
+
+            <form action="/buscar" method="GET">
+
+                <input
+                    type="search"
+                    id="barra_busqueda"
+                    name="busqueda"
+                    placeholder="Buscar productos..."
+                    autocomplete="off"
+                >
+
+                <button class="button" type="submit">
+                    Buscar
+                </button>
+
+            </form>
+
+        </div>
+
+    </header>
 
 
-			<button
-				class="sec_btn"
-				id="osteotecnias_catbtn"
-				type="button"
-				data-categoria="Fosiles"
-			>
-				Fósiles
-			</button>
+    <!-- =================================
+         CONTENIDO PRINCIPAL
+    ================================== -->
+
+    <main>
+
+        <h1 class="centrado">
+            CATÁLOGO LINNEO
+        </h1>
+
+        <!-- CATEGORÍAS -->
+
+        <nav
+            class="barra"
+            id="categoria_menu"
+            aria-label="Categorías"
+        >
+
+            <button
+                class="sec_btn"
+                type="button"
+                data-categoria=""
+            >
+                Todos
+            </button>
+
+            <button
+                class="sec_btn"
+                type="button"
+                data-categoria="Mariposas"
+            >
+                Mariposas
+            </button>
+
+            <button
+                class="sec_btn"
+                type="button"
+                data-categoria="Escarabajos"
+            >
+                Escarabajos
+            </button>
+
+            <button
+                class="sec_btn"
+                type="button"
+                data-categoria="Odonatos"
+            >
+                Odonatos
+            </button>
+
+            <button
+                class="sec_btn"
+                type="button"
+                data-categoria="Minerales"
+            >
+                Minerales
+            </button>
+
+            <button
+                class="sec_btn"
+                type="button"
+                data-categoria="Cuarzos"
+            >
+                Cuarzos
+            </button>
+
+            <button
+                class="sec_btn"
+                type="button"
+                data-categoria="Fosiles"
+            >
+                Fósiles
+            </button>
+
             <button
                 class="sec_btn"
                 id="filtrosbtn"
                 type="button"
-                aria-label="Abrir filtros"
                 aria-controls="filtro_menu"
                 aria-expanded="false"
             >
-                ☰
+                ☰ Filtros
             </button>
 
         </nav>
 
-        <aside id="filtro_menu" hidden aria-label="Filtros de productos">
+
+        <!-- FILTROS -->
+
+        <aside id="filtro_menu" hidden>
 
             <fieldset>
+
                 <legend>Ordenar productos</legend>
 
-                <label for="orden_alfabetico">
+                <label>
+                    <input
+                        type="radio"
+                        name="orden"
+                        value="alfabetico"
+                    >
                     A - Z
                 </label>
 
-                <input
-                    type="radio"
-                    id="orden_alfabetico"
-                    name="orden"
-                    value="alfabetico"
-                >
-
-                <label for="orden_mayor_precio">
+                <label>
+                    <input
+                        type="radio"
+                        name="orden"
+                        value="mayorprecio"
+                    >
                     Precio de mayor a menor
                 </label>
 
-                <input
-                    type="radio"
-                    id="orden_mayor_precio"
-                    name="orden"
-                    value="mayorprecio"
-                >
-
-                <label for="orden_menor_precio">
+                <label>
+                    <input
+                        type="radio"
+                        name="orden"
+                        value="menorprecio"
+                    >
                     Precio de menor a mayor
                 </label>
-
-                <input
-                    type="radio"
-                    id="orden_menor_precio"
-                    name="orden"
-                    value="menorprecio"
-                >
 
             </fieldset>
 
         </aside>
-		<section id="catalogo" aria-label="Catálogo de productos">
 
-			{% for producto in productos %}
 
-				<article
-					class="tarjeta_producto"
-					data-categoria="{{ producto.categoria }}"
-					data-nombre="{{ producto.nombre }}"
-					data-precio="{{ producto.precio_venta }}"
-				>
+        <!-- =================================
+             PRODUCTOS
+        ================================== -->
 
-				<div class="producto_imagen">
+        <section
+            id="catalogo"
+            aria-label="Catálogo de productos"
+        >
 
-					<img
-						src="{{ url_for(
-							'imagenes',
-							nombre_archivo=producto.nombre.replace(' ', '_') + '.jpg'
-						) }}"
-						alt="{{ producto.nombre }}"
-					>
+            {% for producto in productos %}
 
-            </div>
+                <article
+                    class="tarjeta_producto"
+                    data-categoria="{{ producto.categoria }}"
+                    data-nombre="{{ producto.nombre }}"
+                    data-precio="{{ producto.precio_venta }}"
+                >
 
-            <div class="producto_info">
+                    <div class="producto_imagen">
 
-                <h2>{{ producto.nombre }}</h2>
+                        <img
+                            src="{{ url_for(
+                                'imagenes',
+                                nombre_archivo=producto.nombre.replace(' ', '_') + '.jpg'
+                            ) }}"
+                            alt="{{ producto.nombre }}"
+                            loading="lazy"
+                        >
 
-                <a href="/producto/{{ producto.nombre.replace(' ', '%20') }}">
-                    Ver producto
-                </a>
+                    </div>
 
-                <p class="producto_categoria">
-                    Categoría: {{ producto.categoria }}
+
+                    <div class="producto_info">
+
+                        <h2>
+                            {{ producto.nombre }}
+                        </h2>
+
+                        <a href="{{ url_for(
+                            'producto',
+                            nombre=producto.nombre
+                        ) }}">
+                            Ver producto
+                        </a>
+
+                        <p class="producto_categoria">
+                            Categoría: {{ producto.categoria }}
+                        </p>
+
+                        <p class="producto_precio">
+                            Precio: ${{ producto.precio_venta }}
+                        </p>
+
+                        <p class="producto_stock">
+                            Stock: {{ producto.stock }}
+                        </p>
+
+                        <div class="disponibilidad_favicon"></div>
+
+
+                        <!-- AGREGAR AL CARRITO -->
+
+                        <button
+                            class="agregar-carrito button"
+                            type="button"
+                            data-producto-id="{{ producto.codigo }}"
+                            data-producto-nombre="{{ producto.nombre }}"
+                            data-producto-precio="{{ producto.precio_venta }}"
+                            data-producto-stock="{{ producto.stock }}"
+                        >
+                            Agregar al carrito
+                        </button>
+
+
+                        <!-- AGREGAR A FAVORITOS -->
+
+                        <button
+                            class="favoritos_ b"
+                            type="button"
+                            data-producto-id="{{ producto.codigo }}"
+                            data-producto-nombre="{{ producto.nombre }}"
+                            data-producto-precio="{{ producto.precio_venta }}"
+                            data-producto-stock="{{ producto.stock }}"
+                            aria-label="Agregar a favoritos"
+                            aria-pressed="false"
+                        >
+                            ♡
+                        </button>
+
+                    </div>
+
+                </article>
+
+            {% else %}
+
+                <p class="sin-productos">
+                    No hay productos disponibles.
                 </p>
 
-                <p class="producto_precio">
-                    Precio: ${{ producto.precio_venta }}
-                </p>
+            {% endfor %}
 
-                <p class="producto_stock">
-                    Stock: {{ producto.stock }}
-                </p>
-                <div class="disponibilidad_favicon">
-				</div>
+        </section>
 
-              
-<button
-    class="agregar-carrito button"
-    type="button"
-    data-producto-id="{{ producto.codigo }}"
-    data-producto-nombre="{{ producto.nombre }}"
-    data-producto-precio="{{ producto.precio_venta }}"
-    data-producto-stock="{{ producto.stock }}"
->
-    Agregar al carrito
-</button>
+    </main>
 
-<button
-    class="favoritos_ b"
-    type="button"
-    data-producto-id="{{ producto.codigo }}"
-    data-producto-nombre="{{ producto.nombre }}"
-    data-producto-precio="{{ producto.precio_venta }}"
-    data-producto-stock="{{ producto.stock }}"
-    aria-label="Agregar a favoritos"
-    aria-pressed="false"
->
-    ♡
-</button>
 
-            </div>
+    <!-- =================================
+         CHAT
+    ================================== -->
 
-        </article>
-
-    {% else %}
-
-        <p class="sin-productos">
-            No hay productos disponibles.
-        </p>
-
-    {% endfor %}
-
-</section>
-		</main>
-<button id="chat_btn" class="button">💬</button>
-
-<nav class="barra" id="compra_tarjeta">
-	
-    <h1>¿Cómo realizar una compra?</h1>
-
-    <div class="pasos_compra">
-
-        <div class="paso">
-            <h1 class="h1_redondos">1</h1>
-            <h3>Escoge los productos de tu elección en el carrito</h3>
-        </div>
-
-        <div class="paso">
-            <h1 class="h1_redondos">2</h1>
-            <h3>Inicia sesión o crea una cuenta</h3>
-        </div>
-
-        <div class="paso">
-            <h1 class="h1_redondos">3</h1>
-            <h3>Escoge el método y dirección de envío</h3>
-        </div>
-
-        <div class="paso">
-            <h1 class="h1_redondos">4</h1>
-            <h3>Paga</h3>
-        </div>
-
-    </div></nav>
-				
-				
-				
-				
-			
-			</div>
-		</nav>
-		
-		<nav class="barra" id="carrito_bar">
-			<h1>CARRITO</h1>
-			<div id="mostrar_productos">
-			<h3>Producto</h3>
-			<h3 id="contenido_carrito"></h3>
-			<h3>Precio</h3>
-			<h3 id="productos_carrito_precio"></h3>	
-			</div>
-			<div>
-				<h2>Descuentos</h2>
-				<h2>Subtotal</h2>
-			</div>
-			<button class="button" type="button" id="comprar_carrito_btn">
-				Comprar
-			</button>
-			
-				
-		</nav>
-		<nav id="favoritos_bar" class="barra">
-
-    <h1>MIS FAVORITOS</h1>
-
-    <div id="contenido_favoritos">
-        <p>No tienes productos favoritos.</p>
-    </div>
-
-    <button
-        type="button"
-        id="cerrar_favoritos"
-        class="button"
-    >
-        Cerrar
+    <button id="chat_btn" class="button" type="button">
+        💬
     </button>
 
-</nav>
-		<nav class="barra" id="menu_bar">
 
-			<button
-				id="atras_menu"
-				type="button"
-				class="button"
-			>
-				↚
-			</button>
-			<div>
-				<a
-					class="text_menu"
-					href="/catalogo"
-				>
-					Catálogo
-				</a>
-			</div>
-			<div>
-				<a
-					class="text_menu"
-					href="/contacto"
-				>
-					Contáctanos
-				</a>
-			</div>
-			<div>
-				<a
-					class="text_menu"
-					href="/informacion"
-				>
-					¿Quiénes somos?
-				</a>
-			</div>
+    <!-- =================================
+         INFORMACIÓN DE COMPRA
+    ================================== -->
 
-		</nav>
+    <nav class="barra" id="compra_tarjeta">
 
-		<script src="/js/main.js"></script>
+        <h1>¿Cómo realizar una compra?</h1>
 
-	</body>
+        <div class="pasos_compra">
 
-	</html>
+            <div class="paso">
+                <h1 class="h1_redondos">1</h1>
+                <h3>Escoge los productos en el carrito</h3>
+            </div>
+
+            <div class="paso">
+                <h1 class="h1_redondos">2</h1>
+                <h3>Inicia sesión o crea una cuenta</h3>
+            </div>
+
+            <div class="paso">
+                <h1 class="h1_redondos">3</h1>
+                <h3>Escoge el método y dirección de envío</h3>
+            </div>
+
+            <div class="paso">
+                <h1 class="h1_redondos">4</h1>
+                <h3>Paga</h3>
+            </div>
+
+        </div>
+
+    </nav>
+
+
+    <!-- =================================
+         PANEL DEL CARRITO
+    ================================== -->
+
+    <nav id="carrito_bar" class="barra">
+
+        <h1>MI CARRITO</h1>
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Eliminar</th>
+                </tr>
+            </thead>
+
+            <tbody id="lista_carrito">
+
+                <tr>
+                    <td colspan="4">
+                        El carrito está vacío.
+                    </td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+        <h3>
+            Subtotal:
+            <span id="subtotal_carrito">$0.00</span>
+        </h3>
+
+        <button
+            type="button"
+            id="comprar_carrito_btn"
+            class="button"
+        >
+            Comprar
+        </button>
+
+        <button
+            type="button"
+            id="cerrar_carrito"
+            class="button"
+        >
+            Cerrar carrito
+        </button>
+
+    </nav>
+
+
+    <!-- =================================
+         PANEL DE FAVORITOS
+    ================================== -->
+
+    <nav id="favoritos_bar" class="barra">
+
+        <h1>MIS FAVORITOS</h1>
+
+        <div id="contenido_favoritos">
+
+            <p>
+                No tienes productos favoritos.
+            </p>
+
+        </div>
+
+        <button
+            type="button"
+            id="cerrar_favoritos"
+            class="button"
+        >
+            Cerrar
+        </button>
+
+    </nav>
+
+
+    <!-- =================================
+         MENÚ PRINCIPAL
+    ================================== -->
+
+    <nav class="barra" id="menu_bar">
+
+        <button
+            id="atras_menu"
+            type="button"
+            class="button"
+        >
+            ↚
+        </button>
+
+        <div>
+            <a class="text_menu" href="/catalogo">
+                Catálogo
+            </a>
+        </div>
+
+        <div>
+            <a class="text_menu" href="/contacto">
+                Contáctanos
+            </a>
+        </div>
+
+        <div>
+            <a class="text_menu" href="/informacion">
+                ¿Quiénes somos?
+            </a>
+        </div>
+
+    </nav>
+
+
+    <script src="/js/main.js"></script>
+
+</body>
+</html>
