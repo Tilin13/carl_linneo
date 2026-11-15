@@ -2198,6 +2198,7 @@ actualizarFavoritos();
         });
 
     });
+
 // ================================================
 // PROMOCIONES: ADMINISTRADOR
 // ================================================
@@ -2213,7 +2214,7 @@ async function cargarPromocionesAdmin() {
         const promociones = await peticion("/api/admin/promociones");
 
         if (!Array.isArray(promociones)) {
-            throw new Error("La respuesta de promociones no es válida.");
+            throw new Error("La API no devolvió una lista de promociones.");
         }
 
         listaPromocionesAdmin.replaceChildren();
@@ -2226,14 +2227,21 @@ async function cargarPromocionesAdmin() {
 
         promociones.forEach(function(promo) {
             const tarjeta = document.createElement("div");
+            tarjeta.className = "tarjeta-promocion-admin";
 
             const nombre = document.createElement("p");
             nombre.textContent =
-                `${promo.nombre} - ${promo.descuento}% de descuento`;
+                `${promo.nombre || "Producto"} - ${promo.descuento}% de descuento`;
 
             const codigo = document.createElement("p");
             codigo.textContent =
-                "Código: " + promo.producto_codigo;
+                "Código: " + (promo.producto_codigo || promo.codigo || "");
+
+            const estado = document.createElement("p");
+            estado.textContent =
+                promo.activa === false
+                    ? "Estado: Desactivada"
+                    : "Estado: Registrada";
 
             const eliminar = document.createElement("button");
             eliminar.type = "button";
@@ -2246,7 +2254,8 @@ async function cargarPromocionesAdmin() {
 
                 try {
                     await peticion(
-                        "/api/admin/promociones/" + promo.id,
+                        "/api/admin/promociones/" +
+                        encodeURIComponent(promo.id),
                         { method: "DELETE" }
                     );
 
@@ -2263,7 +2272,7 @@ async function cargarPromocionesAdmin() {
                 }
             });
 
-            tarjeta.append(nombre, codigo, eliminar);
+            tarjeta.append(nombre, codigo, estado, eliminar);
             listaPromocionesAdmin.appendChild(tarjeta);
         });
 
@@ -2275,6 +2284,9 @@ async function cargarPromocionesAdmin() {
         }
     }
 }
+
+
+// CREAR PROMOCIÓN
 
 if (formularioPromocion) {
     formularioPromocion.addEventListener("submit", async function(evento) {
@@ -2319,6 +2331,10 @@ if (formularioPromocion) {
         };
 
         try {
+            if (mensajePromocion) {
+                mensajePromocion.textContent = "Guardando promoción...";
+            }
+
             const resultado = await peticion(
                 "/api/admin/promociones",
                 {
@@ -2334,17 +2350,21 @@ if (formularioPromocion) {
             }
 
             formularioPromocion.reset();
+
             await cargarPromocionesAdmin();
 
+            // Actualizar también las ofertas de la tienda
+            await cargarOfertas();
+
         } catch(error) {
+            console.error("Error al crear promoción:", error);
+
             if (mensajePromocion) {
                 mensajePromocion.textContent = error.message;
             }
         }
     });
 }
-
-cargarPromocionesAdmin();
 
 
 // ================================================
@@ -2357,10 +2377,12 @@ async function cargarOfertas() {
     if (!contenedorOfertas) return;
 
     try {
+        contenedorOfertas.textContent = "Cargando ofertas...";
+
         const promociones = await peticion("/api/promociones");
 
         if (!Array.isArray(promociones)) {
-            throw new Error("La respuesta de ofertas no es válida.");
+            throw new Error("La API de ofertas devolvió un formato incorrecto.");
         }
 
         contenedorOfertas.replaceChildren();
@@ -2372,6 +2394,18 @@ async function cargarOfertas() {
         }
 
         promociones.forEach(function(promo) {
+
+            const codigo = promo.codigo || promo.producto_codigo;
+
+            if (
+                !codigo ||
+                !promo.nombre ||
+                !Number.isFinite(Number(promo.precio_oferta))
+            ) {
+                console.error("Promoción con datos incompletos:", promo);
+                return;
+            }
+
             const tarjeta = document.createElement("article");
             tarjeta.className = "tarjeta_producto tarjeta_oferta";
 
@@ -2397,7 +2431,7 @@ async function cargarOfertas() {
             boton.className = "agregar-carrito";
             boton.textContent = "Agregar al carrito";
 
-            boton.dataset.productoId = promo.codigo;
+            boton.dataset.productoId = codigo;
             boton.dataset.productoNombre = promo.nombre;
             boton.dataset.productoPrecio = promo.precio_oferta;
             boton.dataset.productoStock = promo.stock;
@@ -2418,16 +2452,25 @@ async function cargarOfertas() {
             contenedorOfertas.appendChild(tarjeta);
         });
 
+        if (contenedorOfertas.children.length === 0) {
+            contenedorOfertas.textContent =
+                "No se encontraron ofertas con datos válidos.";
+        }
+
     } catch(error) {
         console.error("Error al cargar ofertas:", error);
+
         contenedorOfertas.textContent =
-            "No se pudieron cargar las ofertas.";
+            "No se pudieron cargar las ofertas: " + error.message;
     }
 }
 
-// Delegación de eventos para los botones creados dinámicamente.
+
+// EVENTOS DE LOS BOTONES CREADOS DINÁMICAMENTE
+
 if (contenedorOfertas) {
     contenedorOfertas.addEventListener("click", function(evento) {
+
         const boton = evento.target.closest(".agregar-carrito");
 
         if (!boton || !contenedorOfertas.contains(boton)) return;
@@ -2443,6 +2486,10 @@ if (contenedorOfertas) {
     });
 }
 
+
+// INICIALIZAR
+
+cargarPromocionesAdmin();
 cargarOfertas();
 
     // =====================================================
