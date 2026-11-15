@@ -1,229 +1,405 @@
-	<!DOCTYPE html>
-	<html lang="es">
 
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport"
-      content="width=device-width, initial-scale=1">
+<!DOCTYPE html>
+<html lang="es">
 
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1.0"
-		>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-		<title>Linneo</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-		<link rel="stylesheet" href="/css/variables.css">
-	
-		<link
-			rel="icon"
-			type="image/png"
-			href="linneo_isotipo.png"
-		>
-	</head>
+    <title>¿Quiénes somos? | Linneo</title>
 
+    <link rel="stylesheet" href="/css/variables.css">
 
+    <link
+        rel="icon"
+        type="image/png"
+        href="/linneo_isotipo.png"
+    >
+</head>
 
-	<body>
+<body>
 
-		<header class="barra" id="barra_global">
+    <!-- =================================
+         BARRA PRINCIPAL
+    ================================== -->
 
-			<h2>Linneo</h2>
+    <header class="barra" id="barra_global">
 
+        <h2>Linneo</h2>
 
-			<button
-				class="button"
-				id="buscarbtn"
-				type="button"
-			>
-				🔍︎
-			</button>
+        <button
+            class="button"
+            id="buscarbtn"
+            type="button"
+            aria-label="Abrir búsqueda"
+        >
+            🔍
+        </button>
 
-			<button
-				class="button"
-				id="carritobtn"
-				type="button"
-			>
-				🛒
-			</button>
-			<div id="carrito_productos" >
-				<h5 id="cantidad_productos"></h5>
-			</div>
-			<button 
-				class="button"
-				id="favoritos_btn"
-				type="button"
-			>Favoritos
-			</button>
+        <button
+            class="button"
+            id="carritobtn"
+            type="button"
+            aria-label="Abrir carrito"
+        >
+            🛒
+        </button>
 
-			<button
-				class="button"
-				id="menubtn"
-				type="button"
-			>
-				☰
-			</button>
-			<button
-				class="button"
-				id="iniciar_secion_btn"
-				type="button"
-			>Iniciar sesión
-			</button>
-			<button 
-				class="button"
-				id="registrarse_btn"
-				type="button"
-			>Registrarse
-			</button>
-			<div id="busqueda_div">
-				<form action="/buscar" method="GET">
-
-				<input
-					type="search"
-					id="barra_busqueda"
-					name="busqueda"
-					placeholder="Buscar productos..."
-					autocomplete="off"
-				>
-
-				<button
-					class="button"
-					type="submit"
-				>
-					Buscar
-				</button>
-			</form>
-			
-
-			</div>
-			
-
-		</header>
-
-		<main>
-
-			<div id="tarjeta_logo">
-				<img
-				src="tarjeta2.png"
-				alt="tarjeta"
-				>
-			
-			</div>
-
-		</main>
-
-		<nav class="barra" id="carrito_bar">
-			<h1>CARRITO</h1>
-			<div id="mostrar_productos">
-			<h3>Producto</h3>
-			<h3 id="contenido_carrito"></h3>
-			<h3>Precio</h3>
-			<h3 id="productos_carrito_precio"></h3>	
-			</div>
-			<div>
-				<h2>Descuentos</h2>
-				<h2>Subtotal</h2>
-			</div>
-			<button class="button" type="button" id="comprar_carrito_btn">
-				Comprar
-			</button>
-		
-		<section>
-			<h1>¿Quienes somos?</h1>
-			<p>Somos un grupo de aficionados y amantes de la ciencia y de la entomología</p>
-			<h1>¿Como elaboramos nuestros productos?</h1>
-			<p>Todos nuestros productos provienen de productores autorizados que no dañan la fauna ni el
-		ecosistema local, promoviendo el comercio y la economía. Todos nuestros productos son elaborados
-		con el amor y la pasión de estos animales extraordinarios</p>
-		</section>
-		<hr>
-		</nav>
-		<nav id="compra_tarjeta">
-			<h1>Nuestros valores</h1>
-			
-			<div class="paso">
-            <h1 class="h1_redondos">Respeto</h1>
-            <h3>Respeto a la buodiversidad y la fauna mexicana</h3>
-			</div>
-
-        <div class="paso">
-            <h1 class="h1_redondos">Conservación</h1>
-            <h3>Todos nuestros productos provienen de fuentes cuyas actividades no dañan los ecosistemas</h3>
+        <div id="carrito_productos">
+            <h5 id="cantidad_productos">0</h5>
         </div>
 
-        <div class="paso">
-            <h1 class="h1_redondos">Educación</h1>
-            <h3>La divulgación y educación son los cimientos del futuro que hoy construimis</h3>
+        <button
+            class="button"
+            id="favoritos_btn"
+            type="button"
+        >
+            Favoritos
+        </button>
+
+        <button
+            class="button"
+            id="menubtn"
+            type="button"
+            aria-label="Abrir menú"
+        >
+            ☰
+        </button>
+
+        <button
+            class="button"
+            id="iniciar_secion_btn"
+            type="button"
+        >
+            Iniciar sesión
+        </button>
+
+        <button
+            class="button"
+            id="registrarse_btn"
+            type="button"
+        >
+            Registrarse
+        </button>
+
+        <!-- BÚSQUEDA -->
+
+        <div id="busqueda_div">
+
+            <form action="/buscar" method="GET">
+
+                <input
+                    type="search"
+                    id="barra_busqueda"
+                    name="busqueda"
+                    placeholder="Buscar productos..."
+                    autocomplete="off"
+                >
+
+                <button class="button" type="submit">
+                    Buscar
+                </button>
+
+            </form>
+
         </div>
 
-        <div class="paso">
-            <h1 class="h1_redondos">Honestidad</h1>
-            <h3>Somos transparentes y honestos en nuestras ventas y productos</h3>
+    </header>
+
+
+    <!-- =================================
+         CONTENIDO PRINCIPAL
+    ================================== -->
+
+    <main class="informacion-pagina">
+
+        <!-- PORTADA -->
+
+        <section class="informacion-portada">
+
+            <div id="tarjeta_logo">
+
+                <img
+                    src="/tarjeta2.png"
+                    alt="Identidad de Linneo"
+                >
+
+            </div>
+
+            <div class="informacion-introduccion">
+
+                <p class="informacion-etiqueta">
+                    CONOCE LINNEO
+                </p>
+
+                <h1>¿Quiénes somos?</h1>
+
+                <p>
+                    Somos un grupo de aficionados y amantes
+                    de la ciencia y de la entomología.
+                    Nos apasiona compartir el conocimiento
+                    sobre la biodiversidad y el mundo natural.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================
+             NUESTRA HISTORIA
+        ================================== -->
+
+        <section class="informacion-seccion">
+
+            <h2>¿Quiénes somos?</h2>
+
+            <p>
+                Somos un grupo de aficionados y amantes
+                de la ciencia y de la entomología.
+                Nuestro interés por el mundo natural nos
+                impulsa a compartir y acercar su belleza
+                y conocimiento a más personas.
+            </p>
+
+        </section>
+
+
+        <!-- =================================
+             ELABORACIÓN DE PRODUCTOS
+        ================================== -->
+
+        <section class="informacion-seccion">
+
+            <h2>¿Cómo elaboramos nuestros productos?</h2>
+
+            <p>
+                Todos nuestros productos provienen de
+                productores autorizados que no dañan la
+                fauna ni el ecosistema local, promoviendo
+                el comercio y la economía.
+
+                Todos nuestros productos son elaborados
+                con el amor y la pasión por estos animales
+                extraordinarios.
+            </p>
+
+        </section>
+
+
+        <!-- =================================
+             NUESTROS VALORES
+        ================================== -->
+
+        <section id="compra_tarjeta" class="valores-seccion">
+
+            <h2>Nuestros valores</h2>
+
+            <div class="pasos_compra">
+
+                <article class="paso">
+
+                    <div class="h1_redondos">1</div>
+
+                    <h3>Respeto</h3>
+
+                    <p>
+                        Respeto a la biodiversidad
+                        y la fauna mexicana.
+                    </p>
+
+                </article>
+
+
+                <article class="paso">
+
+                    <div class="h1_redondos">2</div>
+
+                    <h3>Conservación</h3>
+
+                    <p>
+                        Todos nuestros productos provienen
+                        de fuentes cuyas actividades no
+                        dañan los ecosistemas.
+                    </p>
+
+                </article>
+
+
+                <article class="paso">
+
+                    <div class="h1_redondos">3</div>
+
+                    <h3>Educación</h3>
+
+                    <p>
+                        La divulgación y educación son
+                        los cimientos del futuro que hoy
+                        construimos.
+                    </p>
+
+                </article>
+
+
+                <article class="paso">
+
+                    <div class="h1_redondos">4</div>
+
+                    <h3>Honestidad</h3>
+
+                    <p>
+                        Somos transparentes y honestos
+                        en nuestras ventas y productos.
+                    </p>
+
+                </article>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =================================
+         BOTÓN DE CHAT
+    ================================== -->
+
+    <button
+        id="chat_btn"
+        class="button"
+        type="button"
+        aria-label="Abrir chat"
+    >
+        💬
+    </button>
+
+
+    <!-- =================================
+         CARRITO
+         MISMA ESTRUCTURA QUE INDEX
+    ================================== -->
+
+    <nav class="barra" id="carrito_bar">
+
+        <button
+            class="button"
+            id="cerrar_carrito"
+            type="button"
+        >
+            ✕
+        </button>
+
+        <h1>CARRITO</h1>
+
+        <div id="mostrar_productos">
+
+            <h3>Producto</h3>
+
+            <h3 id="contenido_carrito"></h3>
+
+            <h3>Precio</h3>
+
+            <h3 id="productos_carrito_precio"></h3>
+
         </div>
-        </nav>
 
-		
+        <div id="resumen_carrito">
 
-		<button id="chat_btn" class="button">💬</button>
+            <h3>Descuentos</h3>
 
-		<nav class="barra" id="carrito_bar">
-			<h1>CARRITO</h1>
-			<div id="mostrar_productos">
-			<h3>Producto</h3>
-			<h3 id="contenido_carrito"></h3>
-			<h3>Precio</h3>
-			<h3 id="productos_carrito_precio"></h3>	
-			</div>
-			<div>
-				<h2>Descuentos</h2>
-				<h2>Subtotal</h2>
-			</div>
-			<button class="button" type="button" id="comprar_carrito_btn">
-				Comprar
-			</button>
-			
-				
-		</nav>
+            <h3 id="descuento_carrito">$0.00</h3>
 
-		
-		<nav class="barra" id="menu_bar">
+            <h3>Subtotal</h3>
 
-			<button
-				id="atras_menu"
-				type="button"
-				class="button"
-			>
-				↚
-			</button>
-			<div>
-				<a
-					class="text_menu"
-					href="/catalogo"
-				>
-					Catálogo
-				</a>
-			</div>
-			<div>
-				<a
-					class="text_menu"
-					href="/contacto"
-				>
-					Contáctanos
-				</a>
-			</div>
-			<div>
-				<a
-					class="text_menu"
-					href="/informacion"
-				>
-					¿Quiénes somos?
-				</a>
-			</div>
+            <h3 id="subtotal_carrito">$0.00</h3>
 
-		</nav>
+        </div>
 
-		<script src="/js/main.js"></script>
+        <button
+            class="button"
+            type="button"
+            id="comprar_carrito_btn"
+        >
+            Comprar
+        </button>
 
-	</body>
+    </nav>
 
-	</html>
+
+    <!-- =================================
+         FAVORITOS
+    ================================== -->
+
+    <nav class="barra" id="favoritos_bar">
+
+        <button
+            class="button"
+            id="cerrar_favoritos"
+            type="button"
+        >
+            ✕
+        </button>
+
+        <h1>FAVORITOS</h1>
+
+        <div id="contenido_favoritos">
+
+            <!-- JavaScript introduce aquí los productos -->
+
+        </div>
+
+    </nav>
+
+
+    <!-- =================================
+         MENÚ LATERAL
+    ================================== -->
+
+    <nav class="barra" id="menu_bar">
+
+        <button
+            id="atras_menu"
+            type="button"
+            class="button"
+        >
+            ↚
+        </button>
+
+        <div>
+            <a class="text_menu" href="/">
+                Inicio
+            </a>
+        </div>
+
+        <div>
+            <a class="text_menu" href="/catalogo">
+                Catálogo
+            </a>
+        </div>
+
+        <div>
+            <a class="text_menu" href="/contacto">
+                Contáctanos
+            </a>
+        </div>
+
+        <div>
+            <a class="text_menu" href="/informacion">
+                ¿Quiénes somos?
+            </a>
+        </div>
+
+    </nav>
+
+
+    <!-- =================================
+         JAVASCRIPT
+    ================================== -->
+
+    <script src="/js/main.js"></script>
+
+</body>
+</html>

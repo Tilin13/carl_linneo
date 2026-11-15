@@ -3425,3 +3425,257 @@ body:has(.popup.visible) {
 }
 
 
+/* =========================================
+   INFORMACION.HTML — LINNEO
+========================================= */
+
+.informacion-pagina {
+    width: min(1100px, 92%);
+    margin: 0 auto;
+    padding: 30px 0 60px;
+}
+
+/* PORTADA */
+
+.informacion-portada {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+    padding: 25px 0 40px;
+}
+
+.informacion-introduccion {
+    max-width: 750px;
+}
+
+.informacion-introduccion h1 {
+    font-size: clamp(2.2rem, 5vw, 3.5rem);
+    margin: 5px 0 15px;
+    color: var(--texto);
+}
+
+.informacion-introduccion p {
+    font-size: 1.15rem;
+    line-height: 1.8;
+    color: var(--texto-secundario);
+}
+
+.informacion-etiqueta {
+    color: var(--terracota);
+    font-size: 0.8rem;
+    font-weight: bold;
+    letter-spacing: 0.15em;
+}
+
+/* SECCIONES */
+
+.informacion-seccion {
+    max-width: 850px;
+    margin: 25px auto;
+    padding: 30px;
+
+    background-color: var(--tarjeta);
+    border: 1px solid var(--borde);
+    border-radius: 16px;
+
+    box-shadow: var(--sombra);
+}
+
+.informacion-seccion h2 {
+    color: var(--verde-musgo);
+    font-size: 1.8rem;
+    margin-top: 0;
+}
+
+.informacion-seccion p {
+    color: var(--texto-secundario);
+    font-size: 1.1rem;
+    line-height: 1.9;
+}
+
+/* VALORES */
+
+.valores-seccion {
+    display: block;
+    margin: 45px auto;
+    padding: 30px;
+
+    background-color: var(--beige);
+    border: 1px solid var(--borde);
+    border-radius: 18px;
+}
+
+.valores-seccion > h2 {
+    text-align: center;
+    color: var(--texto);
+    font-size: 2rem;
+    margin-bottom: 35px;
+}
+
+.valores-seccion .pasos_compra {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 22px;
+    padding: 0;
+}
+
+.valores-seccion .paso {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-width: 0;
+    padding: 20px 12px;
+
+    background-color: var(--tarjeta);
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+}
+
+.valores-seccion .h1_redondos {
+    width: 65px;
+    height: 65px;
+    margin: 0 0 15px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background-color: var(--verde-musgo);
+    color: white;
+    border-radius: 50%;
+
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.valores-seccion .paso h3 {
+    color: var(--texto);
+    font-size: 1.3rem;
+    margin: 5px 0;
+}
+
+.valores-seccion .paso p {
+    color: var(--texto-secundario);
+    line-height: 1.6;
+    margin-bottom: 0;
+}
+
+/* MÓVILES Y TABLETAS */
+
+@media (max-width: 800px) {
+    .valores-seccion .pasos_compra {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .informacion-pagina {
+        width: calc(100% - 24px);
+        padding-top: 15px;
+    }
+
+    .informacion-seccion {
+        padding: 22px 18px;
+    }
+
+    .valores-seccion {
+        padding: 20px 12px;
+    }
+
+    .valores-seccion .pasos_compra {
+        grid-template-columns: 1fr;
+    }
+
+    .informacion-introduccion p {
+        font-size: 1rem;
+    }
+}
+
+
+/* ============================= */
+/* CHATBOX */
+/* ============================= */
+
+#configuraciones_bar_chatbox {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 10px;
+}
+
+#chat_box {
+    position: fixed;
+    right: 25px;
+    bottom: 100px;
+    width: min(350px, calc(100vw - 30px));
+    height: 450px;
+    max-height: 70vh;
+    background-color: var(--fondo);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio-grande);
+    box-shadow: var(--sombra);
+    z-index: 1000;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#chat_box[hidden] {
+    display: none;
+}
+
+#historial_mensajes {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mensaje_asistente,
+.mensaje_usuario {
+    padding: 10px;
+    border-radius: 12px;
+    max-width: 85%;
+    overflow-wrap: anywhere;
+}
+
+.mensaje_asistente {
+    align-self: flex-start;
+    background-color: var(--verde-musgo);
+    color: white;
+}
+
+.mensaje_usuario {
+    align-self: flex-end;
+    background-color: var(--color-secundario);
+}
+
+#form_chat {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border-top: 1px solid var(--borde);
+}
+
+#bar_mensajes {
+    flex: 1;
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio-grande);
+}
+
+#chat_btn {
+    position: fixed;
+    right: 25px;
+    bottom: 25px;
+    z-index: 1001;
+    border-radius: 50%;
+    width: 55px;
+    height: 55px;
+}
