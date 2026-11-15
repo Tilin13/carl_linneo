@@ -59,7 +59,22 @@ from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
 
 load_dotenv()
+from datetime import timezone
 
+def convertir_fecha_utc(valor):
+
+    fecha = datetime.fromisoformat(
+        valor.replace("Z", "+00:00")
+    )
+
+    if fecha.tzinfo is None:
+        raise ValueError(
+            "La fecha debe incluir una zona horaria."
+        )
+
+    return fecha.astimezone(
+        timezone.utc
+    ).replace(tzinfo=None)
 # ============================================================
 # CONFIGURACIÓN Y RUTAS
 # ============================================================
@@ -137,6 +152,85 @@ limiter = Limiter(
 # ============================================================
 # MODELOS SQLALCHEMY
 # ============================================================
+class Promocion(db.Model):
+
+    __tablename__ = "promociones"
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    producto_codigo = db.Column(
+        db.String(80),
+        nullable=False,
+        index=True
+    )
+
+    descuento = db.Column(
+        db.Numeric(5, 2),
+        nullable=False
+    )
+
+    fecha_inicio = db.Column(
+        db.DateTime,
+        nullable=False
+    )
+
+    fecha_fin = db.Column(
+        db.DateTime,
+        nullable=False
+    )
+
+    activa = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=True
+    )
+
+    fecha_creacion = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+from datetime import datetime
+from decimal import Decimal, ROUND_HALF_UP
+
+
+def obtener_promocion(codigo):
+
+    ahora = datetime.utcnow()
+
+    promocion = db.session.execute(
+        select(Promocion).where(
+            Promocion.producto_codigo == codigo,
+            Promocion.activa.is_(True),
+            Promocion.fecha_inicio <= ahora,
+            Promocion.fecha_fin > ahora
+        ).order_by(
+            Promocion.fecha_creacion.desc()
+        )
+    ).scalars().first()
+
+    return promocion
+
+
+def calcular_precio_promocional(precio, descuento):
+
+    precio = Decimal(str(precio))
+    descuento = Decimal(str(descuento))
+
+    rebaja = (
+        precio * descuento / Decimal("100")
+    ).quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP
+    )
+
+    return (precio - rebaja).quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP
+    )
 class User(UserMixin, db.Model):
     __tablename__ = "usuarios"
 
@@ -1115,6 +1209,278 @@ def migrar_metodo_pago_pedidos():
         app.logger.info(
             "Migración aplicada: pedidos.metodo_pago"
         )
+  
+@app.route(
+    "/api/admin/promociones",
+    methods=["POST"]
+)
+@administrador_requerido
+def crear_promocion():
+
+    try:
+
+        datos = request.get_json(silent=True) or {}
+
+        codigo = str(
+            datos.get("codigo", "")
+        ).strip()
+
+        descuento = Decimal(
+            str(datos.get("descuento", "0"))
+        )
+
+        inicio = convertir_fecha_utc(
+            datos.get("inicio", "")
+        )
+
+        fin = convertir_fecha_utc(
+            datos.get("fin", "")
+        )
+
+        if not codigo:
+
+            raise ValueError(
+                "Debes indicar el código del producto."
+            )
+
+        if not descuento.is_finite() or not (
+            Decimal("1") <= descuento <= Decimal("90")
+        ):
+
+            raise ValueError(
+                "El descuento debe estar entre 1 y 90."
+            )
+
+        if inicio >= fin:
+
+            raise ValueError(
+                "La fecha final debe ser posterior al inicio."
+            )
+
+        producto = db.session.execute(
+            text("""
+                SELECT codigo
+                FROM productos
+                WHERE codigo = :codigo
+            """),
+            {"codigo": codigo}
+        ).first()
+
+        if producto is None:
+
+            raise ValueError(
+                "El producto no existe."
+            )
+
+        promocion = Promocion(
+            producto_codigo=codigo,
+            descuento=descuento,
+            fecha_inicio=inicio,
+            fecha_fin=fin,
+            activa=True
+        )
+
+        db.session.add(promocion)
+        db.session.commit()
+
+        return jsonify({
+            "mensaje": "Promoción creada correctamente.",
+            "id": promocion.id
+        }), 201
+
+    except (ValueError, TypeError, InvalidOperation) as error:
+
+        db.session.rollback()
+
+        return jsonify({
+            "error": str(error)
+        }), 400
+
+    except Exception:
+
+        db.session.rollback()
+
+        app.logger.exception(
+            "Error creando promoción."
+        )
+
+        return jsonify({
+            "error": "No se pudo crear la promoción."
+        }), 500
+        
+@app.route("/promociones")
+def promociones_pagina():
+	return render_template("promociones.html")
+@app.route(
+    "/api/promociones",
+    methods=["GET"]
+)
+def promociones_publicas():
+
+    try:
+
+        ahora = datetime.utcnow()
+
+        promociones = db.session.scalars(
+            select(Promocion).where(
+                Promocion.activa.is_(True),
+                Promocion.fecha_inicio <= ahora,
+                Promocion.fecha_fin > ahora
+            )
+        ).all()
+
+        resultado = []
+
+        for promocion in promociones:
+
+            producto = db.session.execute(
+                text("""
+                    SELECT
+                        codigo,
+                        nombre,
+                        categoria,
+                        precio_venta,
+                        stock
+                    FROM productos
+                    WHERE codigo = :codigo
+                """),
+                {"codigo": promocion.producto_codigo}
+            ).mappings().first()
+
+            if not producto:
+                continue
+
+            if int(producto["stock"] or 0) <= 0:
+                continue
+
+            precio_original = Decimal(
+                str(producto["precio_venta"])
+            )
+
+            precio_oferta = calcular_precio_promocional(
+                precio_original,
+                promocion.descuento
+            )
+
+            resultado.append({
+
+                "codigo": producto["codigo"],
+
+                "nombre": producto["nombre"],
+
+                "categoria": producto["categoria"],
+
+                "precio_original": str(precio_original),
+
+                "precio_oferta": str(precio_oferta),
+
+                "descuento": str(promocion.descuento),
+
+                "stock": producto["stock"]
+
+            })
+
+        return jsonify(resultado)
+
+    except Exception:
+
+        db.session.rollback()
+
+        app.logger.exception(
+            "Error cargando promociones públicas."
+        )
+
+        return jsonify({
+            "error": "No se pudieron cargar las ofertas."
+        }), 500
+@app.route(
+    "/api/admin/promociones/<int:promocion_id>",
+    methods=["DELETE"]
+)
+@administrador_requerido
+def eliminar_promocion(promocion_id):
+
+    try:
+
+        promocion = db.session.get(
+            Promocion,
+            promocion_id
+        )
+
+        if promocion is None:
+
+            return jsonify({
+                "error": "La promoción no existe."
+            }), 404
+
+        db.session.delete(promocion)
+        db.session.commit()
+
+        return jsonify({
+            "mensaje": "Promoción eliminada."
+        })
+
+    except Exception:
+
+        db.session.rollback()
+
+        app.logger.exception(
+            "Error eliminando promoción."
+        )
+
+        return jsonify({
+            "error": "No se pudo eliminar la promoción."
+        }), 500        
+@app.route(
+    "/api/admin/promociones",
+    methods=["GET"]
+)
+@administrador_requerido
+def listar_promociones_admin():
+
+    try:
+
+        promociones = db.session.scalars(
+            select(Promocion).order_by(
+                Promocion.fecha_creacion.desc()
+            )
+        ).all()
+
+        resultado = []
+
+        for promo in promociones:
+
+            producto = db.session.execute(
+                text("""
+                    SELECT nombre
+                    FROM productos
+                    WHERE codigo = :codigo
+                """),
+                {"codigo": promo.producto_codigo}
+            ).first()
+
+            resultado.append({
+                "id": promo.id,
+                "producto_codigo": promo.producto_codigo,
+                "nombre": producto[0] if producto else promo.producto_codigo,
+                "descuento": str(promo.descuento),
+                "fecha_inicio": promo.fecha_inicio.isoformat(),
+                "fecha_fin": promo.fecha_fin.isoformat()
+            })
+
+        return jsonify(resultado)
+
+    except Exception:
+
+        db.session.rollback()
+
+        app.logger.exception(
+            "Error listando promociones."
+        )
+
+        return jsonify({
+            "error": "No se pudieron consultar las promociones."
+        }), 500
 @app.route(
     "/api/admin/finanzas/ventas",
     methods=["GET"]
@@ -2131,7 +2497,6 @@ def guardar_producto(datos):
 # CHECKOUT: REGISTRAR UNA COMPRA
 # ============================================================
 
-
 @app.route("/api/pedidos", methods=["POST"])
 @login_required
 def crear_pedido():
@@ -2191,7 +2556,9 @@ def crear_pedido():
             "error": "La cantidad solicitada es demasiado grande."
         }), 400
 
+    # Importes iniciales.
     subtotal = Decimal("0.00")
+    descuento_total = Decimal("0.00")
 
     try:
 
@@ -2199,18 +2566,27 @@ def crear_pedido():
         pedido = Pedido(
             usuario_id=current_user.id,
             subtotal=Decimal("0.00"),
-            estado="Pendiente"
+            descuento=Decimal("0.00"),
+            total=Decimal("0.00"),
+            estado="Pendiente",
+            metodo_pago="efectivo"
         )
 
         db.session.add(pedido)
         db.session.flush()
 
-        # Comprobar cada producto directamente en la BD.
+        # Consultar cada producto directamente en la base de datos.
         for codigo, cantidad in cantidades.items():
 
             producto = db.session.execute(
                 text("""
-                    SELECT codigo, nombre, precio_venta, stock
+                    SELECT
+                        codigo,
+                        nombre,
+                        precio_venta,
+                        precio_compra,
+                        precio_manofactura,
+                        stock
                     FROM productos
                     WHERE codigo = :codigo
                 """),
@@ -2222,7 +2598,7 @@ def crear_pedido():
                     f"El producto {codigo} ya no existe."
                 )
 
-            stock = int(producto["stock"])
+            stock = int(producto["stock"] or 0)
 
             if stock < cantidad:
                 raise ValueError(
@@ -2230,13 +2606,92 @@ def crear_pedido():
                     f"{producto['nombre']}."
                 )
 
-            precio = Decimal(
+            # Precio original antes de promociones.
+            precio_original = Decimal(
                 str(producto["precio_venta"])
-            ).quantize(Decimal("0.01"))
+            ).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP
+            )
 
-            if not precio.is_finite() or precio < 0:
+            if (
+                not precio_original.is_finite()
+                or precio_original < 0
+            ):
                 raise ValueError(
-                    "El precio de un producto no es válido."
+                    f"El precio de {producto['nombre']} no es válido."
+                )
+
+            # Consultar promoción vigente.
+            promocion = obtener_promocion(codigo)
+
+            if promocion:
+                precio = calcular_precio_promocional(
+                    precio_original,
+                    promocion.descuento
+                )
+            else:
+                precio = precio_original
+
+            precio = Decimal(str(precio)).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP
+            )
+
+            if (
+                not precio.is_finite()
+                or precio < 0
+                or precio > precio_original
+            ):
+                raise ValueError(
+                    f"El precio promocional de "
+                    f"{producto['nombre']} no es válido."
+                )
+
+            # Calcular importes antes y después del descuento.
+            total_original = (
+                precio_original * cantidad
+            ).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP
+            )
+
+            total_producto = (
+                precio * cantidad
+            ).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP
+            )
+
+            # Acumular el subtotal original y el ahorro.
+            subtotal += total_original
+
+            descuento_total += (
+                total_original - total_producto
+            )
+
+            # Calcular costo histórico del producto.
+            costo_compra = Decimal(
+                str(producto["precio_compra"] or 0)
+            )
+
+            costo_manofactura = Decimal(
+                str(producto["precio_manofactura"] or 0)
+            )
+
+            costo_unitario = (
+                costo_compra + costo_manofactura
+            ).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP
+            )
+
+            if (
+                not costo_unitario.is_finite()
+                or costo_unitario < 0
+            ):
+                raise ValueError(
+                    f"El costo de {producto['nombre']} no es válido."
                 )
 
             # Descontar stock de forma condicional.
@@ -2258,35 +2713,51 @@ def crear_pedido():
                     "El stock ha cambiado. Actualiza tu carrito."
                 )
 
-            total_producto = (
-                precio * cantidad
-            ).quantize(Decimal("0.01"))
-
-            # Guardar los detalles de la compra.
+            # Guardar detalle de la compra.
             detalle = PedidoItem(
                 pedido_id=pedido.id,
                 producto_codigo=codigo,
                 nombre=producto["nombre"],
                 cantidad=cantidad,
                 precio_unitario=precio,
+                costo_unitario=costo_unitario,
                 total=total_producto
             )
 
             db.session.add(detalle)
 
-            subtotal += total_producto
+        # Redondear los importes finales.
+        subtotal = subtotal.quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
 
-        # Guardar subtotal definitivo.
+        descuento_total = descuento_total.quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
+
+        total_final = (
+            subtotal - descuento_total
+        ).quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
+
+        # Guardar los importes definitivos del pedido.
         pedido.subtotal = subtotal
-        pedido.total = subtotal
-        pedido.descuento = Decimal("0.00")
-        pedido.metodo_pago = "efectivo"
+        pedido.descuento = descuento_total
+        pedido.total = total_final
+
         # Confirmar pedido, detalles y stock juntos.
         db.session.commit()
 
         return jsonify({
             "mensaje": "Pedido realizado correctamente.",
             "pedido_id": pedido.id,
+            "subtotal": str(pedido.subtotal),
+            "descuento": str(pedido.descuento),
+            "total": str(pedido.total),
             "url": url_for(
                 "detalle_pedido",
                 pedido_id=pedido.id
@@ -2312,6 +2783,7 @@ def crear_pedido():
         return jsonify({
             "error": "No se pudo procesar la compra."
         }), 500
+
 # ============================================================
 # DETALLES DE UN PEDIDO
 # ============================================================
