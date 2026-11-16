@@ -1014,80 +1014,141 @@ document.querySelectorAll(".favoritos_").forEach(function (boton) {
 // FAVORITOS: MOSTRAR PRODUCTOS
 // =====================================================
 
+// =====================================================
+// FAVORITOS: ACTUALIZAR TABLA
+// =====================================================
+
 function actualizarFavoritos() {
 
     if (!contenidoFavoritos) return;
+
+    let subtotal = 0;
 
     contenidoFavoritos.replaceChildren();
 
     if (favoritos.length === 0) {
 
-        const mensaje = document.createElement("p");
-        mensaje.textContent = "No tienes productos favoritos.";
+        const fila = document.createElement("tr");
+        const celda = document.createElement("td");
 
-        contenidoFavoritos.appendChild(mensaje);
+        celda.colSpan = 4;
+        celda.textContent = "No tienes productos favoritos.";
 
-        return;
+        fila.appendChild(celda);
+        contenidoFavoritos.appendChild(fila);
+
+    } else {
+
+        favoritos.forEach(function (producto) {
+
+            const fila = document.createElement("tr");
+
+            // Nombre del producto
+            const nombre = document.createElement("td");
+
+            nombre.textContent = producto.nombre;
+
+            // Cantidad
+            const cantidad = document.createElement("td");
+
+            cantidad.textContent = "1";
+
+            // Precio
+            const precio = document.createElement("td");
+
+            precio.textContent = formatoPrecio(
+                producto.precio
+            );
+
+            // Acciones
+            const acciones = document.createElement("td");
+
+            const botonQuitar = document.createElement("button");
+
+            botonQuitar.type = "button";
+            botonQuitar.textContent = "✖";
+            botonQuitar.className = "eliminar-carrito";
+
+            botonQuitar.setAttribute(
+                "aria-label",
+                "Quitar de favoritos"
+            );
+
+            botonQuitar.addEventListener("click", function () {
+
+                favoritos = favoritos.filter(
+                    p => p.id !== producto.id
+                );
+
+                guardarLocalStorage(
+                    "linneoFavoritos",
+                    favoritos
+                );
+
+                actualizarFavoritos();
+                actualizarBotonesFavoritos();
+
+            });
+
+            const botonAgregar = document.createElement("button");
+
+            botonAgregar.type = "button";
+            botonAgregar.textContent = "🛒";
+            botonAgregar.className = "agregar-desde-favoritos";
+
+            botonAgregar.setAttribute(
+                "aria-label",
+                "Agregar al carrito"
+            );
+
+            botonAgregar.addEventListener("click", function () {
+
+                agregarAlCarrito(
+                    producto.id,
+                    producto.nombre,
+                    producto.precio,
+                    producto.stock
+                );
+
+                abrirCarrito();
+
+            });
+
+            acciones.append(
+                botonQuitar,
+                botonAgregar
+            );
+
+            fila.append(
+                nombre,
+                cantidad,
+                precio,
+                acciones
+            );
+
+            contenidoFavoritos.appendChild(fila);
+
+            subtotal += producto.precio;
+
+        });
 
     }
 
-    favoritos.forEach(function (producto) {
+    const subtotalLabel = document.getElementById(
+        "subtotal_favoritos"
+    );
 
-        const tarjeta = document.createElement("div");
-        tarjeta.className = "producto-favorito";
+    if (subtotalLabel) {
+        subtotalLabel.textContent = formatoPrecio(subtotal);
+    }
 
-        const nombre = document.createElement("h3");
-        nombre.textContent = producto.nombre;
-
-        const precio = document.createElement("p");
-        precio.textContent = formatoPrecio(producto.precio);
-
-        const quitar = document.createElement("button");
-        quitar.type = "button";
-        quitar.textContent = "♥ Quitar de favoritos";
-
-        quitar.addEventListener("click", function () {
-
-            favoritos = favoritos.filter(
-                p => p.id !== producto.id
-            );
-
-            guardarLocalStorage("linneoFavoritos", favoritos);
-
-            actualizarFavoritos();
-            actualizarBotonesFavoritos();
-
-        });
-
-        const agregar = document.createElement("button");
-        agregar.type = "button";
-        agregar.textContent = "🛒 Agregar al carrito";
-
-        agregar.addEventListener("click", function () {
-
-            agregarAlCarrito(
-                producto.id,
-                producto.nombre,
-                producto.precio,
-                producto.stock
-            );
-
-            abrirCarrito();
-
-        });
-
-        tarjeta.append(
-            nombre,
-            precio,
-            quitar,
-            agregar
-        );
-
-        contenidoFavoritos.appendChild(tarjeta);
-
-    });
+    guardarLocalStorage(
+        "linneoFavoritos",
+        favoritos
+    );
 
 }
+
 
 /* =========================================
    CAJA: COMPRADORES Y PRODUCTOS

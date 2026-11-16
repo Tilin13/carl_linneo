@@ -196,27 +196,52 @@
 </nav>
 
 <!-- PANEL DE FAVORITOS -->
-<nav id="favoritos_bar" class="panel-lateral" aria-label="Mis favoritos">
+<nav id="favoritos_bar" class="barra" aria-label="Mis favoritos">
 
-    <div class="panel-lateral-encabezado">
-        <h1>MIS FAVORITOS</h1>
-    </div>
+    <h1>MIS FAVORITOS</h1>
 
-    <div class="panel-lateral-contenido">
+    <table>
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio</th>
+                <th>Eliminar</th>
+            </tr>
+        </thead>
 
-        <div id="contenido_favoritos">
-            <p class="panel-vacio">
-                No tienes productos favoritos.
-            </p>
-        </div>
+        <tbody id="contenido_favoritos">
+            <tr>
+                <td colspan="4">
+                    No tienes productos favoritos.
+                </td>
+            </tr>
+        </tbody>
+    </table>
 
-    </div>
+    <h3>
+        Subtotal:
+        <span id="subtotal_favoritos">$0.00</span>
+    </h3>
 
-    <button type="button" id="cerrar_favoritos" class="button panel-cerrar">
+    <button
+        type="button"
+        id="comprar_favoritos_btn"
+        class="button"
+    >
+        Comprar
+    </button>
+
+    <button
+        type="button"
+        id="cerrar_favoritos"
+        class="button"
+    >
         Cerrar favoritos
     </button>
 
 </nav>
+
 		<hr>
 		<h1 class="centrado">Productos</h1>
 		<section id="productos">
