@@ -83,6 +83,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_DATOS = BASE_DIR / "pos.db"
 FRONTEND_DIR = BASE_DIR / "frontend"
 IMAGENES_DIR = BASE_DIR / "imagenes"
+app = Flask(
+    __name__,
+    template_folder=str(FRONTEND_DIR),
+    static_folder=str(FRONTEND_DIR),
+    static_url_path="",
+)
 
 secret_key = os.getenv("SECRET_KEY", "").strip()
 api_key = os.getenv("OPENAI_API_KEY", "").strip()
@@ -153,12 +159,6 @@ app.config.update(
 
 
 
-app = Flask(
-    __name__,
-    template_folder=str(FRONTEND_DIR),
-    static_folder=str(FRONTEND_DIR),
-    static_url_path="",
-)
 
 app.config.update(
     SECRET_KEY=secret_key,
@@ -2940,7 +2940,6 @@ def admin_eliminar_producto(codigo):
     finally:
         conexion.close()
 
-
 @app.route("/api/admin/stock", methods=["POST"])
 @administrador_requerido
 def admin_anadir_stock():
@@ -3350,7 +3349,14 @@ def login():
         return redirect(url_for("index"))
 
     return render_template("login.html")
+admin = db.session.scalar(
+    select(User).where(User.rol == "admin")
+)
 
+if admin:
+    print("ADMIN_USER_ID:", admin.id)
+else:
+    print("No se encontró ningún administrador")
 @app.route("/registrarse", methods=["GET", "POST"])
 @limiter.limit("5 per minute", methods=["POST"])
 def registrarse():
