@@ -3229,6 +3229,7 @@ def producto(nombre):
 # ============================================================
 # REGISTRO, LOGIN, LOGOUT Y USUARIOS
 # ============================================================
+
 @app.route("/iniciar_sesion", methods=["GET", "POST"])
 @limiter.limit("5 per minute", methods=["POST"])
 def login():
@@ -3264,17 +3265,11 @@ def login():
                 "error"
             )
 
-            return render_template(
-                "login.html"
-            ), 400
+            return render_template("login.html"), 400
 
-        clave = obtener_clave_bloqueo(
-            identificador
-        )
+        clave = obtener_clave_bloqueo(identificador)
 
-        bloqueado, registro = comprobar_bloqueo(
-            clave
-        )
+        bloqueado, registro = comprobar_bloqueo(clave)
 
         if bloqueado:
 
@@ -3284,14 +3279,10 @@ def login():
                 "error"
             )
 
-            return render_template(
-                "login.html"
-            ), 429
+            return render_template("login.html"), 429
 
         identificador_normalizado = (
-            " ".join(
-                identificador.split()
-            ).casefold()
+            " ".join(identificador.split()).casefold()
         )
 
         usuario = db.session.scalar(
@@ -3311,9 +3302,7 @@ def login():
             or not usuario.check_password(password)
         ):
 
-            bloqueado = registrar_fallo_login(
-                clave
-            )
+            bloqueado = registrar_fallo_login(clave)
 
             if bloqueado:
 
@@ -3323,30 +3312,21 @@ def login():
                     "error"
                 )
 
-                return render_template(
-                    "login.html"
-                ), 429
+                return render_template("login.html"), 429
 
             flash(
                 "Usuario/correo o contraseña incorrectos.",
                 "error"
             )
 
-            return render_template(
-                "login.html"
-            ), 401
+            return render_template("login.html"), 401
 
         reiniciar_intentos_login(clave)
 
-        #
-
-        elif usuario.rol == "admin":
-
-            usuario.rol = "user"
-            db.session.commit()
-
+        # Limpiar la sesión anterior
         session.clear()
 
+        # Iniciar sesión sin modificar el rol
         login_user(
             usuario,
             remember=False
@@ -3354,7 +3334,12 @@ def login():
 
         session.permanent = True
 
-        if usuario.rol == "admin":
+        # Comprobar el rol y el correo del administrador
+        if (
+            usuario.rol == "admin"
+            and (usuario.email or "").strip().lower()
+            == ADMIN_EMAIL.strip().lower()
+        ):
             return redirect(url_for("admin"))
 
         destino = request.args.get("next", "")
@@ -3365,6 +3350,7 @@ def login():
         return redirect(url_for("index"))
 
     return render_template("login.html")
+
 @app.route("/registrarse", methods=["GET", "POST"])
 @limiter.limit("5 per minute", methods=["POST"])
 def registrarse():
