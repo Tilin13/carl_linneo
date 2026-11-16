@@ -3354,7 +3354,7 @@ def login():
 
         session.permanent = True
 
-        if correo_usuario == ADMIN_EMAIL:
+        if usuario.rol == "admin":
             return redirect(url_for("admin"))
 
         destino = request.args.get("next", "")
