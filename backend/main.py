@@ -6,6 +6,8 @@ import logging
 import math
 import os
 import re
+from io import BytesIO
+import base64
 import secrets
 from sqlalchemy import inspect, text
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
@@ -822,6 +824,70 @@ def registrar_items_venta(venta, productos_solicitados):
             Decimal("0.01")
         )
     }
+    
+
+class Cupon(db.Model):
+
+    __tablename__ = "cupones"
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    codigo_cupon = db.Column(
+        db.String(64),
+        unique=True,
+        nullable=False,
+        index=True
+    )
+
+    descuento = db.Column(
+        db.Numeric(5, 2),
+        nullable=False
+    )
+
+    categoria = db.Column(
+        db.String(100),
+        nullable=False
+    )
+
+    activo = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=True
+    )
+
+    utilizado = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False
+    )
+
+    usuario_id = db.Column(
+        db.Integer,
+        db.ForeignKey("usuarios.id"),
+        nullable=True
+    )
+
+    pedido_id = db.Column(
+        db.Integer,
+        db.ForeignKey("pedidos.id"),
+        nullable=True
+    )
+
+    fecha_creacion = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+
+    fecha_uso = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+
 class VentaCaja(db.Model):
     __tablename__ = "ventas_caja"
 
@@ -2249,48 +2315,211 @@ def solicitud_demasiado_grande(error):
 # ============================================================
 # RUTA ANTIGUA DE VERIFICACIÓN: SIN SEGUNDO FACTOR
 # ============================================================
-def crrear_cupones():
-	primer_digito = secrets.choice("123456789")
-	resto = "".join(secrets.choice("0123456789") for _ in range(31))
-	codigo_cupon = primer_digito + resto
-	numero_categoria = random.randint(1,7)
-	descuento = random.choice([5,10.15,20])
-	cobrado = False
-	cursor.execute("""
-	INSERT INTO cupones (codigo_cupon,numero_categoria, descuento, cobrado), values=(?,?,?,?)
-	""")
+
+def generar_codigo_cupon():
+
+    while True:
+
+        codigo = secrets.token_urlsafe(24)
+
+        existente = db.session.scalar(
+            select(Cupon.id).where(
+                Cupon.codigo_cupon == codigo
+            )
+        )
+
+        if existente is None:
+            return codigo
+
+
+def crear_cupon_bd(descuento, categoria):
+
+    codigo = generar_codigo_cupon()
+
+    cupon = Cupon(
+        codigo_cupon=codigo,
+        descuento=descuento,
+        categoria=categoria,
+        activo=True,
+        utilizado=False
+    )
+
+    db.session.add(cupon)
+
+    db.session.flush()
+
+    return cupon
+
+			
+
+
+def generar_qr_cupon(codigo):
+
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=8,
+        border=4
+    )
+
+    qr.add_data(codigo)
+    qr.make(fit=True)
+
+    imagen = qr.make_image(
+        fill_color="black",
+        back_color="white"
+    )
+
+    buffer = BytesIO()
+
+    imagen.save(buffer, format="PNG")
+
+    buffer.seek(0)
+
+    imagen_base64 = base64.b64encode(
+        buffer.getvalue()
+    ).decode("utf-8")
+
+    return imagen_base64
+
+
+@app.route(
+    "/api/admin/cupones",
+    methods=["POST"]
+)
+@administrador_requerido
+def crear_cupon_admin():
+
+    try:
+
+        datos = request.get_json(silent=True) or {}
+
+        descuento = Decimal(
+            str(datos.get("descuento", "0"))
+        )
+
+        categoria = str(
+            datos.get("categoria", "")
+        ).strip()
+
+        if not descuento.is_finite() or not (
+            Decimal("1") <= descuento <= Decimal("90")
+        ):
+            raise ValueError(
+                "El descuento debe estar entre 1 y 90."
+            )
+
+        if not categoria or len(categoria) > 100:
+            raise ValueError(
+                "Selecciona una categoría válida."
+            )
+
+        existe_categoria = db.session.execute(
+            text("""
+                SELECT 1
+                FROM productos
+                WHERE categoria = :categoria
+                LIMIT 1
+            """),
+            {"categoria": categoria}
+        ).first()
+
+        if not existe_categoria:
+            raise ValueError(
+                "La categoría no existe en el inventario."
+            )
+
+        cupon = crear_cupon_bd(
+            descuento=descuento,
+            categoria=categoria
+        )
+
+        qr = generar_qr_cupon(
+            cupon.codigo_cupon
+        )
+
+        db.session.commit()
+
+        return jsonify({
+            "mensaje": "Cupón creado correctamente.",
+            "id": cupon.id,
+            "codigo": cupon.codigo_cupon,
+            "descuento": str(cupon.descuento),
+            "categoria": cupon.categoria,
+            "qr": qr,
+            "utilizado": False,
+            "activo": True
+        }), 201
+
+    except (ValueError, TypeError, InvalidOperation) as error:
+
+        db.session.rollback()
+
+        return jsonify({
+            "error": str(error)
+        }), 400
+
+    except Exception:
+
+        db.session.rollback()
+
+        app.logger.exception(
+            "Error creando cupón."
+        )
+
+        return jsonify({
+            "error": "No se pudo crear el cupón."
+        }), 500
+
+@app.route(
+    "/api/admin/cupones",
+    methods=["GET"]
+)
+@administrador_requerido
+def listar_cupones_admin():
+
+    try:
+
+        cupones = db.session.scalars(
+            select(Cupon).order_by(
+                Cupon.fecha_creacion.desc()
+            )
+        ).all()
+
+        return jsonify([
+            {
+                "id": c.id,
+                "codigo": c.codigo_cupon,
+                "descuento": str(c.descuento),
+                "categoria": c.categoria,
+                "activo": c.activo,
+                "utilizado": c.utilizado,
+                "fecha_creacion": (
+                    c.fecha_creacion.isoformat()
+                ),
+                "fecha_uso": (
+                    c.fecha_uso.isoformat()
+                    if c.fecha_uso else None
+                )
+            }
+            for c in cupones
+        ])
+
+    except Exception:
+
+        db.session.rollback()
+
+        app.logger.exception(
+            "Error consultando cupones."
+        )
+
+        return jsonify({
+            "error": "No se pudieron consultar los cupones."
+        }), 500
 	
+
+
 	
-	
-def conocer_categoria(numero_categoria):
-	if numero_categoria == 1:
-		categoria = "Mariposas"
-	elif numero_categoria == 2:
-		categoria = "Escarabajos"
-	elif numero_categoria == 3:
-		categoria = "Odonatos"
-	elif numero_categoria == 4:
-		categoria = "Cuarzos"
-	elif numero_categoria == 5:
-		categoria = "Minerales"
-	elif numero_categoria == 6:
-		categoria = "Fosiles"
-	else:
-		categoria = "todos"
-	
-	
-		
-def imprimir_codigoqr(codigo_cupon):
-	qr = qrcode.QRCode(
-	version=None,
-	error_correction=qrcode.constans.ERROR_CORRECT_M,
-	box_size=10,
-	border=4
-	)
-	qr.add_data(codigo_cupon)
-	qr.make(fit=True)
-	imagen =qr.make_image(fill_color="black", back_color="white")
-	imagen.save("codigo_qr.png")
 @app.route("/cambiar_telefono", methods=["POST"])
 @login_required
 def cambiar_telefono():

@@ -3629,6 +3629,169 @@ if (paquete && cantidades.length > 0) {
     actualizarCantidades();
 
 }
+   const formulario = document.getElementById("form_cupones");
 
+    const mensaje = document.getElementById("mensaje_cupones");
+
+    const lista = document.getElementById("lista_cupones");
+
+    const generado = document.getElementById("cupon_generado");
+
+    if (!formulario || !lista) return;
+
+    const csrf = document.querySelector(
+        'meta[name="csrf-token"]'
+    )?.content;
+
+    async function cargarCupones() {
+
+        try {
+
+            const respuesta = await fetch(
+                "/api/admin/cupones"
+            );
+
+            const datos = await respuesta.json();
+
+            if (!respuesta.ok) {
+                throw new Error(datos.error || "Error cargando cupones.");
+            }
+
+            lista.replaceChildren();
+
+            if (!datos.length) {
+
+                const fila = document.createElement("tr");
+                const celda = document.createElement("td");
+
+                celda.colSpan = 5;
+                celda.textContent = "No hay cupones registrados.";
+
+                fila.appendChild(celda);
+                lista.appendChild(fila);
+
+                return;
+            }
+
+            datos.forEach(cupon => {
+
+                const fila = document.createElement("tr");
+
+                const codigo = document.createElement("td");
+                codigo.textContent = cupon.codigo;
+
+                const qr = document.createElement("td");
+                qr.textContent = "Ver QR al generar";
+
+                const descuento = document.createElement("td");
+                descuento.textContent = cupon.descuento + "%";
+
+                const categoria = document.createElement("td");
+                categoria.textContent = cupon.categoria;
+
+                const estado = document.createElement("td");
+
+                estado.textContent = cupon.utilizado
+                    ? "Utilizado"
+                    : cupon.activo
+                        ? "Disponible"
+                        : "Desactivado";
+
+                fila.append(
+                    codigo,
+                    qr,
+                    descuento,
+                    categoria,
+                    estado
+                );
+
+                lista.appendChild(fila);
+
+            });
+
+        } catch (error) {
+
+            mensaje.textContent = error.message;
+
+        }
+
+    }
+
+    formulario.addEventListener("submit", async function (evento) {
+
+        evento.preventDefault();
+
+        mensaje.textContent = "Generando cupón...";
+
+        generado.replaceChildren();
+
+        const descuento = document.getElementById(
+            "cupon_descuento"
+        ).value;
+
+        const categoria = document.getElementById(
+            "cupon_categoria"
+        ).value;
+
+        try {
+
+            const respuesta = await fetch(
+                "/api/admin/cupones",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrf
+                    },
+
+                    body: JSON.stringify({
+                        descuento: descuento,
+                        categoria: categoria
+                    })
+                }
+            );
+
+            const datos = await respuesta.json();
+
+            if (!respuesta.ok) {
+                throw new Error(
+                    datos.error || "No se pudo crear el cupón."
+                );
+            }
+
+            mensaje.textContent = datos.mensaje;
+
+            const titulo = document.createElement("h3");
+            titulo.textContent = "Cupón generado";
+
+            const codigo = document.createElement("p");
+            codigo.textContent = "Código: " + datos.codigo;
+
+            const imagen = document.createElement("img");
+
+            imagen.src = "data:image/png;base64," + datos.qr;
+            imagen.alt = "Código QR del cupón";
+            imagen.width = 200;
+
+            generado.append(
+                titulo,
+                codigo,
+                imagen
+            );
+
+            formulario.reset();
+
+            await cargarCupones();
+
+        } catch (error) {
+
+            mensaje.textContent = error.message;
+
+        }
+
+    });
+
+    cargarCupones();
 
 });
