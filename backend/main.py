@@ -328,6 +328,28 @@ class User(UserMixin, db.Model):
             self.password,
             password
         )
+    
+def comprobar_administrador():
+
+    with app.app_context():
+
+        administrador = db.session.scalar(
+            select(User).where(
+                User.id == ADMIN_USER_ID,
+                User.rol == "admin"
+            )
+        )
+
+        if administrador:
+            print(
+                "Administrador encontrado:",
+                administrador.id
+            )
+        else:
+            print(
+                "ERROR: No se encontró el administrador "
+                "configurado en ADMIN_USER_ID."
+            )
 class LoginLock(db.Model):
     __tablename__ = "login_locks"
 
@@ -3349,14 +3371,8 @@ def login():
         return redirect(url_for("index"))
 
     return render_template("login.html")
-admin = db.session.scalar(
-    select(User).where(User.rol == "admin")
-)
 
-if admin:
-    print("ADMIN_USER_ID:", admin.id)
-else:
-    print("No se encontró ningún administrador")
+
 @app.route("/registrarse", methods=["GET", "POST"])
 @limiter.limit("5 per minute", methods=["POST"])
 def registrarse():
