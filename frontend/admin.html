@@ -261,103 +261,62 @@
                 <!-- main.js cargará aquí los usuarios -->
             </div>
         </section>
-        <section class="admin-seccion"
-         aria-labelledby="titulo_promociones">
+<section id="marketing">
+    <h2>Crear promoción</h2>
 
-    <div class="admin-seccion-encabezado">
-        <div>
-            <p class="admin-etiqueta">MARKETING</p>
-            <h2 id="titulo_promociones">
-                Crear promoción
-            </h2>
-            <p class="admin-ayuda">
-                Configura descuentos para tus productos.
-            </p>
-        </div>
-    </div>
+    <p>Configura descuentos para tus productos.</p>
 
-    <form id="admin_promociones"
-          class="admin-formulario">
+    <form id="admin_promociones">
 
-        <div class="admin-campo">
-            <label for="codigo_promocion">
-                Código del producto
-            </label>
+        <label for="codigo_promocion">
+            Código del producto
+        </label>
+        <input
+            type="text"
+            id="codigo_promocion"
+            required
+        >
 
-            <input
-                type="text"
-                id="codigo_promocion"
-                name="codigo"
-                maxlength="80"
-                required
-                placeholder="Ej. LIN-001">
-        </div>
+        <label for="descuento_promocion">
+            Descuento porcentual
+        </label>
+        <input
+            type="number"
+            id="descuento_promocion"
+            min="1"
+            max="90"
+            required
+        >
 
-        <div class="admin-campo">
-            <label for="descuento_promocion">
-                Descuento porcentual
-            </label>
+        <label for="inicio_promocion">
+            Inicio de la promoción
+        </label>
+        <input
+            type="datetime-local"
+            id="inicio_promocion"
+            required
+        >
 
-            <input
-                type="number"
-                id="descuento_promocion"
-                name="descuento"
-                min="1"
-                max="90"
-                step="0.01"
-                required
-                placeholder="Ej. 15">
-        </div>
+        <label for="fin_promocion">
+            Finalización de la promoción
+        </label>
+        <input
+            type="datetime-local"
+            id="fin_promocion"
+            required
+        >
 
-        <div class="admin-campo">
-            <label for="inicio_promocion">
-                Inicio de la promoción
-            </label>
-
-            <input
-                type="datetime-local"
-                id="inicio_promocion"
-                name="inicio"
-                required>
-        </div>
-
-        <div class="admin-campo">
-            <label for="duracion_promocion">
-                Finalización de la promoción
-            </label>
-
-            <input
-                type="datetime-local"
-                id="duracion_promocion"
-                name="fin"
-                required>
-        </div>
-
-        <div class="admin-acciones admin-formulario-completo">
-
-            <button
-                type="submit"
-                class="admin-boton admin-boton-principal">
-                Crear oferta
-            </button>
-
-        </div>
+        <button type="submit">Crear oferta</button>
 
     </form>
 
+    <p id="mensaje_promociones"></p>
+
     <h3>Promociones existentes</h3>
-
-    <div id="lista_promociones"
-         class="admin-lista">
+    <div id="lista_promociones">
+        No hay promociones registradas.
     </div>
-
-    <p id="mensaje_promociones"
-       role="status"
-       aria-live="polite">
-    </p>
-
 </section>
-        
 
         <!-- Pie de página -->
         <footer class="admin-footer">
