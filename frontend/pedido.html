@@ -135,33 +135,20 @@
 
             </div>
 
+<div>
+    <strong>Descuento:</strong>
+    <span>${{ "%.2f"|format(pedido.descuento) }}</span>
+</div>
 
-            <div class="resumen-pedido">
+<div>
+    <strong>Total:</strong>
+    <span>${{ "%.2f"|format(pedido.total) }}</span>
+</div>
 
-                <h2>Resumen de compra</h2>
-
-                <div>
-
-                    <strong>Subtotal:</strong>
-
-                    <span>
-                        ${{ "%.2f"|format(pedido.subtotal) }}
-                    </span>
-
-                </div>
-
-                <div>
-
-                    <strong>Estado:</strong>
-
-                    <span>
-                        {{ pedido.estado }}
-                    </span>
-
-                </div>
-
-            </div>
-
+<div>
+    <strong>Método de pago:</strong>
+    <span>{{ pedido.metodo_pago }}</span>
+</div>
         </section>
 
 

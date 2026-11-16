@@ -15,6 +15,10 @@
         type="image/png"
         href="linneo_isotipo.png"
     >
+    <meta
+    name="csrf-token"
+    content="{{ csrf_token() }}"
+>
 </head>
 
 <body>
@@ -131,101 +135,67 @@
     </section>
 
 
-    <!-- MÉTODOS DE PAGO -->
+<section id="metodos_pago">
 
-    <section id="metodos_pago">
+    <h1>Método de pago</h1>
 
-        <h1>Modo de compra</h1>
+    <label>
+        <input
+            type="radio"
+            name="metodo_pago"
+            value="mercado_pago"
+            checked
+        >
+        Mercado Pago (tarjetas y métodos disponibles)
+    </label>
 
-        <button class="button_2" id="tarjeta_credito" type="button">
-            Tarjeta de crédito
-        </button>
+    <label>
+        <input
+            type="radio"
+            name="metodo_pago"
+            value="paypal"
+        >
+        PayPal
+    </label>
 
-        <button class="button_2" id="paypal" type="button">
-            <img
-                src="/imagenes/paypal.jpg"
-                width="35"
-                height="35"
-                alt="PayPal"
-            >
-            PayPal
-        </button>
+</section>
 
-        <button class="button_2" id="oxxo" type="button">
-            <img
-                src="/imagenes/oxxo.jpg"
-                width="35"
-                height="35"
-                alt="Oxxo"
-            >
-            Oxxo
-        </button>
+<button
+    class="button"
+    type="button"
+    id="finalizar_compra"
+>
+    Continuar al pago
+</button>
 
-        <button class="button_2" id="spin" type="button">
-            Spin
-        </button>
-
-        <button class="button_2" id="transeferencia" type="button">
-            Transferencia bancaria
-        </button>
-
-    </section>
+<p id="mensaje_pago" role="status"></p>
 
 
-    <!-- DATOS DE ENVÍO -->
+<form class="panel" id="datos_compra">
 
-    <form class="panel" id="datos_compra">
+    <h1>Datos de envío</h1>
 
-        <h1>Datos de envío</h1>
+    <label for="metodo_envio">Método de envío</label>
+    <select id="metodo_envio" name="envio_metodo" required>
+        <option value="fedex">FedEx</option>
+        <option value="estafeta">Estafeta</option>
+        <option value="correos_mex">Correos mexicanos</option>
+    </select>
 
-        <label for="metodo_envio">
-            Método de envío
-        </label>
+    <label for="direccion">Dirección</label>
+    <input type="text" id="direccion" name="direccion" required>
 
-        <select id="metodo_envio" name="envio_metodo">
-            <option value="fedex">FedEx</option>
-            <option value="estafeta">Estafeta</option>
-            <option value="correos_mex">Correos mexicanos</option>
-        </select>
+    <label for="codigo_postal">Código postal</label>
+    <input type="text" id="codigo_postal" name="codigo_postal"
+           inputmode="numeric" required>
 
-        <div>
-            <h2>Dirección</h2>
+    <label for="ciudad">Ciudad</label>
+    <input type="text" id="ciudad" name="ciudad" required>
 
-            <input
-                type="text"
-                id="direccion"
-                name="direccion"
-            >
-        </div>
+    <label for="Estado">Estado</label>
+    <input type="text" id="Estado" name="estado" required>
 
-        <div>
-            <h2>Código postal</h2>
-
-            <input
-                type="text"
-                id="codigo_postal"
-                name="codigo_postal"
-                inputmode="numeric"
-            >
-
-            <h2>Ciudad</h2>
-
-            <input
-                type="text"
-                id="ciudad"
-                name="ciudad"
-            >
-
-            <h2>Estado</h2>
-
-            <input
-                type="text"
-                id="Estado"
-                name="estado"
-            >
-        </div>
-
-    </form>
+</form>
 
 
     <!-- DATOS DE TARJETA -->
@@ -370,7 +340,7 @@
             <a class="text_menu" href="/informacion">
                 ¿Quiénes somos?
             </a>
-        </div>
+        </div
 
     </nav>
 

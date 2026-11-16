@@ -1645,82 +1645,105 @@ if (cerrarFavoritos) {
 const comprarBtn = $("comprar_carrito_btn");
 
 if (comprarBtn) {
-
-    comprarBtn.addEventListener("click", async function () {
-
+    comprarBtn.addEventListener("click", function () {
         if (carrito.length === 0) {
-
             alert("Tu carrito está vacío.");
-
             return;
         }
 
-        const confirmar = confirm(
-            "¿Deseas confirmar tu compra?"
-        );
-
-        if (!confirmar) return;
-
-        comprarBtn.disabled = true;
-
-        comprarBtn.textContent = "Procesando...";
-
-        try {
-
-            const resultado = await peticion(
-                "/api/pedidos",
-                {
-                    method: "POST",
-
-                    body: JSON.stringify({
-
-                        productos: carrito.map(function (producto) {
-
-                            return {
-                                id: producto.id,
-                                cantidad: producto.cantidad
-                            };
-
-                        })
-
-                    })
-
-                }
-            );
-
-            if (!resultado.url) {
-
-                throw new Error(
-                    "No se recibió la dirección del pedido."
-                );
-
-            }
-
-            // Vaciar carrito únicamente después de confirmar
-            // que el servidor ha registrado la compra.
-
-            carrito = [];
-
-            actualizarCarrito();
-
-            // Abrir los detalles del pedido.
-            window.location.assign(resultado.url);
-
-        } catch (error) {
-
-            alert(error.message);
-
-            comprarBtn.disabled = false;
-
-            comprarBtn.textContent = "Comprar";
-
-        }
-
+        window.location.assign("/comprar");
     });
-
 }
 
 
+// =====================================================
+// FINALIZAR COMPRA Y REDIRIGIR AL PROVEEDOR DE PAGO
+// =====================================================
+
+const finalizarCompraBtn = $("finalizar_compra");
+
+if (finalizarCompraBtn) {
+    finalizarCompraBtn.addEventListener("click", async function (evento) {
+        evento.preventDefault();
+
+        const formularioEnvio = $("datos_compra");
+
+        const metodo = document.querySelector(
+            'input[name="metodo_pago"]:checked'
+        )?.value;
+
+        if (!carrito.length) {
+            alert("Tu carrito está vacío.");
+            return;
+        }
+
+        if (!["mercado_pago", "paypal"].includes(metodo)) {
+            alert("Selecciona Mercado Pago o PayPal.");
+            return;
+        }
+
+        if (formularioEnvio && !formularioEnvio.reportValidity()) {
+            return;
+        }
+
+        const envio = {
+            envio_metodo: $("metodo_envio")?.value || "",
+            direccion: $("direccion")?.value?.trim() || "",
+            codigo_postal: $("codigo_postal")?.value?.trim() || "",
+            ciudad: $("ciudad")?.value?.trim() || "",
+            estado: $("estado")?.value?.trim() || ""
+        };
+
+        const textoOriginal = finalizarCompraBtn.textContent;
+
+        finalizarCompraBtn.disabled = true;
+        finalizarCompraBtn.textContent = "Preparando pago...";
+
+        try {
+            // 1. Crear pedido pendiente en Linneo
+            const pedido = await peticion("/api/pedidos", {
+                method: "POST",
+                body: JSON.stringify({
+                    metodo_pago: metodo,
+                    envio: envio,
+                    productos: carrito.map(producto => ({
+                        id: producto.id,
+                        cantidad: producto.cantidad
+                    }))
+                })
+            });
+
+            // 2. Crear el pago en Mercado Pago o PayPal
+            const pago = await peticion("/api/pagos/iniciar", {
+                method: "POST",
+                body: JSON.stringify({
+                    pedido_id: pedido.pedido_id
+                })
+            });
+
+            if (!pago.url || !/^https:\/\//i.test(pago.url)) {
+                throw new Error(
+                    "El proveedor no devolvió una dirección de pago segura."
+                );
+            }
+
+            // 3. Enviar al cliente al sitio del proveedor
+            window.location.assign(pago.url);
+
+        } catch (error) {
+            console.error("Error al finalizar compra:", error);
+
+            alert(
+                error.message ||
+                "No se pudo iniciar el pago. Inténtalo nuevamente."
+            );
+
+            finalizarCompraBtn.disabled = false;
+            finalizarCompraBtn.textContent =
+                textoOriginal || "Continuar al pago";
+        }
+    });
+}
 // =====================================================
 // INICIALIZAR CARRITO Y FAVORITOS
 // =====================================================
