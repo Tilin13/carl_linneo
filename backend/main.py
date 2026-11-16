@@ -87,7 +87,15 @@ IMAGENES_DIR = BASE_DIR / "imagenes"
 secret_key = os.getenv("SECRET_KEY", "").strip()
 api_key = os.getenv("OPENAI_API_KEY", "").strip()
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "").strip().lower()
+ADMIN_USER_ID = os.getenv("ADMIN_USER_ID", "").strip()
 
+if not ADMIN_USER_ID.isdigit() or int(ADMIN_USER_ID) <= 0:
+    raise RuntimeError(
+        "Debes configurar ADMIN_USER_ID con el ID "
+        "de tu cuenta administrativa."
+    )
+
+ADMIN_USER_ID = int(ADMIN_USER_ID)
 if len(secret_key) < 32:
     raise RuntimeError(
         "Configura SECRET_KEY en .env con una clave aleatoria "
@@ -107,13 +115,44 @@ if not ADMIN_EMAIL or not re.fullmatch(
 if not FRONTEND_DIR.exists():
     raise RuntimeError(f"No existe la carpeta frontend: {FRONTEND_DIR}")
 
-cookie_secure_env = os.getenv("COOKIE_SECURE")
-if cookie_secure_env is None:
-    cookie_secure = os.getenv("FLASK_ENV", "").lower() == "production"
-else:
-    cookie_secure = cookie_secure_env.lower() in {
+
+_secure_env = os.getenv("COOKIE_SECURE")
+
+
+ENTORNO = os.getenv("APP_ENV", "development").strip().lower()
+
+if ENTORNO not in ("development", "production"):
+    raise RuntimeError("APP_ENV no es válido.")
+
+if ENTORNO == "production":
+    if os.getenv("COOKIE_SECURE", "").lower() not in (
         "1", "true", "yes", "on"
-    }
+    ):
+        raise RuntimeError(
+            "En producción COOKIE_SECURE debe estar activado."
+        )
+
+cookie_secure = ENTORNO == "production"
+
+app.config.update(
+    SECRET_KEY=secret_key,
+
+    SESSION_COOKIE_SECURE=cookie_secure,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_NAME="linneo_session",
+
+    PERMANENT_SESSION_LIFETIME=1800,
+    SESSION_REFRESH_EACH_REQUEST=False,
+
+    WTF_CSRF_ENABLED=True,
+    WTF_CSRF_TIME_LIMIT=3600,
+
+    MAX_CONTENT_LENGTH=2 * 1024 * 1024,
+)
+
+
+
 app = Flask(
     __name__,
     template_folder=str(FRONTEND_DIR),
@@ -142,11 +181,17 @@ login_manager.session_protection = "strong"
 csrf = CSRFProtect(app)
 client = OpenAI(api_key=api_key)
 
+
 limiter = Limiter(
     key_func=get_remote_address,
     app=app,
     default_limits=[],
-    storage_uri=os.getenv("RATELIMIT_STORAGE_URI", "memory://"),
+    storage_uri=os.getenv(
+        "RATELIMIT_STORAGE_URI",
+        "memory://"
+    ),
+    strategy="fixed-window",
+    headers_enabled=True,
 )
 
 # ============================================================
@@ -1025,40 +1070,23 @@ def destino_local_seguro(destino):
         and "\\" not in destino
     )
 
-
 def administrador_requerido(func):
-    """Exige una sesión autenticada, el rol admin y ADMIN_EMAIL."""
+    """Permite el acceso únicamente al administrador autorizado."""
 
     @wraps(func)
+    @login_required
     def decorada(*args, **kwargs):
-        es_api = request.path.startswith("/api/")
 
-        if not current_user.is_authenticated:
-            if es_api:
-                return jsonify({
-                    "error": "Debes iniciar sesión."
-                }), 401
-
-            return redirect(
-                url_for("login", next=request.path)
-            )
-
-        correo_usuario = (
-            getattr(current_user, "email", "") or ""
-        ).strip().lower()
-
-        rol = getattr(current_user, "rol", None)
-
-        autorizado = (
-            bool(ADMIN_EMAIL)
-            and correo_usuario == ADMIN_EMAIL
-            and rol == "admin"
+        usuario_autorizado = (
+            current_user.is_authenticated
+            and current_user.id == ADMIN_USER_ID
+            and current_user.rol == "admin"
         )
 
-        if not autorizado:
-            if es_api:
+        if not usuario_autorizado:
+            if request.path.startswith("/api/"):
                 return jsonify({
-                    "error": "No tienes permiso para esta operación."
+                    "error": "No tienes permisos para esta operación."
                 }), 403
 
             abort(403)
@@ -1129,17 +1157,38 @@ Si no has solicitado este acceso, ignora este mensaje.
 
 @app.after_request
 def agregar_cabeceras_seguridad(response):
+
     response.headers["X-Content-Type-Options"] = "nosniff"
+
     response.headers["X-Frame-Options"] = "DENY"
+
     response.headers["Referrer-Policy"] = (
         "strict-origin-when-cross-origin"
     )
+
     response.headers["Permissions-Policy"] = (
         "camera=(), microphone=(), geolocation=()"
     )
 
-    if request.path.startswith("/api/"):
-        response.headers["Cache-Control"] = "no-store"
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+
+    response.headers["Cross-Origin-Resource-Policy"] = (
+        "same-origin"
+    )
+
+    response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
+
+    response.headers["Cache-Control"] = (
+        "no-store"
+        if request.path.startswith("/api/")
+        or current_user.is_authenticated
+        else "no-cache"
+    )
+
+    if request.is_secure and ENTORNO == "production":
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000"
+        )
 
     return response
 
@@ -3181,7 +3230,7 @@ def producto(nombre):
 # REGISTRO, LOGIN, LOGOUT Y USUARIOS
 # ============================================================
 @app.route("/iniciar_sesion", methods=["GET", "POST"])
-@limiter.limit("10 per minute", methods=["POST"])
+@limiter.limit("5 per minute", methods=["POST"])
 def login():
 
     if current_user.is_authenticated:
@@ -3289,15 +3338,7 @@ def login():
 
         reiniciar_intentos_login(clave)
 
-        correo_usuario = (
-            usuario.email or ""
-        ).strip().lower()
-
-        if correo_usuario == ADMIN_EMAIL:
-
-            if usuario.rol != "admin":
-                usuario.rol = "admin"
-                db.session.commit()
+        #
 
         elif usuario.rol == "admin":
 
@@ -3400,10 +3441,13 @@ def registrarse():
 
                 # Si el correo es ADMIN_EMAIL, asignar el rol y
                 # entrar directamente al panel, sin segundo factor.
-                if email == ADMIN_EMAIL:
-                    usuario.rol = "admin"
-                    db.session.commit()
-                    return redirect(url_for("admin"))
+                session.clear()
+
+                login_user(usuario, remember=False)
+
+                session.permanent = True
+
+                return redirect(url_for("index"))
 
                 return redirect(url_for("index"))
 
