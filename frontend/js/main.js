@@ -3088,101 +3088,160 @@ if (tipoCompradorSelect) {
     actualizarTipoComprador();
 }
        
-    const cantidades = document.querySelectorAll(".cantidad_especie");
-    const filtros = document.querySelectorAll(".filtro_especie");
-    
-    const crear_mi_marco = document.getElementById("crear_mi_marco");
-    if (crear_mi_marco) {
-    crear_mi_marco.addEventListener("click", function() {
-        window.location.href = "/crear_pedido";
-    });}
 
-    const contador = document.getElementById("contador_especies");
-    const limiteTexto = document.getElementById("limite_especies");
-    const mensaje = document.getElementById("mensaje_especies");
+/* =========================================
+   PEDIDOS PERSONALIZADOS LINNEO
+========================================= */
 
-    if (!paquete || cantidades.length === 0) return;
+const paquete = $("paquete_pedido");
 
-    const limites = {
-        individual: 1,
-        trio: 3,
-        quinteto: 5
-    };
+const cantidades = document.querySelectorAll(
+    ".cantidad_especie"
+);
 
-    function obtenerLimite() {
-        return limites[paquete.value] || 1;
-    }
+const filtros = document.querySelectorAll(
+    ".filtro_especie"
+);
 
-    function obtenerTotal() {
-        return Array.from(cantidades).reduce(function (total, input) {
+const contador = $("contador_especies");
+const limiteTexto = $("limite_especies");
+const mensaje = $("mensaje_especies");
+
+const alineacion = $("alineacion_especies");
+const colorMarco = $("color_marco");
+const vistaPrevia = $("vista_previa_marco");
+
+const formularioPedido = $("form_pedido_personalizado");
+const botonConfirmar = $("confirmar_pedido");
+const mensajePedido = $("mensaje_pedido");
+
+const limites = {
+    individual: 1,
+    trio: 3,
+    quinteto: 5
+};
+
+function obtenerLimite() {
+    return limites[paquete.value] || 1;
+}
+
+function obtenerTotal() {
+    return Array.from(cantidades).reduce(
+        (total, input) => {
             return total + (Number(input.value) || 0);
-        }, 0);
+        },
+        0
+    );
+}
+
+/* =========================================
+   DISTRIBUCIÓN AUTOMÁTICA
+========================================= */
+
+function distribucionAutomatica() {
+
+    const cantidad = obtenerLimite();
+
+    if (cantidad === 1) {
+        alineacion.value = "vertical";
+    } else if (cantidad === 3) {
+        alineacion.value = "horizontal";
+    } else {
+        alineacion.value = "diagonal";
     }
 
-    function actualizarCantidades(inputModificado = null) {
+}
 
-        const limite = obtenerLimite();
-        let total = obtenerTotal();
+/* =========================================
+   CONTROLAR CANTIDADES
+========================================= */
 
-        // Si el cliente supera el límite, corregir su selección.
-        if (total > limite && inputModificado) {
+function actualizarCantidades(inputModificado = null) {
 
-            const anterior = Number(inputModificado.value);
+    const limite = obtenerLimite();
 
-            inputModificado.value = Math.max(
-                0,
-                anterior - (total - limite)
-            );
+    let total = obtenerTotal();
 
-        }
+    if (total > limite && inputModificado) {
 
-        // Actualizar el máximo permitido para cada especie.
-        cantidades.forEach(function (input) {
+        const diferencia = total - limite;
 
-            const stock = Number(input.dataset.stock);
-            const seleccionados = obtenerTotal();
+        inputModificado.value = Math.max(
+            0,
+            Number(inputModificado.value) - diferencia
+        );
 
-            const disponiblesParaEstaEspecie =
-                limite - (seleccionados - Number(input.value));
+    }
 
-            input.max = Math.max(
-                0,
-                Math.min(stock, disponiblesParaEstaEspecie)
-            );
+    cantidades.forEach(function(input) {
 
-            input.disabled =
-                Number(input.max) === 0 &&
-                Number(input.value) === 0;
-
-        });
+        const stock = Math.max(
+            0,
+            Number(input.dataset.stock) || 0
+        );
 
         const seleccionados = obtenerTotal();
 
-        contador.textContent =
-            "Seleccionados: " + seleccionados + " / " + limite;
+        const otros = seleccionados -
+            (Number(input.value) || 0);
 
-        limiteTexto.textContent =
-            "Puedes seleccionar hasta " + limite + " ejemplar(es).";
+        const disponibles = Math.max(
+            0,
+            Math.min(stock, limite - otros)
+        );
 
-        if (seleccionados === limite) {
-            mensaje.textContent = "¡Has completado tu paquete!";
-        } else {
-            mensaje.textContent =
-                "Puedes seleccionar " + (limite - seleccionados) +
-                " ejemplar(es) más.";
-        }
+        input.max = disponibles;
+
+        input.disabled =
+            disponibles === 0 &&
+            Number(input.value) === 0;
+
+    });
+
+    const seleccionados = obtenerTotal();
+
+    contador.textContent =
+        `Seleccionados: ${seleccionados} / ${limite}`;
+
+    limiteTexto.textContent =
+        `Puedes seleccionar hasta ${limite} ejemplar(es).`;
+
+    if (seleccionados === limite) {
+
+        mensaje.textContent =
+            "¡Has completado tu paquete!";
+
+    } else {
+
+        mensaje.textContent =
+            `Puedes seleccionar ${limite - seleccionados} ejemplar(es) más.`;
+
     }
 
-    // Cambiar de paquete.
-    paquete.addEventListener("change", function () {
+    actualizarVistaPrevia();
+
+}
+
+/* =========================================
+   CAMBIAR PAQUETE
+========================================= */
+
+if (paquete) {
+
+    paquete.addEventListener("change", function() {
 
         const limite = obtenerLimite();
+
         let restantes = limite;
 
-        cantidades.forEach(function (input) {
+        cantidades.forEach(function(input) {
 
-            const actual = Number(input.value);
-            const stock = Number(input.dataset.stock);
+            const actual = Number(input.value) || 0;
+
+            const stock = Math.max(
+                0,
+                Number(input.dataset.stock) || 0
+            );
 
             const permitido = Math.min(
                 actual,
@@ -3191,67 +3250,302 @@ if (tipoCompradorSelect) {
             );
 
             input.value = permitido;
+
             restantes -= permitido;
 
         });
 
+        distribucionAutomatica();
+
         actualizarCantidades();
-    });
-
-    // Controlar las cantidades.
-    cantidades.forEach(function (input) {
-
-        input.addEventListener("input", function () {
-
-            let cantidad = Number(this.value);
-
-            if (!Number.isInteger(cantidad) || cantidad < 0) {
-                cantidad = 0;
-            }
-
-            const stock = Number(this.dataset.stock);
-            const limite = obtenerLimite();
-
-            const otros = obtenerTotal() - (Number(this.value) || 0);
-
-            const maximo = Math.max(
-                0,
-                Math.min(stock, limite - otros)
-            );
-
-            this.value = Math.min(cantidad, maximo);
-
-            actualizarCantidades(this);
-
-        });
 
     });
 
-    // Filtrar por categoría.
-    filtros.forEach(function (boton) {
+}
 
-        boton.addEventListener("click", function () {
+/* =========================================
+   CAMBIAR CANTIDADES
+========================================= */
 
-            const categoria = this.dataset.categoria;
+cantidades.forEach(function(input) {
 
-            filtros.forEach(function (f) {
-                f.classList.remove("activo");
+    input.addEventListener("input", function() {
+
+        const limite = obtenerLimite();
+
+        const stock = Math.max(
+            0,
+            Number(this.dataset.stock) || 0
+        );
+
+        const otros = obtenerTotal() -
+            (Number(this.value) || 0);
+
+        let cantidad = Number(this.value);
+
+        if (!Number.isSafeInteger(cantidad) || cantidad < 0) {
+            cantidad = 0;
+        }
+
+        const maximo = Math.max(
+            0,
+            Math.min(stock, limite - otros)
+        );
+
+        this.value = Math.min(cantidad, maximo);
+
+        actualizarCantidades(this);
+
+    });
+
+});
+
+/* =========================================
+   VISTA PREVIA DEL MARCO
+========================================= */
+
+function actualizarVistaPrevia() {
+
+    if (!vistaPrevia) return;
+
+    vistaPrevia.replaceChildren();
+
+    const claseColor = colorMarco.value;
+    const claseAlineacion = alineacion.value;
+
+    vistaPrevia.className =
+        `marco-preview ${claseColor} ${claseAlineacion}`;
+
+    let seleccionados = [];
+
+    cantidades.forEach(function(input) {
+
+        const cantidad = Number(input.value) || 0;
+
+        for (let i = 0; i < cantidad; i++) {
+
+            seleccionados.push({
+                nombre: input.dataset.nombre || "Ejemplar"
             });
 
-            this.classList.add("activo");
-
-            document.querySelectorAll(".tarjeta_especie")
-                .forEach(function (tarjeta) {
-
-                    tarjeta.hidden =
-                        tarjeta.dataset.categoria !== categoria;
-
-                });
-
-        });
+        }
 
     });
 
+    if (seleccionados.length === 0) {
+
+        const texto = document.createElement("p");
+
+        texto.textContent =
+            "Selecciona tus especies para visualizar el marco.";
+
+        vistaPrevia.appendChild(texto);
+
+        return;
+
+    }
+
+    seleccionados.forEach(function(especie) {
+
+        const ejemplar = document.createElement("div");
+
+        ejemplar.className = "ejemplar-preview";
+
+        ejemplar.textContent = especie.nombre;
+
+        vistaPrevia.appendChild(ejemplar);
+
+    });
+
+}
+
+/* =========================================
+   CAMBIAR DISTRIBUCIÓN Y COLOR
+========================================= */
+
+if (alineacion) {
+    alineacion.addEventListener(
+        "change",
+        actualizarVistaPrevia
+    );
+}
+
+if (colorMarco) {
+    colorMarco.addEventListener(
+        "change",
+        actualizarVistaPrevia
+    );
+}
+
+/* =========================================
+   FILTRAR ESPECIES
+========================================= */
+
+filtros.forEach(function(boton) {
+
+    boton.addEventListener("click", function() {
+
+        const categoria = this.dataset.categoria;
+
+        filtros.forEach(function(filtro) {
+            filtro.classList.remove("activo");
+        });
+
+        this.classList.add("activo");
+
+        document.querySelectorAll(".tarjeta_especie")
+            .forEach(function(tarjeta) {
+
+                tarjeta.hidden =
+                    tarjeta.dataset.categoria !== categoria;
+
+            });
+
+    });
+
+});
+
+/* =========================================
+   VALIDAR Y ENVIAR PEDIDO
+========================================= */
+
+if (formularioPedido) {
+
+    formularioPedido.addEventListener(
+        "submit",
+        async function(evento) {
+
+            evento.preventDefault();
+
+            const total = obtenerTotal();
+            const limite = obtenerLimite();
+
+            if (total !== limite) {
+
+                mensajePedido.textContent =
+                    `Debes seleccionar exactamente ${limite} ejemplar(es).`;
+
+                return;
+
+            }
+
+            const especies = [];
+
+            cantidades.forEach(function(input) {
+
+                const cantidad = Number(input.value) || 0;
+
+                if (cantidad > 0) {
+
+                    especies.push({
+                        codigo: input.dataset.codigo,
+                        nombre: input.dataset.nombre,
+                        cantidad: cantidad
+                    });
+
+                }
+
+            });
+
+            const dedicatoria =
+                $("texto_dedicatoria").value.trim();
+
+            const datosPedido = {
+
+                paquete: paquete.value,
+
+                cantidad_ejemplares: total,
+
+                especies: especies,
+
+                distribucion: alineacion.value,
+
+                color_marco: colorMarco.value,
+
+                dedicatoria: {
+                    texto: dedicatoria,
+                    posicion: $("posicion_dedicatoria").value,
+                    tipografia: $("tipografia").value
+                }
+
+            };
+
+            if (!confirm(
+                "¿Deseas confirmar tu pedido personalizado?"
+            )) {
+                return;
+            }
+
+            botonConfirmar.disabled = true;
+
+            botonConfirmar.textContent =
+                "Registrando pedido...";
+
+            mensajePedido.textContent =
+                "Enviando tu pedido...";
+
+            try {
+
+                const resultado = await peticion(
+                    "/api/pedidos/personalizados",
+                    {
+                        method: "POST",
+                        body: JSON.stringify(datosPedido)
+                    }
+                );
+
+                mensajePedido.textContent =
+                    resultado.mensaje ||
+                    "¡Tu pedido personalizado se registró correctamente!";
+
+                if (resultado.url) {
+
+                    window.location.assign(resultado.url);
+
+                } else {
+
+                    formularioPedido.reset();
+
+                    cantidades.forEach(function(input) {
+                        input.value = 0;
+                    });
+
+                    distribucionAutomatica();
+                    actualizarCantidades();
+
+                }
+
+            } catch(error) {
+
+                mensajePedido.textContent =
+                    error.message ||
+                    "No se pudo registrar el pedido.";
+
+            } finally {
+
+                botonConfirmar.disabled = false;
+
+                botonConfirmar.textContent =
+                    "Confirmar pedido personalizado";
+
+            }
+
+        }
+    );
+
+}
+
+/* =========================================
+   INICIALIZACIÓN
+========================================= */
+
+if (paquete && cantidades.length > 0) {
+
+    distribucionAutomatica();
+
     actualizarCantidades();
+
+}
+
 
 });

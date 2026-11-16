@@ -147,124 +147,190 @@
 			</div>
 		</div>
 		
-<section class="seleccion-paquete">
-    <h2>1. Escoge tu paquete</h2>
 
-    <select id="paquete_pedido" name="paquete_pedido">
-        <option value="individual">Paquete individual (1 ejemplar)</option>
-        <option value="trio">Paquete de tres ejemplares</option>
-        <option value="quinteto">Paquete de cinco ejemplares</option>
-    </select>
+<form id="form_pedido_personalizado">
 
-    <p id="limite_especies">
-        Puedes seleccionar hasta 1 ejemplar.
-    </p>
+    <!-- PAQUETE -->
+    <section class="seleccion-paquete">
+        <h2>1. Escoge tu paquete</h2>
 
-    <p id="contador_especies">Seleccionados: 0 / 1</p>
-</section>
+        <select id="paquete_pedido" name="paquete_pedido" required>
+            <option value="individual">Individual (1 ejemplar)</option>
+            <option value="trio">Trío (3 ejemplares)</option>
+            <option value="quinteto">Quinteto (5 ejemplares)</option>
+        </select>
 
-<section id="especies_seccion">
+        <p id="limite_especies">
+            Puedes seleccionar hasta 1 ejemplar.
+        </p>
 
-    <h2>2. Escoge tus especies</h2>
+        <p id="contador_especies">
+            Seleccionados: 0 / 1
+        </p>
+    </section>
 
-    <p>Selecciona las especies que deseas incluir en tu marco.</p>
+    <!-- ESPECIES -->
+    <section id="especies_seccion">
 
-    <nav id="especies_barra">
-        <button type="button" class="filtro_especie activo"
-                data-categoria="Mariposas">
-            Mariposas
-        </button>
+        <h2>2. Escoge tus especies</h2>
 
-        <button type="button" class="filtro_especie"
-                data-categoria="Escarabajos">
-            Escarabajos
-        </button>
+        <p>Selecciona las especies para tu marco.</p>
 
-        <button type="button" class="filtro_especie"
-                data-categoria="Odonatos">
-            Odonatos
-        </button>
-    </nav>
+        <nav id="especies_barra">
 
-    <div id="especies_seleccionadas">
+            <button type="button"
+                    class="filtro_especie activo"
+                    data-categoria="Mariposas">
+                Mariposas
+            </button>
 
-        {% for especie in especies %}
+            <button type="button"
+                    class="filtro_especie"
+                    data-categoria="Escarabajos">
+                Escarabajos
+            </button>
 
-        <article class="tarjeta_especie"
-                 data-categoria="{{ especie.categoria }}">
+            <button type="button"
+                    class="filtro_especie"
+                    data-categoria="Odonatos">
+                Odonatos
+            </button>
 
-            <h3>{{ especie.nombre }}</h3>
+        </nav>
 
-            <p>{{ especie.categoria }}</p>
+        <div id="especies_seleccionadas">
 
-            <p>
-                Disponibles:
-                <strong>{{ especie.stock }}</strong>
-            </p>
+            {% for especie in especies %}
 
-            <label for="cantidad_{{ loop.index }}">
-                Cantidad:
-            </label>
+            <article class="tarjeta_especie"
+                     data-categoria="{{ especie.categoria }}">
 
-            <input
-                type="number"
-                class="cantidad_especie"
-                id="cantidad_{{ loop.index }}"
-                name="especies[{{ especie.codigo }}]"
-                data-codigo="{{ especie.codigo }}"
-                data-stock="{{ especie.stock }}"
-                value="0"
-                min="0"
-                max="{{ especie.stock }}"
-            >
+                <h3>{{ especie.nombre }}</h3>
 
-        </article>
+                <p>{{ especie.categoria }}</p>
 
-        {% else %}
+                <p>
+                    Disponibles:
+                    <strong>{{ especie.stock }}</strong>
+                </p>
 
-        <p>No hay especies disponibles actualmente.</p>
+                <label for="cantidad_{{ loop.index }}">
+                    Cantidad:
+                </label>
 
-        {% endfor %}
+                <input
+                    type="number"
+                    class="cantidad_especie"
+                    id="cantidad_{{ loop.index }}"
+                    name="especies[{{ especie.codigo }}]"
+                    data-codigo="{{ especie.codigo }}"
+                    data-nombre="{{ especie.nombre }}"
+                    data-stock="{{ especie.stock }}"
+                    value="0"
+                    min="0"
+                    max="{{ especie.stock }}"
+                >
 
-    </div>
+            </article>
 
-    <p id="mensaje_especies" aria-live="polite"></p>
+            {% else %}
 
-</section>
-<section>
-	<h2>Color del marco</h2>
-	<select id="color_marco">
-		<option value="rojo">Rojo</option>
-		<option value="amarillo">Amarillo</option>
-		<option value="verde">Verde</option>
-		<option value="azul">Azul</option>
-		<option value="negro">Negro</option>
-		<option value="blanco">Blanco</option>
-	</select>
-</section>
-<section>
-	<h2>Textos o dedicatoria</h2>
-	<div>
-		<h3>Texto o dedicatoria
-			<input type="text" placeholder="texto">
-		</h3>
-	</div>
-	<select id="posicion_dedicatoria">
-		<option value="arriba">Arriba</option>
-		<option value="abajo">Abajo</option>
-		<option value="derecha">Derecha</option>
-		<option value="izquierda">izquierda</option>
-	</select>
-	<div>
-		<h2>Tipografía</h2>
-		<select id="tipografia">
-			<option value="manuscrita">Manuscrita</option>
-			<option value="normal">Normal</option>
-		</select>
-	</div>
-</section>
+            <p>No hay especies disponibles.</p>
 
-			
+            {% endfor %}
+
+        </div>
+
+        <p id="mensaje_especies" aria-live="polite"></p>
+
+    </section>
+
+    <!-- DISTRIBUCIÓN -->
+    <section id="posicion_especies">
+
+        <h2>3. Distribución de los ejemplares</h2>
+
+        <p>Elige cómo deseas distribuir tus ejemplares.</p>
+
+        <select id="alineacion_especies" required>
+            <option value="vertical">Vertical</option>
+            <option value="horizontal">Horizontal</option>
+            <option value="diagonal">Diagonal</option>
+        </select>
+
+        <h3>Vista previa del marco</h3>
+
+        <div id="vista_previa_marco"
+             class="marco-preview">
+
+            <p>Selecciona tus especies para ver el diseño.</p>
+
+        </div>
+
+    </section>
+
+    <!-- COLOR -->
+    <section>
+
+        <h2>4. Color del marco</h2>
+
+        <select id="color_marco" required>
+            <option value="rojo">Rojo</option>
+            <option value="amarillo">Amarillo</option>
+            <option value="verde">Verde</option>
+            <option value="azul">Azul</option>
+            <option value="negro">Negro</option>
+            <option value="blanco">Blanco</option>
+        </select>
+
+    </section>
+
+    <!-- DEDICATORIA -->
+    <section>
+
+        <h2>5. Dedicatoria</h2>
+
+        <label for="texto_dedicatoria">
+            Texto o dedicatoria
+        </label>
+
+        <input
+            type="text"
+            id="texto_dedicatoria"
+            maxlength="150"
+            placeholder="Escribe tu dedicatoria"
+        >
+
+        <label for="posicion_dedicatoria">
+            Posición del texto
+        </label>
+
+        <select id="posicion_dedicatoria">
+            <option value="arriba">Arriba</option>
+            <option value="abajo">Abajo</option>
+            <option value="derecha">Derecha</option>
+            <option value="izquierda">Izquierda</option>
+        </select>
+
+        <label for="tipografia">
+            Tipografía
+        </label>
+
+        <select id="tipografia">
+            <option value="manuscrita">Manuscrita</option>
+            <option value="normal">Normal</option>
+        </select>
+
+    </section>
+
+    <p id="mensaje_pedido" aria-live="polite"></p>
+
+    <button type="submit" id="confirmar_pedido">
+        Confirmar pedido personalizado
+    </button>
+
+</form>
+
 
 		<button id="chat_btn" class="button">💬</button>
 
