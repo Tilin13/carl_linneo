@@ -3093,7 +3093,6 @@ if (tipoCompradorSelect) {
    PEDIDOS PERSONALIZADOS LINNEO
 ========================================= */
 
-const paquete = $("paquete_pedido");
 
 const cantidades = document.querySelectorAll(
     ".cantidad_especie"
