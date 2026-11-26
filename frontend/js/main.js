@@ -2310,9 +2310,17 @@ actualizarFavoritos();
 // PROMOCIONES: ADMINISTRADOR
 // ================================================
 
-const formularioPromocion = $("admin_promociones");
-const mensajePromocion = $("mensaje_promociones");
-const listaPromocionesAdmin = $("lista_promociones");
+/* =========================================
+   CUPONES
+========================================= */
+
+const formularioCupones = document.getElementById("form_cupones");
+
+const mensajeCupones = document.getElementById("mensaje_cupones");
+
+const listaCupones = document.getElementById("lista_cupones");
+
+const cuponGenerado = document.getElementById("cupon_generado");
 
 async function cargarPromocionesAdmin() {
     if (!listaPromocionesAdmin) return;
