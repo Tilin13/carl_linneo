@@ -3660,7 +3660,8 @@ if (paquete && cantidades.length > 0) {
     actualizarCantidades();
 
 }
-   const formulario = document.getElementById("form_cupones");
+   const formularioCuponesAdmin =
+    document.getElementById("form_cupones");
 
     const mensaje = document.getElementById("mensaje_cupones");
 
@@ -3668,7 +3669,7 @@ if (paquete && cantidades.length > 0) {
 
     const generado = document.getElementById("cupon_generado");
 
-    if (!formulario || !lista) return;
+    if (!formularioCuponesAdmin || !lista) return;
 
     const csrf = document.querySelector(
         'meta[name="csrf-token"]'
@@ -3748,7 +3749,7 @@ if (paquete && cantidades.length > 0) {
 
     }
 
-    formulario.addEventListener("submit", async function (evento) {
+    formularioCuponesAdmin.addEventListener("submit", async function (evento) {
 
         evento.preventDefault();
 
@@ -3811,7 +3812,7 @@ if (paquete && cantidades.length > 0) {
                 imagen
             );
 
-            formulario.reset();
+            formularioCuponesAdmin.reset();
 
             await cargarCupones();
 
