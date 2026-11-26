@@ -23,6 +23,580 @@
     
 }
 
+/* =========================================
+   LINNEO - CHATBOT PROFESIONAL
+========================================= */
+
+/* VENTANA PRINCIPAL */
+
+#chat_box {
+    position: fixed;
+
+    right: 25px;
+    bottom: 95px;
+
+    width: min(390px, calc(100vw - 30px));
+
+    height: min(600px, calc(100dvh - 120px));
+
+    min-height: 350px;
+    max-height: 650px;
+
+    margin: 0;
+    padding: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    background-color: var(--tarjeta);
+
+    border: 1px solid var(--borde);
+    border-radius: 20px;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 15px 45px rgba(35, 55, 42, 0.20),
+        0 3px 10px rgba(35, 55, 42, 0.08);
+
+    z-index: 1500;
+
+    transform-origin: bottom right;
+
+    animation: aparecer_chat 0.25s ease;
+}
+
+/* IMPORTANTE:
+   Permite que el atributo hidden funcione */
+
+#chat_box[hidden] {
+    display: none !important;
+}
+
+/* ANIMACIÓN */
+
+@keyframes aparecer_chat {
+
+    from {
+        opacity: 0;
+        transform: translateY(15px) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+}
+
+
+/* =========================================
+   ENCABEZADO
+========================================= */
+
+.chat_encabezado {
+
+    min-height: 85px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 15px 18px;
+
+    background: var(--verde-musgo);
+    color: white;
+
+    border-bottom: 3px solid var(--ocre);
+
+}
+
+.chat_identidad {
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+}
+
+.chat_avatar {
+
+    width: 48px;
+    height: 48px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: var(--tarjeta);
+
+    border-radius: 50%;
+
+    font-size: 25px;
+
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+
+}
+
+.chat_info h2 {
+
+    margin: 0;
+
+    color: white;
+
+    font-size: 22px;
+
+    font-family: inherit;
+
+}
+
+.chat_info span {
+
+    display: block;
+
+    margin-top: 3px;
+
+    color: #E6EBDD;
+
+    font-size: 12px;
+
+}
+
+.estado_online {
+
+    display: inline-block !important;
+
+    width: 8px;
+    height: 8px;
+
+    margin-right: 4px;
+
+    background: #9AD18B;
+
+    border-radius: 50%;
+
+}
+
+.chat_cerrar {
+
+    width: 36px;
+    height: 36px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: rgba(255,255,255,0.12);
+
+    color: white;
+
+    font-size: 17px;
+
+    cursor: pointer;
+
+    transition: background 0.2s ease;
+
+}
+
+.chat_cerrar:hover {
+
+    background: rgba(255,255,255,0.25);
+
+}
+
+
+/* =========================================
+   HISTORIAL DE MENSAJES
+========================================= */
+
+#historial_mensajes {
+
+    flex: 1;
+
+    min-height: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 14px;
+
+    padding: 20px 15px;
+
+    overflow-y: auto;
+
+    background:
+        linear-gradient(
+            rgba(242,239,225,0.70),
+            rgba(242,239,225,0.70)
+        );
+
+    scroll-behavior: smooth;
+
+    overscroll-behavior: contain;
+
+}
+
+
+/* BARRA DE DESPLAZAMIENTO */
+
+#historial_mensajes::-webkit-scrollbar {
+
+    width: 5px;
+
+}
+
+#historial_mensajes::-webkit-scrollbar-thumb {
+
+    background: var(--borde);
+
+    border-radius: 20px;
+
+}
+
+
+/* =========================================
+   MENSAJES DEL USUARIO
+========================================= */
+
+.mensaje_usuario {
+
+    align-self: flex-end;
+
+    max-width: 82%;
+
+    padding: 12px 15px;
+
+    background: var(--verde-musgo);
+
+    color: white;
+
+    border-radius: 18px 18px 4px 18px;
+
+    font-size: 14px;
+
+    line-height: 1.5;
+
+    overflow-wrap: anywhere;
+
+    box-shadow: 0 3px 8px rgba(35,55,42,0.12);
+
+}
+
+
+/* =========================================
+   MENSAJES DEL ASISTENTE
+========================================= */
+
+.mensaje_asistente {
+
+    align-self: flex-start;
+
+    max-width: 85%;
+
+    padding: 12px 15px;
+
+    background: #E9DFC4;
+
+    color: var(--texto);
+
+    border-radius: 18px 18px 18px 4px;
+
+    font-size: 14px;
+
+    line-height: 1.6;
+
+    overflow-wrap: anywhere;
+
+    box-shadow: 0 3px 8px rgba(35,55,42,0.08);
+
+}
+
+
+/* =========================================
+   ERRORES
+========================================= */
+
+.mensaje_error {
+
+    align-self: center;
+
+    max-width: 90%;
+
+    padding: 10px 14px;
+
+    background: #A75E4D;
+
+    color: white;
+
+    border-radius: 12px;
+
+    font-size: 13px;
+
+    text-align: center;
+
+}
+
+
+/* =========================================
+   FORMULARIO INFERIOR
+========================================= */
+
+#form_chat {
+
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 13px;
+
+    background: var(--tarjeta);
+
+    border-top: 1px solid var(--borde);
+
+}
+
+
+/* INPUT */
+
+#form_chat #bar_mensajes {
+
+    flex: 1;
+
+    min-width: 0;
+
+    height: 45px;
+
+    padding: 0 16px;
+
+    background: white;
+
+    color: var(--texto);
+
+    border: 1px solid var(--borde);
+
+    border-radius: 30px;
+
+    outline: none;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+
+}
+
+#form_chat #bar_mensajes:focus {
+
+    border-color: var(--verde-musgo);
+
+    box-shadow:
+        0 0 0 3px rgba(76,99,67,0.13);
+
+}
+
+#form_chat #bar_mensajes::placeholder {
+
+    color: #99958A;
+
+}
+
+
+/* BOTÓN ENVIAR */
+
+#form_chat #enviar_mensaje_btn {
+
+    flex-shrink: 0;
+
+    width: 45px;
+    height: 45px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background: var(--verde-musgo);
+
+    color: white;
+
+    font-size: 21px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+
+}
+
+#form_chat #enviar_mensaje_btn:hover {
+
+    background: var(--verde-hover);
+
+    transform: scale(1.06);
+
+}
+
+#form_chat #enviar_mensaje_btn:disabled {
+
+    opacity: 0.5;
+
+    cursor: not-allowed;
+
+    transform: none;
+
+}
+
+
+/* =========================================
+   BOTÓN FLOTANTE
+========================================= */
+
+#chat_btn {
+
+    position: fixed;
+
+    right: 25px;
+    bottom: 22px;
+
+    left: auto;
+
+    width: 62px;
+    height: 62px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    margin: 0;
+
+    background: var(--verde-musgo);
+
+    color: white;
+
+    border: 2px solid var(--tarjeta);
+
+    border-radius: 50%;
+
+    font-size: 27px;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 5px 18px rgba(35,55,42,0.25);
+
+    z-index: 1600;
+
+    transition:
+        transform 0.25s ease,
+        background 0.25s ease;
+
+}
+
+#chat_btn:hover {
+
+    background: var(--verde-hover);
+
+    transform: translateY(-4px);
+
+}
+
+
+/* =========================================
+   ACCESIBILIDAD
+========================================= */
+
+#chat_box button:focus-visible,
+#chat_btn:focus-visible {
+
+    outline: 3px solid var(--ocre);
+
+    outline-offset: 3px;
+
+}
+
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 600px) {
+
+    #chat_box {
+
+        right: 10px;
+        bottom: 82px;
+
+        width: calc(100vw - 20px);
+
+        height: min(620px, calc(100dvh - 100px));
+
+        min-height: 300px;
+
+        border-radius: 17px;
+
+    }
+
+    #chat_btn {
+
+        right: 15px;
+        bottom: 15px;
+
+        width: 55px;
+        height: 55px;
+
+    }
+
+    .chat_encabezado {
+
+        min-height: 75px;
+
+        padding: 12px 15px;
+
+    }
+
+    #historial_mensajes {
+
+        padding: 15px 12px;
+
+    }
+
+    .mensaje_usuario,
+    .mensaje_asistente {
+
+        max-width: 90%;
+
+        font-size: 13px;
+
+    }
+
+}
+
+
+/* MOVIMIENTO REDUCIDO */
+
+@media (prefers-reduced-motion: reduce) {
+
+    #chat_box,
+    #chat_btn {
+
+        animation: none;
+
+        transition: none;
+
+    }
+
+}
+
 
 /* Página */
 

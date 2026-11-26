@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const menubtn = $("menubtn");
     const menu_bar = $("menu_bar");
-    const atras_menu = $("atras_menu");
+    const atras_menu = $("atras_menu")
      const paquete = document.getElementById("paquete_pedido");
 
     const carritobtn = $("carritobtn");
@@ -943,52 +943,75 @@ function actualizarBotonesFavoritos() {
 // FAVORITOS: AGREGAR O QUITAR
 // =====================================================
 
-function alternarFavorito(id, nombre, precio, stockDisponible = null) {
+// =========================================
+// ABRIR Y CERRAR CHATBOT
+// =========================================
 
-    id = String(id ?? "").trim();
-    nombre = String(nombre ?? "").trim();
-    precio = Number(precio);
+function alternarChat() {
 
-    const stock = stockDisponible === null ||
-        stockDisponible === undefined ||
-        stockDisponible === ""
-            ? null
-            : Number(stockDisponible);
+    if (!chatBox || !chatBtn) return;
 
-    if (
-        !id ||
-        !nombre ||
-        !Number.isFinite(precio) ||
-        precio < 0
-    ) {
-        console.error("Los datos del favorito no son válidos.");
-        return;
-    }
+    const abierto = chatBox.hidden;
 
-    if (esFavorito(id)) {
+    chatBox.hidden = !abierto;
 
-        favoritos = favoritos.filter(
-            p => p.id !== id
-        );
+    chatBox.setAttribute(
+        "aria-hidden",
+        String(!abierto)
+    );
 
-    } else {
+    chatBtn.setAttribute(
+        "aria-expanded",
+        String(abierto)
+    );
 
-        favoritos.push({
-            id: id,
-            nombre: nombre,
-            precio: precio,
-            stock: stock
-        });
+    if (abierto && barraMensajes) {
+
+        setTimeout(function() {
+            barraMensajes.focus();
+        }, 100);
 
     }
-
-    guardarLocalStorage("linneoFavoritos", favoritos);
-
-    actualizarBotonesFavoritos();
-    actualizarFavoritos();
 
 }
 
+// Botón flotante
+
+if (chatBtn) {
+
+    chatBtn.addEventListener(
+        "click",
+        alternarChat
+    );
+
+}
+
+// Botón de cerrar del encabezado
+
+if (cerrarChatBtn) {
+
+    cerrarChatBtn.addEventListener(
+        "click",
+        alternarChat
+    );
+
+}
+
+// Cerrar con Escape
+
+document.addEventListener("keydown", function(evento) {
+
+    if (
+        evento.key === "Escape" &&
+        chatBox &&
+        !chatBox.hidden
+    ) {
+
+        alternarChat();
+
+    }
+
+});
 
 // =====================================================
 // FAVORITOS: BOTONES DE PRODUCTOS
@@ -3793,5 +3816,6 @@ if (paquete && cantidades.length > 0) {
     });
 
     cargarCupones();
+
 
 });

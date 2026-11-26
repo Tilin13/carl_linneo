@@ -71,82 +71,105 @@
     </header>
 
 
-    <!-- CONTENIDO PRINCIPAL -->
-    <main>
-
-        <div id="tarjeta_logo">
-            <img
-                src="/tarjeta2.png"
-                alt="Logo de Linneo"
-            >
-        </div>
-
-        <!-- CHATBOX -->
-        <nav class="barra" id="configuraciones_bar_chatbox">
-
-            <button
-                id="idioma_chatboxbtn"
-                class="button"
-                type="button"
-                aria-label="Cambiar idioma"
-            >
-                🌐
-            </button>
-
-        </nav>
-
-        <section
-            id="chat_box"
-            aria-label="Asistente virtual Linneo"
-            hidden
-        >
-
-            <div id="historial_mensajes" aria-live="polite">
-
-                <div class="mensaje_asistente">
-                    Linneo: ¡Hola! Soy el asistente virtual de Linneo.
-                    ¿Qué producto estás buscando?
-                </div>
-
-            </div>
-
-            <form id="form_chat">
-
-                <input
-                    type="text"
-                    id="bar_mensajes"
-                    placeholder="Escribe tu mensaje..."
-                    maxlength="4000"
-                    autocomplete="off"
-                    aria-label="Escribe tu mensaje"
-                    required
-                >
-
-                <button
-                    type="submit"
-                    id="enviar_mensaje_btn"
-                    class="button"
-                >
-                    Enviar
-                </button>
-
-            </form>
-
-        </section>
-
-    </main>
-
-
-    <!-- BOTÓN FLOTANTE DEL CHAT -->
+<!-- CHATBOX -->
+<nav class="barra" id="configuraciones_bar_chatbox">
     <button
-        id="chat_btn"
+        id="idioma_chatboxbtn"
         class="button"
         type="button"
-        aria-label="Abrir o cerrar el chat"
-        aria-expanded="false"
+        aria-label="Cambiar idioma"
     >
-        💬
+        🌐
     </button>
+</nav>
+
+<!-- VENTANA DEL CHAT -->
+<section
+    id="chat_box"
+    aria-label="Asistente virtual Linneo"
+    aria-hidden="true"
+    hidden
+>
+    <!-- ENCABEZADO -->
+    <header class="chat_encabezado">
+
+        <div class="chat_identidad">
+
+            <div class="chat_avatar">
+                <span>🌿</span>
+            </div>
+
+            <div class="chat_info">
+                <h2>Linneo</h2>
+                <span>
+                    <span class="estado_online"></span>
+                    Asistente virtual
+                </span>
+            </div>
+
+        </div>
+
+        <button
+            type="button"
+            id="chat_cerrar_btn"
+            class="chat_cerrar"
+            aria-label="Cerrar chat"
+        >
+            ✕
+        </button>
+
+    </header>
+
+    <!-- HISTORIAL -->
+    <div
+        id="historial_mensajes"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-label="Conversación"
+    >
+
+        <div class="mensaje_asistente">
+            ¡Hola! Soy el asistente virtual de Linneo. 🌿
+            ¿Qué producto estás buscando?
+        </div>
+
+    </div>
+
+    <!-- FORMULARIO -->
+    <form id="form_chat">
+
+        <input
+            type="text"
+            id="bar_mensajes"
+            placeholder="Escribe tu mensaje..."
+            maxlength="4000"
+            autocomplete="off"
+            aria-label="Escribe tu mensaje"
+            required
+        >
+
+        <button
+            type="submit"
+            id="enviar_mensaje_btn"
+            aria-label="Enviar mensaje"
+        >
+            ➤
+        </button>
+
+    </form>
+
+</section>
+
+<!-- BOTÓN FLOTANTE -->
+<button
+    id="chat_btn"
+    class="button"
+    type="button"
+    aria-label="Abrir o cerrar el chat"
+    aria-expanded="false"
+>
+    💬
+</button>
 
 
     <!-- CARRITO -->
