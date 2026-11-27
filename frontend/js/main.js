@@ -1977,7 +1977,7 @@ actualizarFavoritos();
     const barraMensajes = $("bar_mensajes");
     const historialMensajes = $("historial_mensajes");
     const enviarMensajeBtn = $("enviar_mensaje_btn");
-    const chatBtn = $("chat_btn");
+    
     const chatBox = $("chat_box");
     const formChat = $("form_chat");
 
