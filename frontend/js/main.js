@@ -3219,7 +3219,7 @@ const filtros = document.querySelectorAll(
 
 const contador = $("contador_especies");
 const limiteTexto = $("limite_especies");
-const mensaje = $("mensaje_especies");
+const mensajeEspecies = $("mensaje_especies");
 
 const alineacion = $("alineacion_especies");
 const colorMarco = $("color_marco");
@@ -3322,12 +3322,12 @@ function actualizarCantidades(inputModificado = null) {
 
     if (seleccionados === limite) {
 
-        mensaje.textContent =
+        mensajeEspecies.textContent =
             "¡Has completado tu paquete!";
 
     } else {
 
-        mensaje.textContent =
+        mensajeEspecies.textContent =
             `Puedes seleccionar ${limite - seleccionados} ejemplar(es) más.`;
 
     }
@@ -3663,7 +3663,7 @@ if (paquete && cantidades.length > 0) {
    const formularioCuponesAdmin =
     document.getElementById("form_cupones");
 
-    const mensaje = document.getElementById("mensaje_cupones");
+    const mensajeCuponesAdmin = document.getElementById("mensaje_cupones");
 
     const lista = document.getElementById("lista_cupones");
 
@@ -3743,7 +3743,7 @@ if (paquete && cantidades.length > 0) {
 
         } catch (error) {
 
-            mensaje.textContent = error.message;
+            mensajeCuponesAdmin.textContent = error.message;
 
         }
 
