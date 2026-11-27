@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const atras_menu = $("atras_menu")
      const paquete = document.getElementById("paquete_pedido");
      const chatBtn = $("chat_btn");
+    const cerrarChatBtn = $("cerrar_chat");
 
     const carritobtn = $("carritobtn");
     const carrito_bar = $("carrito_bar");
