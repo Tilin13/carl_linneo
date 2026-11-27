@@ -4723,3 +4723,64 @@ body:has(.popup.visible) {
     }
 
 }
+/* ============================================
+   CHATBOT LINNEO
+============================================ */
+
+#chat_box {
+    position: fixed;
+    right: 25px;
+    bottom: 100px;
+
+    width: 380px;
+    height: 550px;
+
+    max-width: calc(100vw - 30px);
+    max-height: calc(100dvh - 125px);
+
+    display: flex;
+    flex-direction: column;
+
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+
+    z-index: 99999;
+    overflow: hidden;
+}
+
+#chat_box[hidden] {
+    display: none !important;
+}
+
+#chat_btn {
+    position: fixed;
+    right: 25px;
+    bottom: 25px;
+
+    width: 60px;
+    height: 60px;
+
+    border-radius: 50%;
+    cursor: pointer;
+
+    z-index: 100000;
+}
+
+#historial_mensajes {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+#form_chat {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+}
+
+#bar_mensajes {
+    flex: 1;
+    min-width: 0;
+}
