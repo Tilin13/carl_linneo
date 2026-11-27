@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const menu_bar = $("menu_bar");
     const atras_menu = $("atras_menu")
      const paquete = document.getElementById("paquete_pedido");
+     const chatBtn = $("chat_btn");
 
     const carritobtn = $("carritobtn");
     const carrito_bar = $("carrito_bar");
@@ -389,14 +390,7 @@ function mostrarDetalleVenta(venta) {
     });
 
 }
-if (chatBtn) {
 
-    chatBtn.addEventListener(
-        "click",
-        alternarChat
-    );
-
-}
 /* =========================================
    EVENTOS
 ========================================= */
