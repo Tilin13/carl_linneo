@@ -43,14 +43,15 @@
         </div>
 
         <button
-            class="button"
-            id="favoritos_btn"
-            type="button"
-            aria-controls="favoritos_bar"
-            aria-expanded="false"
-        >
-            ♡
-        </button>
+    class="button"
+    id="favoritos_btn"
+    type="button"
+    aria-label="Abrir favoritos"
+    aria-controls="favoritos_bar"
+    aria-expanded="false"
+>
+    ♡
+</button>
 
         <button class="button" id="menubtn" type="button">
             ☰
@@ -286,17 +287,17 @@
                         <!-- AGREGAR A FAVORITOS -->
 
                         <button
-                            class="favoritos_ b"
-                            type="button"
-                            data-producto-id="{{ producto.codigo }}"
-                            data-producto-nombre="{{ producto.nombre }}"
-                            data-producto-precio="{{ producto.precio_venta }}"
-                            data-producto-stock="{{ producto.stock }}"
-                            aria-label="Agregar a favoritos"
-                            aria-pressed="false"
-                        >
-                            ♡
-                        </button>
+    class="favoritos_ button"
+    type="button"
+    data-producto-id="{{ producto.codigo }}"
+    data-producto-nombre="{{ producto.nombre }}"
+    data-producto-precio="{{ producto.precio_venta }}"
+    data-producto-stock="{{ producto.stock }}"
+    aria-label="Agregar a favoritos"
+    aria-pressed="false"
+>
+    ♡
+</button>
 
                     </div>
 

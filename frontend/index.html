@@ -50,11 +50,15 @@
 			<div id="carrito_productos" >
 				<h5 id="cantidad_productos"></h5>
 			</div>
-			<button 
-				class="button"
-				id="favoritos_btn"
-				type="button"
-			>♡
+			<button
+			class="button"
+			id="favoritos_btn"
+			type="button"
+			aria-label="Abrir favoritos"
+			aria-controls="favoritos_bar"
+			aria-expanded="false"
+			>
+				♡
 			</button>
 
 			<button
@@ -301,7 +305,7 @@
 </button>
 
 <button
-    class="favoritos_ b"
+    class="favoritos_ button"
     type="button"
     data-producto-id="{{ producto.codigo }}"
     data-producto-nombre="{{ producto.nombre }}"
