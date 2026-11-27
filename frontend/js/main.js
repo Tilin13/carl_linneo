@@ -2064,108 +2064,189 @@ actualizarFavoritos();
     }
 
    
-    // =====================================================
-    // CHATBOT LINNEO
-    // =====================================================
-    
+// =====================================================
+// CHATBOT LINNEO
+// =====================================================
 
-    const barraMensajes = $("bar_mensajes");
-    const historialMensajes = $("historial_mensajes");
-    const enviarMensajeBtn = $("enviar_mensaje_btn");
-    
-    const chatBox = $("chat_box");
-    const formChat = $("form_chat");
+const barraMensajes = $("bar_mensajes");
+const historialMensajes = $("historial_mensajes");
+const enviarMensajeBtn = $("enviar_mensaje_btn");
 
-    let esperandoRespuesta = false;
+const chatBtn = $("chat_btn");
+const chatBox = $("chat_box");
+const cerrarChatBtn = $("chat_cerrar_btn");
+const formChat = $("form_chat");
 
-    // Mostrar mensajes de manera segura
+let esperandoRespuesta = false;
+
+// -----------------------------------------------------
+// COMPROBAR QUE EXISTAN LOS ELEMENTOS
+// -----------------------------------------------------
+
+const chatbotDisponible = Boolean(
+    barraMensajes &&
+    historialMensajes &&
+    enviarMensajeBtn &&
+    chatBtn &&
+    chatBox &&
+    cerrarChatBtn &&
+    formChat
+);
+
+if (chatbotDisponible) {
+
+    // -------------------------------------------------
+    // AGREGAR MENSAJES
+    // -------------------------------------------------
+
     function agregarMensaje(texto, clase) {
 
         const mensaje = document.createElement("div");
 
-        mensaje.className = clase;
+        mensaje.classList.add(clase);
         mensaje.textContent = texto;
 
         historialMensajes.appendChild(mensaje);
 
-        historialMensajes.scrollTop =
-            historialMensajes.scrollHeight;
+        historialMensajes.scrollTo({
+            top: historialMensajes.scrollHeight,
+            behavior: "smooth"
+        });
 
         return mensaje;
     }
 
-    // Abrir y cerrar chatbot
+    // -------------------------------------------------
+    // ABRIR CHAT
+    // -------------------------------------------------
+
+    function abrirChat() {
+
+        chatBox.hidden = false;
+
+        chatBox.setAttribute("aria-hidden", "false");
+
+        chatBtn.setAttribute("aria-expanded", "true");
+
+        barraMensajes.focus();
+
+    }
+
+    // -------------------------------------------------
+    // CERRAR CHAT
+    // -------------------------------------------------
+
+    function cerrarChat() {
+
+        chatBox.hidden = true;
+
+        chatBox.setAttribute("aria-hidden", "true");
+
+        chatBtn.setAttribute("aria-expanded", "false");
+
+        chatBtn.focus();
+
+    }
+
+    // -------------------------------------------------
+    // ALTERNAR CHAT
+    // -------------------------------------------------
+
     function alternarChat() {
 
-        if (!chatBox) return;
-
-        const abierto = chatBox.hidden;
-
-        chatBox.hidden = !abierto;
-
-        chatBtn.setAttribute(
-            "aria-expanded",
-            String(abierto)
-        );
-
-        if (abierto && barraMensajes) {
-            barraMensajes.focus();
+        if (chatBox.hidden) {
+            abrirChat();
+        } else {
+            cerrarChat();
         }
+
     }
 
-    if (chatBtn) {
-        chatBtn.addEventListener(
-            "click",
-            alternarChat
-        );
-    }
+    chatBtn.addEventListener("click", alternarChat);
 
-    // Enviar mensaje
-    async function enviarMensaje(evento) {
+    cerrarChatBtn.addEventListener("click", cerrarChat);
 
-        if (evento) evento.preventDefault();
+    // Cerrar con Escape
+    document.addEventListener("keydown", function(evento) {
 
         if (
-            !barraMensajes ||
-            !historialMensajes ||
-            esperandoRespuesta
+            evento.key === "Escape" &&
+            !chatBox.hidden
         ) {
-            return;
+            cerrarChat();
         }
+
+    });
+
+    // -------------------------------------------------
+    // INDICADOR DE ESCRITURA
+    // -------------------------------------------------
+
+    function mostrarEscribiendo() {
+
+        const indicador = agregarMensaje(
+            "Linneo está escribiendo...",
+            "mensaje_asistente"
+        );
+
+        indicador.classList.add("mensaje_escribiendo");
+
+        indicador.setAttribute("aria-label", "Linneo está escribiendo");
+
+        return indicador;
+
+    }
+
+    // -------------------------------------------------
+    // ENVIAR MENSAJE
+    // -------------------------------------------------
+
+    async function enviarMensaje(evento) {
+
+        evento.preventDefault();
+
+        if (esperandoRespuesta) return;
 
         const texto = barraMensajes.value.trim();
 
-        if (!texto) return;
+        if (!texto) {
+            barraMensajes.focus();
+            return;
+        }
 
         if (texto.length > 4000) {
+
             agregarMensaje(
-                "El mensaje supera el límite permitido.",
+                "Tu mensaje supera el límite de 4000 caracteres.",
                 "mensaje_error"
             );
+
             return;
+
         }
 
         esperandoRespuesta = true;
 
+        // Bloquear controles mientras responde
         enviarMensajeBtn.disabled = true;
-
-        enviarMensajeBtn.textContent = "Enviando...";
-
         barraMensajes.disabled = true;
 
+        enviarMensajeBtn.setAttribute("aria-busy", "true");
+
+        // Mostrar mensaje del usuario
         agregarMensaje(
-            "Tú: " + texto,
+            texto,
             "mensaje_usuario"
         );
 
         barraMensajes.value = "";
 
-        const cargando = agregarMensaje(
-            "Linneo: Escribiendo...",
-            "mensaje_asistente"
-        );
+        const indicador = mostrarEscribiendo();
 
         try {
+
+            // La función peticion() ya existente gestiona
+            // el envío JSON y el token CSRF.
 
             const datos = await peticion(
                 "/api/chat",
@@ -2178,30 +2259,37 @@ actualizarFavoritos();
                 }
             );
 
-            cargando.remove();
+            indicador.remove();
 
             if (
+                !datos ||
                 typeof datos.respuesta !== "string" ||
                 !datos.respuesta.trim()
             ) {
+
                 throw new Error(
                     "Linneo no pudo generar una respuesta."
                 );
+
             }
 
             agregarMensaje(
-                "Linneo: " + datos.respuesta,
+                datos.respuesta.trim(),
                 "mensaje_asistente"
             );
 
         } catch (error) {
 
-            cargando.remove();
+            indicador.remove();
+
+            console.error(
+                "Error en el chatbot:",
+                error
+            );
 
             agregarMensaje(
-                "Linneo: " +
-                (error.message ||
-                    "No pude conectarme. Inténtalo nuevamente."),
+                error.message ||
+                "No pude conectarme. Inténtalo nuevamente.",
                 "mensaje_error"
             );
 
@@ -2210,26 +2298,28 @@ actualizarFavoritos();
             esperandoRespuesta = false;
 
             enviarMensajeBtn.disabled = false;
-
-            enviarMensajeBtn.textContent = "Enviar";
-
             barraMensajes.disabled = false;
 
-            barraMensajes.focus();
+            enviarMensajeBtn.removeAttribute("aria-busy");
+
+            if (!chatBox.hidden) {
+                barraMensajes.focus();
+            }
 
         }
-    }
-
-    // El formulario controla el envío
-    if (formChat) {
-
-        formChat.addEventListener(
-            "submit",
-            enviarMensaje
-        );
 
     }
-    
+
+    // -------------------------------------------------
+    // EVENTO DEL FORMULARIO
+    // -------------------------------------------------
+
+    formChat.addEventListener(
+        "submit",
+        enviarMensaje
+    );
+
+}
 
 
     // =====================================================

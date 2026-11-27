@@ -4624,88 +4624,102 @@ body:has(.popup.visible) {
     }
 }
 
+/* =========================================
+   CHATBOX LINNEO - AJUSTES Y ESTADOS
+========================================= */
 
-/* ============================= */
-/* CHATBOX */
-/* ============================= */
-
-#configuraciones_bar_chatbox {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    padding: 10px;
+/* Evitar que el contenido desborde */
+#chat_box,
+#chat_box * {
+    box-sizing: border-box;
 }
 
 #chat_box {
-    position: fixed;
-    right: 25px;
-    bottom: 100px;
-    width: min(350px, calc(100vw - 30px));
-    height: 450px;
-    max-height: 70vh;
-    background-color: var(--fondo);
-    border: 1px solid var(--borde);
-    border-radius: var(--radio-grande);
-    box-shadow: var(--sombra);
-    z-index: 1000;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+    border-color: var(--borde);
 }
 
-#chat_box[hidden] {
-    display: none;
-}
-
+/* Mensajes */
 #historial_mensajes {
-    flex: 1;
-    overflow-y: auto;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--verde-musgo) transparent;
 }
 
-.mensaje_asistente,
-.mensaje_usuario {
-    padding: 10px;
-    border-radius: 12px;
-    max-width: 85%;
+#historial_mensajes .mensaje_usuario,
+#historial_mensajes .mensaje_asistente,
+#historial_mensajes .mensaje_error {
+    white-space: pre-wrap;
     overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
-.mensaje_asistente {
-    align-self: flex-start;
-    background-color: var(--verde-musgo);
-    color: white;
+/* Indicador de escritura */
+#historial_mensajes .mensaje_escribiendo {
+    opacity: 0.75;
+    font-style: italic;
 }
 
-.mensaje_usuario {
-    align-self: flex-end;
-    background-color: var(--color-secundario);
+/* Botón enviar deshabilitado */
+#form_chat #enviar_mensaje_btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
 }
 
-#form_chat {
-    display: flex;
-    gap: 8px;
-    padding: 10px;
-    border-top: 1px solid var(--borde);
+/* Campo deshabilitado */
+#form_chat #bar_mensajes:disabled {
+    opacity: 0.65;
+    cursor: wait;
 }
 
-#bar_mensajes {
-    flex: 1;
-    min-width: 0;
-    padding: 10px;
-    border: 1px solid var(--borde);
-    border-radius: var(--radio-grande);
+/* Accesibilidad */
+#chat_box button:focus-visible,
+#chat_box input:focus-visible,
+#chat_btn:focus-visible {
+    outline: 3px solid var(--ocre);
+    outline-offset: 3px;
 }
 
-#chat_btn {
-    position: fixed;
-    right: 25px;
-    bottom: 25px;
-    z-index: 1001;
-    border-radius: 50%;
-    width: 55px;
-    height: 55px;
+/* Animación de aparición */
+#chat_box:not([hidden]) {
+    animation: aparecerChat 0.22s ease-out;
+}
+
+@keyframes aparecerChat {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Pantallas pequeñas */
+@media (max-width: 600px) {
+
+    #chat_box {
+        width: calc(100vw - 20px);
+        right: 10px;
+        bottom: 85px;
+        height: calc(100dvh - 105px);
+        max-height: 650px;
+        min-height: 300px;
+    }
+
+    #historial_mensajes {
+        padding: 14px;
+    }
+
+    #historial_mensajes .mensaje_usuario,
+    #historial_mensajes .mensaje_asistente,
+    #historial_mensajes .mensaje_error {
+        max-width: 90%;
+    }
+
+    #form_chat {
+        padding: 10px;
+    }
+
 }
