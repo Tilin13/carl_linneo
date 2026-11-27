@@ -104,147 +104,297 @@
     </button>
 
 
-    <!-- TABLA DE PRODUCTOS -->
+<!-- =========================================
+     CHECKOUT LINNEO
+========================================= -->
 
-    <section id="resumen_compra">
+<main class="checkout">
 
-        <h1>Resumen de compra</h1>
+    <header class="checkout-header">
+        <span class="checkout-etiqueta">LINNEO · COMPRA SEGURA</span>
+        <h1>Finaliza tu compra</h1>
+        <p>Estás a unos pasos de recibir tus productos.</p>
+    </header>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Cantidad</th>
-                    <th>Precio unitario</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
+    <div class="checkout-layout">
 
-            <tbody id="lista_carrito">
-                <!-- JavaScript insertará aquí los productos -->
-            </tbody>
+        <!-- COLUMNA PRINCIPAL -->
+        <div class="checkout-principal">
 
-            <tfoot>
-                <tr>
-                    <th colspan="3">Total</th>
-                    <td id="total_compra">$0.00</td>
-                </tr>
-            </tfoot>
-        </table>
+            <!-- DATOS DE ENVÍO -->
+            <section class="checkout-card">
 
-    </section>
+                <div class="checkout-titulo">
+                    <span class="checkout-numero">01</span>
+                    <div>
+                        <h2>Datos de envío</h2>
+                        <p>¿Dónde entregamos tu pedido?</p>
+                    </div>
+                </div>
+
+                <form id="datos_compra">
+
+                    <div class="checkout-campos">
+
+                        <div class="campo-checkout campo-completo">
+                            <label for="nombre_destinatario">
+                                Nombre del destinatario
+                            </label>
+                            <input
+                                type="text"
+                                id="nombre_destinatario"
+                                name="nombre_destinatario"
+                                autocomplete="name"
+                                required
+                            >
+                        </div>
+
+                        <div class="campo-checkout campo-completo">
+                            <label for="direccion">
+                                Calle y dirección
+                            </label>
+                            <input
+                                type="text"
+                                id="direccion"
+                                name="direccion"
+                                autocomplete="street-address"
+                                required
+                            >
+                        </div>
+
+                        <div class="campo-checkout">
+                            <label for="numero_exterior">
+                                Número exterior
+                            </label>
+                            <input
+                                type="text"
+                                id="numero_exterior"
+                                name="numero_exterior"
+                                required
+                            >
+                        </div>
+
+                        <div class="campo-checkout">
+                            <label for="codigo_postal">
+                                Código postal
+                            </label>
+                            <input
+                                type="text"
+                                id="codigo_postal"
+                                name="codigo_postal"
+                                inputmode="numeric"
+                                autocomplete="postal-code"
+                                maxlength="5"
+                                pattern="[0-9]{5}"
+                                required
+                            >
+                        </div>
+
+                        <div class="campo-checkout">
+                            <label for="ciudad">Ciudad</label>
+                            <input
+                                type="text"
+                                id="ciudad"
+                                name="ciudad"
+                                autocomplete="address-level2"
+                                required
+                            >
+                        </div>
+
+                        <div class="campo-checkout">
+                            <label for="Estado">Estado</label>
+                            <input
+                                type="text"
+                                id="Estado"
+                                name="estado"
+                                autocomplete="address-level1"
+                                required
+                            >
+                        </div>
+
+                        <div class="campo-checkout campo-completo">
+                            <label for="telefono">
+                                Teléfono de contacto
+                            </label>
+                            <input
+                                type="tel"
+                                id="telefono"
+                                name="telefono"
+                                autocomplete="tel"
+                                required
+                            >
+                        </div>
+
+                        <div class="campo-checkout campo-completo">
+                            <label for="metodo_envio">
+                                Empresa de paquetería
+                            </label>
+
+                            <select
+                                id="metodo_envio"
+                                name="envio_metodo"
+                                required
+                            >
+                                <option value="fedex">FedEx</option>
+                                <option value="estafeta">Estafeta</option>
+                                <option value="correos_mex">
+                                    Correos Mexicanos
+                                </option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </section>
 
 
-<section id="metodos_pago">
+            <!-- MÉTODOS DE PAGO -->
+            <section class="checkout-card">
 
-    <h1>Método de pago</h1>
+                <div class="checkout-titulo">
+                    <span class="checkout-numero">02</span>
 
-    <label>
-        <input
-            type="radio"
-            name="metodo_pago"
-            value="mercado_pago"
-            checked
-        >
-        Mercado Pago (tarjetas y métodos disponibles)
-    </label>
+                    <div>
+                        <h2>Método de pago</h2>
+                        <p>Selecciona cómo deseas pagar.</p>
+                    </div>
+                </div>
 
-    <label>
-        <input
-            type="radio"
-            name="metodo_pago"
-            value="paypal"
-        >
-        PayPal
-    </label>
+                <div class="metodos-pago">
 
-</section>
+                    <!-- MERCADO PAGO -->
+                    <label class="metodo-opcion">
 
-<button
-    class="button"
-    type="button"
-    id="finalizar_compra"
->
-    Continuar al pago
-</button>
+                        <input
+                            type="radio"
+                            name="metodo_pago"
+                            value="mercado_pago"
+                            checked
+                        >
 
-<p id="mensaje_pago" role="status"></p>
+                        <span class="metodo-contenido">
 
+                            <span class="metodo-icono mercado-icono">
+                                MP
+                            </span>
 
-<form class="panel" id="datos_compra">
+                            <span class="metodo-informacion">
+                                <strong>Mercado Pago</strong>
+                                <small>
+                                    Paga de forma segura con tarjetas
+                                    y los métodos disponibles en Mercado Pago.
+                                </small>
+                            </span>
 
-    <h1>Datos de envío</h1>
+                            <span class="metodo-seleccion"></span>
 
-    <label for="metodo_envio">Método de envío</label>
-    <select id="metodo_envio" name="envio_metodo" required>
-        <option value="fedex">FedEx</option>
-        <option value="estafeta">Estafeta</option>
-        <option value="correos_mex">Correos mexicanos</option>
-    </select>
+                        </span>
 
-    <label for="direccion">Dirección</label>
-    <input type="text" id="direccion" name="direccion" required>
-
-    <label for="codigo_postal">Código postal</label>
-    <input type="text" id="codigo_postal" name="codigo_postal"
-           inputmode="numeric" required>
-
-    <label for="ciudad">Ciudad</label>
-    <input type="text" id="ciudad" name="ciudad" required>
-
-    <label for="Estado">Estado</label>
-    <input type="text" id="Estado" name="estado" required>
-
-</form>
+                    </label>
 
 
-    <!-- DATOS DE TARJETA -->
+                    <!-- PAYPAL -->
+                    <label class="metodo-opcion">
 
-    <form class="panel" id="pago_tarjeta">
+                        <input
+                            type="radio"
+                            name="metodo_pago"
+                            value="paypal"
+                        >
 
-        <h1>Número de tarjeta</h1>
+                        <span class="metodo-contenido">
 
-        <input
-            type="text"
-            id="numero_tarjeta"
-            name="numero_tarjeta"
-            inputmode="numeric"
-            autocomplete="cc-number"
-        >
+                            <span class="metodo-icono paypal-icono">
+                                P
+                            </span>
 
-        <div>
-            <h1>Fecha de vencimiento</h1>
+                            <span class="metodo-informacion">
+                                <strong>PayPal</strong>
+                                <small>
+                                    Paga utilizando tu cuenta PayPal
+                                    mediante su plataforma segura.
+                                </small>
+                            </span>
 
-            <input
-                type="month"
-                id="fecha_vencimiento"
-                name="fecha_vencimiento"
-                autocomplete="cc-exp"
-            >
+                            <span class="metodo-seleccion"></span>
 
-            <h1>Código de seguridad</h1>
+                        </span>
 
-            <input
-                type="password"
-                id="codigo_Seguridad"
-                name="codigo_seguridad"
-                inputmode="numeric"
-                autocomplete="cc-csc"
-            >
+                    </label>
+
+                </div>
+
+                <div class="checkout-seguridad">
+                    <span>🔒</span>
+                    <p>
+                        Tu pago se procesa mediante la plataforma
+                        de pago seleccionada.
+                    </p>
+                </div>
+
+            </section>
+
         </div>
 
-        <div>
-            <h1>Nombre del titular</h1>
 
-            <input
-                type="text"
-                id="nombre_titular"
-                name="nombre_titular"
-                autocomplete="cc-name"
-            >
-        </div>
+        <!-- COLUMNA DEL RESUMEN -->
+        <aside class="checkout-resumen">
 
-    </form>
+            <div class="checkout-resumen-contenido">
+
+                <h2>Resumen de compra</h2>
+
+                <div class="resumen-productos"
+                     id="lista_carrito">
+
+                    <!-- JavaScript insertará los productos -->
+
+                </div>
+
+                <div class="resumen-linea">
+                    <span>Subtotal</span>
+                    <strong id="subtotal_compra">$0.00</strong>
+                </div>
+
+                <div class="resumen-linea">
+                    <span>Envío</span>
+                    <strong id="costo_envio">
+                        Por calcular
+                    </strong>
+                </div>
+
+                <div class="resumen-total">
+                    <span>Total</span>
+                    <strong id="total_compra">$0.00</strong>
+                </div>
+
+                <button
+                    class="checkout-boton"
+                    type="button"
+                    id="finalizar_compra"
+                >
+                    Continuar al pago
+                    <span>→</span>
+                </button>
+
+                <p id="mensaje_pago" role="status"
+                   aria-live="polite"></p>
+
+                <div class="checkout-confianza">
+                    <span>✓</span>
+                    Compra protegida mediante tu plataforma de pago
+                </div>
+
+            </div>
+
+        </aside>
+
+    </div>
+
+</main>
+
 
 
     <!-- CARRITO LATERAL -->
