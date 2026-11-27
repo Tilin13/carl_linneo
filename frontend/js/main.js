@@ -389,7 +389,14 @@ function mostrarDetalleVenta(venta) {
     });
 
 }
+if (chatBtn) {
 
+    chatBtn.addEventListener(
+        "click",
+        alternarChat
+    );
+
+}
 /* =========================================
    EVENTOS
 ========================================= */
@@ -977,14 +984,7 @@ function alternarChat() {
 
 // Botón flotante
 
-if (chatBtn) {
 
-    chatBtn.addEventListener(
-        "click",
-        alternarChat
-    );
-
-}
 
 // Botón de cerrar del encabezado
 
