@@ -268,9 +268,7 @@ body {
 	width:1px;
 	height:20px;
 }
-#text_carrito{
-	text-align:center;
-}
+
 .button {
     background-color: var(--verde-musgo);
     color: var(--tarjeta);
@@ -456,6 +454,293 @@ body {
     opacity: 0.55;
 }
 
+/* =================================================
+   LINNEO — PANELES LATERALES
+   Carrito y favoritos con diseño unificado
+================================================= */
+
+#carrito_bar,
+#favoritos_bar {
+    position: fixed;
+    top: 0;
+    right: 0;
+
+    display: block;
+    width: min(390px, 92vw);
+    height: 100vh;
+    height: 100dvh;
+
+    margin: 0;
+    padding: 26px 22px;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+
+    background: var(--tarjeta);
+    color: var(--texto);
+
+    border-left: 1px solid var(--borde);
+    border-radius: 18px 0 0 18px;
+
+    box-shadow: -12px 0 35px rgba(35, 55, 42, 0.16);
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transform: translateX(105%);
+
+    transition:
+        transform 0.3s ease,
+        opacity 0.3s ease,
+        visibility 0.3s ease;
+
+    z-index: 3000;
+}
+
+/* Estado abierto */
+
+#carrito_bar.visible,
+#favoritos_bar.visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(0);
+}
+
+/* Encabezados */
+
+#carrito_bar > h1,
+#favoritos_bar > h1 {
+    margin: 0 0 24px;
+    padding-bottom: 18px;
+
+    color: var(--texto);
+    font-size: 1.8rem;
+    font-weight: 700;
+
+    border-bottom: 2px solid var(--ocre);
+}
+
+/* Tablas */
+
+#carrito_bar table,
+#favoritos_bar table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+
+    table-layout: fixed;
+    font-size: 0.85rem;
+}
+
+/* Encabezados de tabla */
+
+#carrito_bar thead,
+#favoritos_bar thead {
+    background: var(--verde-musgo);
+    color: white;
+}
+
+#carrito_bar th,
+#favoritos_bar th {
+    padding: 11px 5px;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+/* Filas */
+
+#carrito_bar tbody tr,
+#favoritos_bar tbody tr {
+    background: #fff;
+}
+
+#carrito_bar td,
+#favoritos_bar td {
+    padding: 12px 5px;
+    text-align: center;
+    overflow-wrap: anywhere;
+
+    border-top: 1px solid var(--borde);
+    border-bottom: 1px solid var(--borde);
+}
+
+#carrito_bar td:first-child,
+#favoritos_bar td:first-child {
+    border-left: 1px solid var(--borde);
+    border-radius: 9px 0 0 9px;
+}
+
+#carrito_bar td:last-child,
+#favoritos_bar td:last-child {
+    border-right: 1px solid var(--borde);
+    border-radius: 0 9px 9px 0;
+}
+
+/* Los cuerpos conservan su comportamiento de tabla */
+
+#lista_carrito,
+#contenido_favoritos {
+    display: table-row-group;
+}
+
+/* Subtotales */
+
+#carrito_bar > h3,
+#favoritos_bar > h3 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+
+    margin: 25px 0;
+    padding: 17px;
+
+    background: var(--beige);
+    border-radius: 12px;
+
+    color: var(--texto);
+    font-size: 1.05rem;
+}
+
+#subtotal_carrito,
+#subtotal_favoritos {
+    color: var(--precio);
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+/* Botones de ambos paneles */
+
+#carrito_bar > .button,
+#favoritos_bar > .button {
+    display: block;
+    width: 100%;
+
+    margin: 10px 0;
+    padding: 13px;
+
+    border: none;
+    border-radius: 50px;
+
+    font: inherit;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+#comprar_carrito_btn,
+#comprar_favoritos_btn {
+    background: var(--verde-musgo);
+    color: white;
+}
+
+#comprar_carrito_btn:hover,
+#comprar_favoritos_btn:hover {
+    background: var(--verde-hover);
+    transform: translateY(-2px);
+}
+
+#cerrar_carrito,
+#cerrar_favoritos {
+    background: var(--terracota);
+    color: white;
+}
+
+#cerrar_carrito:hover,
+#cerrar_favoritos:hover {
+    background: var(--terracota-hover);
+}
+
+/* Botones de eliminación generados por JavaScript */
+
+#lista_carrito button,
+#contenido_favoritos button {
+    max-width: 100%;
+    padding: 7px 9px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: var(--terracota);
+    color: white;
+
+    cursor: pointer;
+}
+
+#lista_carrito button:hover,
+#contenido_favoritos button:hover {
+    background: var(--terracota-hover);
+}
+
+/* Favoritos: corazón de las tarjetas */
+
+.favoritos_ {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 44px;
+    min-height: 44px;
+
+    margin: 8px 0;
+    padding: 8px 14px;
+
+    border: 1px solid var(--terracota);
+    border-radius: 50px;
+
+    background: var(--tarjeta);
+    color: var(--terracota);
+
+    font-size: 1.4rem;
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.favoritos_:hover {
+    background: var(--terracota);
+    color: white;
+    transform: scale(1.06);
+}
+
+/* Móviles */
+
+@media (max-width: 600px) {
+    #carrito_bar,
+    #favoritos_bar {
+        width: min(370px, 94vw);
+        padding: 20px 14px;
+        border-radius: 14px 0 0 14px;
+    }
+
+    #carrito_bar > h1,
+    #favoritos_bar > h1 {
+        font-size: 1.5rem;
+    }
+
+    #carrito_bar table,
+    #favoritos_bar table {
+        font-size: 0.76rem;
+    }
+
+    #carrito_bar th,
+    #favoritos_bar th,
+    #carrito_bar td,
+    #favoritos_bar td {
+        padding: 9px 3px;
+    }
+}
+
 .catalogo-vacio {
     grid-column: 1 / -1;
     padding: 2rem 1rem;
@@ -472,36 +757,6 @@ body {
     }
 }
 
-/* Carrito lateral */
-
-#carrito_bar {
-    background-color: var(--beige);
-
-    position: fixed;
-
-    top: 0;
-    right: 0;
-
-    width: 300px;
-    height: 100vh;
-
-    margin: 0;
-    padding: 20px;
-
-    box-sizing: border-box;
-
-    opacity: 0;
-    visibility: hidden;
-
-    transform: translateX(100%);
-
-    transition:
-        transform 0.3s ease,
-        opacity 0.3s ease,
-        visibility 0.3s ease;
-
-    z-index: 1000;
-}
 #novedades_bar{
   display: flex;
   justify-content: center;
@@ -509,14 +764,6 @@ body {
 }
 .centrado{
 	justify-content: center;
-}
-/* Carrito abierto */
-
-#carrito_bar.visible {
-    opacity: 1;
-    visibility: visible;
-
-    transform: translateX(0);
 }
 
 #busqueda_div {
@@ -1509,10 +1756,7 @@ img {
         padding: 20px;
     }
 
-    /* Paneles laterales */
-    #carrito_bar {
-        width: min(320px, 85vw);
-    }
+    
 
     #menu_bar {
         width: min(250px, 80vw);
@@ -1661,14 +1905,7 @@ img {
         min-height: 44px;
     }
 
-    /* Carrito y menú lateral */
-    #carrito_bar {
-        width: min(340px, 92vw);
-        max-width: 100%;
-        padding: 16px;
-        overflow-y: auto;
-        overscroll-behavior: contain;
-    }
+   
 
     #menu_bar {
         width: min(280px, 85vw);
@@ -1955,10 +2192,7 @@ input:focus-visible {
     text-decoration: underline;
 }
 
-#carrito_bar {
-    display: block;
-    overflow-y: auto;
-}
+
 
 #mostrar_productos {
     display: grid;
@@ -1968,12 +2202,6 @@ input:focus-visible {
 #mostrar_productos h3 {
     margin: 6px 0;
 }
-
-#contenido_carrito {
-    overflow-wrap: anywhere;
-}
-
-/* Ventana emergente */
 
 #quitar_popup {
     position: absolute;

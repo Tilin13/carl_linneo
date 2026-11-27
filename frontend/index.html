@@ -325,31 +325,46 @@
     {% endfor %}
 
 		</section>
-		
-<section>
-    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Mariposas') }}">
+
+<!-- CATEGORÍAS -->
+<section id="categorias_portada">
+
+    <h1>Explora nuestras colecciones</h1>
+
+    <a class="botones_catalogo"
+       href="{{ url_for('catalogo', categoria='Mariposas') }}">
         Mariposas
     </a>
 
-    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Escarabajos') }}">
+    <a class="botones_catalogo"
+       href="{{ url_for('catalogo', categoria='Escarabajos') }}">
         Escarabajos
     </a>
 
-    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Odonatos') }}">
+    <a class="botones_catalogo"
+       href="{{ url_for('catalogo', categoria='Odonatos') }}">
         Odonatos
     </a>
 
-    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Fosiles') }}">
+    <a class="botones_catalogo"
+       href="{{ url_for('catalogo', categoria='Fosiles') }}">
         Fósiles
     </a>
 
-    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Esqueletos') }}">
+    <a class="botones_catalogo"
+       href="{{ url_for('catalogo', categoria='Esqueletos') }}">
         Esqueletos
     </a>
 
-    <a class="botones_catalogo" href="{{ url_for('catalogo', categoria='Minerales') }}">
+    <a class="botones_catalogo"
+       href="{{ url_for('catalogo', categoria='Minerales') }}">
         Minerales
     </a>
+
+</section>
+
+<!-- CATÁLOGO COMPLETO -->
+<section class="catalogo-encabezado">
 
     <h1>REVISA EL CATÁLOGO COMPLETO</h1>
 
@@ -357,25 +372,52 @@
         Catálogo completo
     </a>
 
-<hr>
-<h1>Cuidados de las piezas entomológicas y de minerales</h1>
-<p>Para que nuestras hermosas piezas duren varios años decorando y divulgando la ciencia es necesario conocer algunos cuidados 
-para conservarlas</p>
-<div>
-	<h2>1. Mantener lejos de la humedad</h2>		
-	<p>Evitar mojar las piezas y no retirar los agentes desecantes de silica que ya vienen incluidos</p>
-</div>
-<div>
-	<h2>2. Mantenerlos lejos de la luz</h2>
-	<p>Evitar exponerlos por largos periodos de tiempo a la luz del sol directa o luces ultravioletas, ya que pueden 
-	decolorar las piezas</p>
-</div>
-<div>
-	<h2>3. No abrirlos</h2>
-	<p>Evitar abrir los cuadros, ya que al hacerlo pueden entrar hongos y humedad que arruinan las piezas</p>
-</div>
+</section>
 
+<!-- CUIDADOS -->
+<section class="informacion-pagina">
+
+    <h1 class="centrado">
+        Cuidados de las piezas entomológicas y minerales
+    </h1>
+
+    <p class="texto_normal">
+        Para que nuestras hermosas piezas duren varios años
+        decorando y divulgando la ciencia, es necesario
+        conocer algunos cuidados para conservarlas.
+    </p>
+
+    <article class="informacion-seccion">
+        <h2>1. Mantener lejos de la humedad</h2>
+        <p>
+            Evitar mojar las piezas y no retirar los agentes
+            desecantes de sílica que ya vienen incluidos.
+        </p>
+    </article>
+
+    <article class="informacion-seccion">
+        <h2>2. Mantenerlas lejos de la luz</h2>
+        <p>
+            Evitar exponerlas por largos periodos de tiempo
+            a la luz directa del sol o luces ultravioletas,
+            ya que pueden decolorar las piezas.
+        </p>
+    </article>
+
+    <article class="informacion-seccion">
+        <h2>3. No abrirlas</h2>
+        <p>
+            Evitar abrir los cuadros, ya que al hacerlo
+            pueden entrar hongos y humedad que arruinan
+            las piezas.
+        </p>
+    </article>
+
+</section>
+
+<!-- CÓMO COMPRAR -->
 <nav class="barra" id="compra_tarjeta">
+
     <h1>¿Cómo realizar una compra?</h1>
 
     <div class="pasos_compra">
@@ -400,11 +442,10 @@ para conservarlas</p>
             <h3>Paga</h3>
         </div>
 
-    </div></nav>
-				
-			
-			</div>
-		</nav>
+    </div>
+
+</nav>
+
 		
 	<div class="popup" id="popup" role="dialog" aria-modal="true" aria-labelledby="titulo_popup">
 		<button
