@@ -10,9 +10,20 @@ document.addEventListener("DOMContentLoaded", function () {
     const menubtn = $("menubtn");
     const menu_bar = $("menu_bar");
     const atras_menu = $("atras_menu")
-     const paquete = document.getElementById("paquete_pedido");
-     const chatBtn = $("chat_btn");
-    const cerrarChatBtn = $("cerrar_chat");
+    const paquete = document.getElementById("paquete_pedido");
+    // =====================================================
+// ELEMENTOS DEL CHAT
+// =====================================================
+
+const chatBtn = $("chat_btn");
+const chatBox = $("chat_box");
+const cerrarChatBtn = $("chat_cerrar_btn");
+
+const barraMensajes = $("bar_mensajes");
+const historialMensajes = $("historial_mensajes");
+
+const formChat = $("form_chat");
+const enviarMensajeBtn = $("enviar_mensaje_btn");
 
     const carritobtn = $("carritobtn");
     const carrito_bar = $("carrito_bar");
@@ -1036,66 +1047,181 @@ function actualizarBotonesFavoritos() {
 // =========================================
 // ABRIR Y CERRAR CHATBOT
 // =========================================
+// =====================================================
+// CHATBOT: ABRIR Y CERRAR
+// =====================================================
 
-function alternarChat() {
-
-    if (!chatBox || !chatBtn) return;
-
-    const abierto = chatBox.hidden;
-
-    chatBox.hidden = !abierto;
-
-    chatBox.setAttribute(
-        "aria-hidden",
-        String(!abierto)
-    );
-
-    chatBtn.setAttribute(
-        "aria-expanded",
-        String(abierto)
-    );
-
-    if (abierto && barraMensajes) {
-
-        setTimeout(function() {
-            barraMensajes.focus();
-        }, 100);
-
+function abrirChat() {
+    if (!chatBox) {
+        console.error("No se encontró el elemento #chat_box");
+        return;
     }
 
+    chatBox.hidden = false;
+    chatBox.setAttribute("aria-hidden", "false");
+
+    if (chatBtn) {
+        chatBtn.setAttribute("aria-expanded", "true");
+    }
+
+    barraMensajes?.focus();
 }
 
-// Botón flotante
+function cerrarChat() {
+    if (!chatBox) return;
 
+    chatBox.hidden = true;
+    chatBox.setAttribute("aria-hidden", "true");
 
+    if (chatBtn) {
+        chatBtn.setAttribute("aria-expanded", "false");
+    }
 
-// Botón de cerrar del encabezado
-
-if (cerrarChatBtn) {
-
-    cerrarChatBtn.addEventListener(
-        "click",
-        alternarChat
-    );
-
+    chatBtn?.focus();
 }
 
-// Cerrar con Escape
+// El botón flotante abre el chat.
+chatBtn?.addEventListener("click", abrirChat);
 
+// El botón de la cabecera cierra el chat.
+cerrarChatBtn?.addEventListener("click", cerrarChat);
+
+// Escape cierra el chat.
 document.addEventListener("keydown", function(evento) {
-
-    if (
-        evento.key === "Escape" &&
-        chatBox &&
-        !chatBox.hidden
-    ) {
-
-        alternarChat();
-
+    if (evento.key === "Escape" && chatBox && !chatBox.hidden) {
+        cerrarChat();
     }
-
 });
 
+
+// =====================================================
+// CHATBOT: MOSTRAR MENSAJES
+// =====================================================
+
+function agregarMensajeChat(texto, clase) {
+    if (!historialMensajes) return;
+
+    const mensaje = document.createElement("div");
+
+    mensaje.className = clase;
+    mensaje.textContent = String(texto);
+
+    historialMensajes.appendChild(mensaje);
+
+    // Desplazar el historial hasta el mensaje más reciente.
+    historialMensajes.scrollTop = historialMensajes.scrollHeight;
+
+    return mensaje;
+}
+
+
+// =====================================================
+// CHATBOT: ENVIAR MENSAJES
+// =====================================================
+
+let esperandoRespuestaChat = false;
+
+async function enviarMensajeChat(evento) {
+    evento.preventDefault();
+
+    if (!barraMensajes || esperandoRespuestaChat) return;
+
+    const texto = barraMensajes.value.trim();
+
+    if (!texto) return;
+
+    // Mostrar el mensaje del usuario.
+    agregarMensajeChat(texto, "mensaje_usuario");
+
+    barraMensajes.value = "";
+    esperandoRespuestaChat = true;
+
+    if (enviarMensajeBtn) {
+        enviarMensajeBtn.disabled = true;
+    }
+
+    barraMensajes.disabled = true;
+
+    const mensajeCargando = agregarMensajeChat(
+        "Escribiendo...",
+        "mensaje_asistente"
+    );
+
+    try {
+        // Enviar el mensaje al servidor.
+        const datos = await peticion("/api/chat", {
+            method: "POST",
+            body: JSON.stringify({
+                mensaje: texto
+            })
+        });
+
+        if (!datos || typeof datos.respuesta !== "string") {
+            throw new Error(
+                "El servidor no devolvió una respuesta válida."
+            );
+        }
+
+        // Sustituir el indicador de carga por la respuesta.
+        if (mensajeCargando) {
+            mensajeCargando.textContent = datos.respuesta;
+        } else {
+            agregarMensajeChat(
+                datos.respuesta,
+                "mensaje_asistente"
+            );
+        }
+
+    } catch (error) {
+        console.error("Error en el chatbot:", error);
+
+        if (mensajeCargando) {
+            mensajeCargando.textContent =
+                "No pude responder. Inténtalo nuevamente.";
+            mensajeCargando.classList.add("mensaje_error");
+        } else {
+            agregarMensajeChat(
+                "No pude responder. Inténtalo nuevamente.",
+                "mensaje_error"
+            );
+        }
+
+    } finally {
+        esperandoRespuestaChat = false;
+
+        if (enviarMensajeBtn) {
+            enviarMensajeBtn.disabled = false;
+        }
+
+        barraMensajes.disabled = false;
+        barraMensajes.focus();
+    }
+}
+
+
+// =====================================================
+// CHATBOT: EVENTO DEL FORMULARIO
+// =====================================================
+
+if (formChat) {
+    formChat.addEventListener("submit", enviarMensajeChat);
+} else {
+    console.error("No se encontró el formulario #form_chat");
+}
+
+
+// =====================================================
+// CHATBOT: ESTADO INICIAL
+// =====================================================
+
+if (chatBox) {
+    chatBox.hidden = true;
+    chatBox.setAttribute("aria-hidden", "true");
+}
+
+if (chatBtn) {
+    chatBtn.setAttribute("aria-expanded", "false");
+}
 // =====================================================
 // FAVORITOS: BOTONES DE PRODUCTOS
 // =====================================================
@@ -3080,15 +3206,6 @@ if (botonTerminarCaja) {
     // =====================================================
 
 
-    if (chatBtn) {
-
-        chatBtn.addEventListener("click", function () {
-
-            window.location.href = "/chatbox";
-
-        });
-
-    }
     const tipoCompradorSelect = $("tipo_comprador");
 const compradorRegistrado = $("comprador_registrado");
 const compradorExterno = $("comprador_externo");
